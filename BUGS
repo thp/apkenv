@@ -1,0 +1,2 @@
+- Using manpages to get the required headers is.. "hackish" to say the least.
+- Only works for GLES v1 for now. GLES v2 support would be nice, too.
