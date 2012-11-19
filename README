@@ -1,0 +1,112 @@
+
+apkenv
+======
+
+A compatibility layer for applications packaged as .apk.
+
+Support website: http://thp.io/2012/apkenv/
+
+
+Example module and .apk
+=======================
+
+An example module is provided in modules/trg2.c - you can use this module as a
+basis to create your own modules. You can download the .apk that works with
+this example module from:
+
+    http://thp.io/2011/trg2/
+
+
+softfp vs. hardfp
+=================
+
+Android is softfp.
+Maemo 5 is softfp.
+MeeGo 1.2 Harmattan is hardfp.
+
+softfp and hardfp differ in the way functions with floating point arguments
+get called. Trying to call a hardfp function with the softfp calling
+convention will not work and likely result in a crash or worse. To avoid
+this, you can add an attribute to function declarations to make sure that
+the function accepts its parameters using the softfp calling convention,
+like this:
+
+    __attribute__((pcs("aapcs")))
+
+There's a convenience #define in apkenv.h called "SOFTFP" with which you can
+decorate all functions that are either in a native library (i.e. in
+modules/) or that will be called from the native library (i.e. in compat/).
+Please note that in theory this attribute is only required on functions that
+pass float values in the arguments, but do it always to save you some
+headaches.
+
+
+Debugging crashes
+=================
+
+First of all, enable debugging in the makefile (set DEBUG=1). Then rebuild
+to get a debug build with lots of debug output. You can then check which
+symbols get mapped from where at the linker phase (e.g. apkenv x.apk | grep
+'from libc') - in general, most libc functions must be mapped in order to
+avoid problems (e.g. stdio functions don't work in Bionic libc, so we have
+to hack around these issues - the same is true for memory (de-)allocation,
+etc..).
+
+When you have all relevant functions mapped, ltrace'ing apkenv can help you
+find the library function in which it crashes - this will not list functions
+from Bionic libs, but only from your system libraries (another reason why it
+is usually a good idea to map system-level functions).
+
+
+Documentation
+=============
+
+JNI Invocation API
+http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/invocation.html
+
+JNI Functions
+http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/functions.html
+
+JNI Types and Data Structures
+http://docs.oracle.com/javase/1.5.0/docs/guide/jni/spec/types.html
+
+GCC Function Attributes
+http://gcc.gnu.org/onlinedocs/gcc/Function-Attributes.html
+
+ARM Hard Float Point: VFP Comparison
+http://wiki.debian.org/ArmHardFloatPort/VfpComparison
+
+Android MotionEvent
+http://developer.android.com/reference/android/view/MotionEvent.html
+
+
+Third Party Code
+================
+
+All code written by me (thp) for apkenv is licensed under a simplified BSD
+license (see LICENSE.apkenv). However, code from third parties might be
+licensed under a different license, and have different copyright holders:
+
+apklib/unzip.{c,h}, apklib/ioapi.{c,h}:
+    The MiniZip project - http://www.winimage.com/zLibDll/minizip.html
+    Copyright (C) 1998-2010 Gilles Vollant (minizip)
+    Copyright (C) 2007-2008 Even Rouault
+    Copyright (C) 2009-2010 Mathias Svensson ( http://result42.com )
+
+apklib/ioapi_mem.c:
+    ioapi implementation for accessing .zip files in memory
+    Copyright (C) 1998-2003 Gilles Vollant
+    Copyright (C) 2003 Justin Fletcher
+
+linker/*:
+    The Android Bionic Linker + The Android Bionic C Library
+    Copyright (c) 2005-2008, The Android Open Source Project
+
+jni/jni.h:
+    libnativehelper: Support functions for Android's class libraries
+    Copyright (C) 2006 The Android Open Source Project
+
+compat/hooks.c, compat/pthread_wrapper.c:
+    pthread wrapper implementation based on code from libhybris
+    Copyright (C) 2012 Carsten Munk
+
