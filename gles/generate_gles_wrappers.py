@@ -64,7 +64,7 @@ class Function:
     def _format_call(self):
         if any(self.name.endswith(postfix)
                 for postfix in ('OES', 'EXT', 'ARB', 'IMG')):
-            return '/* No CALL */ assert(0/*%s*/);' % self.name
+            return '/* No CALL */ printf("UNIMPLEMENTED: %s\\n");' % self.name
         else:
             return '%s%s(%s);' % (self._format_return(),
                 self.name, self._format_call_args())
