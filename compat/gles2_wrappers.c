@@ -862,108 +862,108 @@ void
 my_glEGLImageTargetTexture2DOES(GLenum target, GLeglImageOES image)
 {
     WRAPPERS_DEBUG_PRINTF("glEGLImageTargetTexture2DOES()\n", target, image);
-    /* No CALL */ assert(0/*glEGLImageTargetTexture2DOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glEGLImageTargetTexture2DOES\n");
 }
 void
 my_glEGLImageTargetRenderbufferStorageOES(GLenum target, GLeglImageOES image)
 {
     WRAPPERS_DEBUG_PRINTF("glEGLImageTargetRenderbufferStorageOES()\n", target, image);
-    /* No CALL */ assert(0/*glEGLImageTargetRenderbufferStorageOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glEGLImageTargetRenderbufferStorageOES\n");
 }
 void *
 my_glMapBufferOES(GLenum target, GLenum access)
 {
     WRAPPERS_DEBUG_PRINTF("glMapBufferOES()\n", target, access);
-    /* No CALL */ assert(0/*glMapBufferOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glMapBufferOES\n");
 }
 GLboolean
 my_glUnmapBufferOES(GLenum target)
 {
     WRAPPERS_DEBUG_PRINTF("glUnmapBufferOES()\n", target);
-    /* No CALL */ assert(0/*glUnmapBufferOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glUnmapBufferOES\n");
 }
 void
 my_glGetBufferPointervOES(GLenum target, GLenum pname, void **params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetBufferPointervOES()\n", target, pname, params);
-    /* No CALL */ assert(0/*glGetBufferPointervOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetBufferPointervOES\n");
 }
 void
 my_glTexImage3DOES(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *pixels)
 {
     WRAPPERS_DEBUG_PRINTF("glTexImage3DOES()\n", target, level, internalformat, width, height, depth, border, format, type, pixels);
-    /* No CALL */ assert(0/*glTexImage3DOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexImage3DOES\n");
 }
 void
 my_glTexSubImage3DOES(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels)
 {
     WRAPPERS_DEBUG_PRINTF("glTexSubImage3DOES()\n", target, level, xoffset, yoffset, zoffset, width, height, depth, format, type, pixels);
-    /* No CALL */ assert(0/*glTexSubImage3DOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexSubImage3DOES\n");
 }
 void
 my_glCopyTexSubImage3DOES(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLint x, GLint y, GLsizei width, GLsizei height)
 {
     WRAPPERS_DEBUG_PRINTF("glCopyTexSubImage3DOES()\n", target, level, xoffset, yoffset, zoffset, x, y, width, height);
-    /* No CALL */ assert(0/*glCopyTexSubImage3DOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glCopyTexSubImage3DOES\n");
 }
 void
 my_glCompressedTexImage3DOES(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLsizei imageSize, const void *data)
 {
     WRAPPERS_DEBUG_PRINTF("glCompressedTexImage3DOES()\n", target, level, internalformat, width, height, depth, border, imageSize, data);
-    /* No CALL */ assert(0/*glCompressedTexImage3DOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glCompressedTexImage3DOES\n");
 }
 void
 my_glCompressedTexSubImage3DOES(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLsizei imageSize, const void *data)
 {
     WRAPPERS_DEBUG_PRINTF("glCompressedTexSubImage3DOES()\n", target, level, xoffset, yoffset, zoffset, width, height, depth, format, imageSize, data);
-    /* No CALL */ assert(0/*glCompressedTexSubImage3DOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glCompressedTexSubImage3DOES\n");
 }
 void
 my_glFramebufferTexture3DOES(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level, GLint zoffset)
 {
     WRAPPERS_DEBUG_PRINTF("glFramebufferTexture3DOES()\n", target, attachment, textarget, texture, level, zoffset);
-    /* No CALL */ assert(0/*glFramebufferTexture3DOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glFramebufferTexture3DOES\n");
 }
 void
 my_glMultiDrawArraysEXT(GLenum mode, GLint *first, GLsizei *count, GLsizei primcount)
 {
     WRAPPERS_DEBUG_PRINTF("glMultiDrawArraysEXT()\n", mode, first, count, primcount);
-    /* No CALL */ assert(0/*glMultiDrawArraysEXT*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glMultiDrawArraysEXT\n");
 }
 void
 my_glMultiDrawElementsEXT(GLenum mode, const GLsizei *count, GLenum type, const GLvoid **indices, GLsizei primcount)
 {
     WRAPPERS_DEBUG_PRINTF("glMultiDrawElementsEXT()\n", mode, count, type, indices, primcount);
-    /* No CALL */ assert(0/*glMultiDrawElementsEXT*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glMultiDrawElementsEXT\n");
 }
 void
 my_glTexBindStreamIMG(GLint device, GLint deviceoffset)
 {
     WRAPPERS_DEBUG_PRINTF("glTexBindStreamIMG()\n", device, deviceoffset);
-    /* No CALL */ assert(0/*glTexBindStreamIMG*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexBindStreamIMG\n");
 }
 void
 my_glGetTexStreamDeviceAttributeivIMG(GLint device, GLenum pname, GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexStreamDeviceAttributeivIMG()\n", device, pname, params);
-    /* No CALL */ assert(0/*glGetTexStreamDeviceAttributeivIMG*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetTexStreamDeviceAttributeivIMG\n");
 }
 const GLubyte *
 my_glGetTexStreamDeviceNameIMG(GLint device)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexStreamDeviceNameIMG()\n", device);
-    /* No CALL */ assert(0/*glGetTexStreamDeviceNameIMG*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetTexStreamDeviceNameIMG\n");
 }
 void
 my_glGetProgramBinaryOES(GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary)
 {
     WRAPPERS_DEBUG_PRINTF("glGetProgramBinaryOES()\n", program, bufSize, length, binaryFormat, binary);
-    /* No CALL */ assert(0/*glGetProgramBinaryOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetProgramBinaryOES\n");
 }
 void
 my_glProgramBinaryOES(GLuint program, GLenum binaryFormat, const void *binary, GLint length)
 {
     WRAPPERS_DEBUG_PRINTF("glProgramBinaryOES()\n", program, binaryFormat, binary, length);
-    /* No CALL */ assert(0/*glProgramBinaryOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glProgramBinaryOES\n");
 }
 #endif /* APKENV_GLES2 */

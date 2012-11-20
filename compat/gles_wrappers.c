@@ -874,678 +874,678 @@ void
 my_glPointSizePointerOES(GLenum type, GLsizei stride, const GLvoid *pointer)
 {
     WRAPPERS_DEBUG_PRINTF("glPointSizePointerOES()\n", type, stride, pointer);
-    /* No CALL */ assert(0/*glPointSizePointerOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glPointSizePointerOES\n");
 }
 void
 my_glBlendEquationSeparateOES(GLenum modeRGB, GLenum modeAlpha)
 {
     WRAPPERS_DEBUG_PRINTF("glBlendEquationSeparateOES()\n", modeRGB, modeAlpha);
-    /* No CALL */ assert(0/*glBlendEquationSeparateOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glBlendEquationSeparateOES\n");
 }
 void
 my_glBlendFuncSeparateOES(GLenum srcRGB, GLenum dstRGB, GLenum srcAlpha, GLenum dstAlpha)
 {
     WRAPPERS_DEBUG_PRINTF("glBlendFuncSeparateOES()\n", srcRGB, dstRGB, srcAlpha, dstAlpha);
-    /* No CALL */ assert(0/*glBlendFuncSeparateOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glBlendFuncSeparateOES\n");
 }
 void
 my_glBlendEquationOES(GLenum mode)
 {
     WRAPPERS_DEBUG_PRINTF("glBlendEquationOES()\n", mode);
-    /* No CALL */ assert(0/*glBlendEquationOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glBlendEquationOES\n");
 }
 void
 my_glDrawTexsOES(GLshort x, GLshort y, GLshort z, GLshort width, GLshort height)
 {
     WRAPPERS_DEBUG_PRINTF("glDrawTexsOES()\n", x, y, z, width, height);
-    /* No CALL */ assert(0/*glDrawTexsOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDrawTexsOES\n");
 }
 void
 my_glDrawTexiOES(GLint x, GLint y, GLint z, GLint width, GLint height)
 {
     WRAPPERS_DEBUG_PRINTF("glDrawTexiOES()\n", x, y, z, width, height);
-    /* No CALL */ assert(0/*glDrawTexiOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDrawTexiOES\n");
 }
 void
 my_glDrawTexxOES(GLfixed x, GLfixed y, GLfixed z, GLfixed width, GLfixed height)
 {
     WRAPPERS_DEBUG_PRINTF("glDrawTexxOES()\n", x, y, z, width, height);
-    /* No CALL */ assert(0/*glDrawTexxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDrawTexxOES\n");
 }
 void
 my_glDrawTexsvOES(const GLshort *coords)
 {
     WRAPPERS_DEBUG_PRINTF("glDrawTexsvOES()\n", coords);
-    /* No CALL */ assert(0/*glDrawTexsvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDrawTexsvOES\n");
 }
 void
 my_glDrawTexivOES(const GLint *coords)
 {
     WRAPPERS_DEBUG_PRINTF("glDrawTexivOES()\n", coords);
-    /* No CALL */ assert(0/*glDrawTexivOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDrawTexivOES\n");
 }
 void
 my_glDrawTexxvOES(const GLfixed *coords)
 {
     WRAPPERS_DEBUG_PRINTF("glDrawTexxvOES()\n", coords);
-    /* No CALL */ assert(0/*glDrawTexxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDrawTexxvOES\n");
 }
 void
 my_glDrawTexfOES(GLfloat x, GLfloat y, GLfloat z, GLfloat width, GLfloat height)
 {
     WRAPPERS_DEBUG_PRINTF("glDrawTexfOES()\n", x, y, z, width, height);
-    /* No CALL */ assert(0/*glDrawTexfOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDrawTexfOES\n");
 }
 void
 my_glDrawTexfvOES(const GLfloat *coords)
 {
     WRAPPERS_DEBUG_PRINTF("glDrawTexfvOES()\n", coords);
-    /* No CALL */ assert(0/*glDrawTexfvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDrawTexfvOES\n");
 }
 void
 my_glAlphaFuncxOES(GLenum func, GLclampx ref)
 {
     WRAPPERS_DEBUG_PRINTF("glAlphaFuncxOES()\n", func, ref);
-    /* No CALL */ assert(0/*glAlphaFuncxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glAlphaFuncxOES\n");
 }
 void
 my_glClearColorxOES(GLclampx red, GLclampx green, GLclampx blue, GLclampx alpha)
 {
     WRAPPERS_DEBUG_PRINTF("glClearColorxOES()\n", red, green, blue, alpha);
-    /* No CALL */ assert(0/*glClearColorxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glClearColorxOES\n");
 }
 void
 my_glClearDepthxOES(GLclampx depth)
 {
     WRAPPERS_DEBUG_PRINTF("glClearDepthxOES()\n", depth);
-    /* No CALL */ assert(0/*glClearDepthxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glClearDepthxOES\n");
 }
 void
 my_glClipPlanexOES(GLenum plane, const GLfixed *equation)
 {
     WRAPPERS_DEBUG_PRINTF("glClipPlanexOES()\n", plane, equation);
-    /* No CALL */ assert(0/*glClipPlanexOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glClipPlanexOES\n");
 }
 void
 my_glColor4xOES(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha)
 {
     WRAPPERS_DEBUG_PRINTF("glColor4xOES()\n", red, green, blue, alpha);
-    /* No CALL */ assert(0/*glColor4xOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glColor4xOES\n");
 }
 void
 my_glDepthRangexOES(GLclampx zNear, GLclampx zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glDepthRangexOES()\n", zNear, zFar);
-    /* No CALL */ assert(0/*glDepthRangexOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDepthRangexOES\n");
 }
 void
 my_glFogxOES(GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glFogxOES()\n", pname, param);
-    /* No CALL */ assert(0/*glFogxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glFogxOES\n");
 }
 void
 my_glFogxvOES(GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glFogxvOES()\n", pname, params);
-    /* No CALL */ assert(0/*glFogxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glFogxvOES\n");
 }
 void
 my_glFrustumxOES(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed zNear, GLfixed zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glFrustumxOES()\n", left, right, bottom, top, zNear, zFar);
-    /* No CALL */ assert(0/*glFrustumxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glFrustumxOES\n");
 }
 void
 my_glGetClipPlanexOES(GLenum pname, GLfixed eqn[4])
 {
     WRAPPERS_DEBUG_PRINTF("glGetClipPlanexOES()\n", pname, eqn);
-    /* No CALL */ assert(0/*glGetClipPlanexOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetClipPlanexOES\n");
 }
 void
 my_glGetFixedvOES(GLenum pname, GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetFixedvOES()\n", pname, params);
-    /* No CALL */ assert(0/*glGetFixedvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetFixedvOES\n");
 }
 void
 my_glGetLightxvOES(GLenum light, GLenum pname, GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetLightxvOES()\n", light, pname, params);
-    /* No CALL */ assert(0/*glGetLightxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetLightxvOES\n");
 }
 void
 my_glGetMaterialxvOES(GLenum face, GLenum pname, GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetMaterialxvOES()\n", face, pname, params);
-    /* No CALL */ assert(0/*glGetMaterialxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetMaterialxvOES\n");
 }
 void
 my_glGetTexEnvxvOES(GLenum env, GLenum pname, GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexEnvxvOES()\n", env, pname, params);
-    /* No CALL */ assert(0/*glGetTexEnvxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetTexEnvxvOES\n");
 }
 void
 my_glGetTexParameterxvOES(GLenum target, GLenum pname, GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexParameterxvOES()\n", target, pname, params);
-    /* No CALL */ assert(0/*glGetTexParameterxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetTexParameterxvOES\n");
 }
 void
 my_glLightModelxOES(GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glLightModelxOES()\n", pname, param);
-    /* No CALL */ assert(0/*glLightModelxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glLightModelxOES\n");
 }
 void
 my_glLightModelxvOES(GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glLightModelxvOES()\n", pname, params);
-    /* No CALL */ assert(0/*glLightModelxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glLightModelxvOES\n");
 }
 void
 my_glLightxOES(GLenum light, GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glLightxOES()\n", light, pname, param);
-    /* No CALL */ assert(0/*glLightxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glLightxOES\n");
 }
 void
 my_glLightxvOES(GLenum light, GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glLightxvOES()\n", light, pname, params);
-    /* No CALL */ assert(0/*glLightxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glLightxvOES\n");
 }
 void
 my_glLineWidthxOES(GLfixed width)
 {
     WRAPPERS_DEBUG_PRINTF("glLineWidthxOES()\n", width);
-    /* No CALL */ assert(0/*glLineWidthxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glLineWidthxOES\n");
 }
 void
 my_glLoadMatrixxOES(const GLfixed *m)
 {
     WRAPPERS_DEBUG_PRINTF("glLoadMatrixxOES()\n", m);
-    /* No CALL */ assert(0/*glLoadMatrixxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glLoadMatrixxOES\n");
 }
 void
 my_glMaterialxOES(GLenum face, GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glMaterialxOES()\n", face, pname, param);
-    /* No CALL */ assert(0/*glMaterialxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glMaterialxOES\n");
 }
 void
 my_glMaterialxvOES(GLenum face, GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glMaterialxvOES()\n", face, pname, params);
-    /* No CALL */ assert(0/*glMaterialxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glMaterialxvOES\n");
 }
 void
 my_glMultMatrixxOES(const GLfixed *m)
 {
     WRAPPERS_DEBUG_PRINTF("glMultMatrixxOES()\n", m);
-    /* No CALL */ assert(0/*glMultMatrixxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glMultMatrixxOES\n");
 }
 void
 my_glMultiTexCoord4xOES(GLenum target, GLfixed s, GLfixed t, GLfixed r, GLfixed q)
 {
     WRAPPERS_DEBUG_PRINTF("glMultiTexCoord4xOES()\n", target, s, t, r, q);
-    /* No CALL */ assert(0/*glMultiTexCoord4xOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glMultiTexCoord4xOES\n");
 }
 void
 my_glNormal3xOES(GLfixed nx, GLfixed ny, GLfixed nz)
 {
     WRAPPERS_DEBUG_PRINTF("glNormal3xOES()\n", nx, ny, nz);
-    /* No CALL */ assert(0/*glNormal3xOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glNormal3xOES\n");
 }
 void
 my_glOrthoxOES(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed zNear, GLfixed zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glOrthoxOES()\n", left, right, bottom, top, zNear, zFar);
-    /* No CALL */ assert(0/*glOrthoxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glOrthoxOES\n");
 }
 void
 my_glPointParameterxOES(GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glPointParameterxOES()\n", pname, param);
-    /* No CALL */ assert(0/*glPointParameterxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glPointParameterxOES\n");
 }
 void
 my_glPointParameterxvOES(GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glPointParameterxvOES()\n", pname, params);
-    /* No CALL */ assert(0/*glPointParameterxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glPointParameterxvOES\n");
 }
 void
 my_glPointSizexOES(GLfixed size)
 {
     WRAPPERS_DEBUG_PRINTF("glPointSizexOES()\n", size);
-    /* No CALL */ assert(0/*glPointSizexOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glPointSizexOES\n");
 }
 void
 my_glPolygonOffsetxOES(GLfixed factor, GLfixed units)
 {
     WRAPPERS_DEBUG_PRINTF("glPolygonOffsetxOES()\n", factor, units);
-    /* No CALL */ assert(0/*glPolygonOffsetxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glPolygonOffsetxOES\n");
 }
 void
 my_glRotatexOES(GLfixed angle, GLfixed x, GLfixed y, GLfixed z)
 {
     WRAPPERS_DEBUG_PRINTF("glRotatexOES()\n", angle, x, y, z);
-    /* No CALL */ assert(0/*glRotatexOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glRotatexOES\n");
 }
 void
 my_glSampleCoveragexOES(GLclampx value, GLboolean invert)
 {
     WRAPPERS_DEBUG_PRINTF("glSampleCoveragexOES()\n", value, invert);
-    /* No CALL */ assert(0/*glSampleCoveragexOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glSampleCoveragexOES\n");
 }
 void
 my_glScalexOES(GLfixed x, GLfixed y, GLfixed z)
 {
     WRAPPERS_DEBUG_PRINTF("glScalexOES()\n", x, y, z);
-    /* No CALL */ assert(0/*glScalexOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glScalexOES\n");
 }
 void
 my_glTexEnvxOES(GLenum target, GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glTexEnvxOES()\n", target, pname, param);
-    /* No CALL */ assert(0/*glTexEnvxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexEnvxOES\n");
 }
 void
 my_glTexEnvxvOES(GLenum target, GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glTexEnvxvOES()\n", target, pname, params);
-    /* No CALL */ assert(0/*glTexEnvxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexEnvxvOES\n");
 }
 void
 my_glTexParameterxOES(GLenum target, GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glTexParameterxOES()\n", target, pname, param);
-    /* No CALL */ assert(0/*glTexParameterxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexParameterxOES\n");
 }
 void
 my_glTexParameterxvOES(GLenum target, GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glTexParameterxvOES()\n", target, pname, params);
-    /* No CALL */ assert(0/*glTexParameterxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexParameterxvOES\n");
 }
 void
 my_glTranslatexOES(GLfixed x, GLfixed y, GLfixed z)
 {
     WRAPPERS_DEBUG_PRINTF("glTranslatexOES()\n", x, y, z);
-    /* No CALL */ assert(0/*glTranslatexOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTranslatexOES\n");
 }
 GLboolean
 my_glIsRenderbufferOES(GLuint renderbuffer)
 {
     WRAPPERS_DEBUG_PRINTF("glIsRenderbufferOES()\n", renderbuffer);
-    /* No CALL */ assert(0/*glIsRenderbufferOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glIsRenderbufferOES\n");
 }
 void
 my_glBindRenderbufferOES(GLenum target, GLuint renderbuffer)
 {
     WRAPPERS_DEBUG_PRINTF("glBindRenderbufferOES()\n", target, renderbuffer);
-    /* No CALL */ assert(0/*glBindRenderbufferOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glBindRenderbufferOES\n");
 }
 void
 my_glDeleteRenderbuffersOES(GLsizei n, const GLuint *renderbuffers)
 {
     WRAPPERS_DEBUG_PRINTF("glDeleteRenderbuffersOES()\n", n, renderbuffers);
-    /* No CALL */ assert(0/*glDeleteRenderbuffersOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDeleteRenderbuffersOES\n");
 }
 void
 my_glGenRenderbuffersOES(GLsizei n, GLuint *renderbuffers)
 {
     WRAPPERS_DEBUG_PRINTF("glGenRenderbuffersOES()\n", n, renderbuffers);
-    /* No CALL */ assert(0/*glGenRenderbuffersOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGenRenderbuffersOES\n");
 }
 void
 my_glRenderbufferStorageOES(GLenum target, GLenum internalformat, GLsizei width, GLsizei height)
 {
     WRAPPERS_DEBUG_PRINTF("glRenderbufferStorageOES()\n", target, internalformat, width, height);
-    /* No CALL */ assert(0/*glRenderbufferStorageOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glRenderbufferStorageOES\n");
 }
 void
 my_glGetRenderbufferParameterivOES(GLenum target, GLenum pname, GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetRenderbufferParameterivOES()\n", target, pname, params);
-    /* No CALL */ assert(0/*glGetRenderbufferParameterivOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetRenderbufferParameterivOES\n");
 }
 GLboolean
 my_glIsFramebufferOES(GLuint framebuffer)
 {
     WRAPPERS_DEBUG_PRINTF("glIsFramebufferOES()\n", framebuffer);
-    /* No CALL */ assert(0/*glIsFramebufferOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glIsFramebufferOES\n");
 }
 void
 my_glBindFramebufferOES(GLenum target, GLuint framebuffer)
 {
     WRAPPERS_DEBUG_PRINTF("glBindFramebufferOES()\n", target, framebuffer);
-    /* No CALL */ assert(0/*glBindFramebufferOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glBindFramebufferOES\n");
 }
 void
 my_glDeleteFramebuffersOES(GLsizei n, const GLuint *framebuffers)
 {
     WRAPPERS_DEBUG_PRINTF("glDeleteFramebuffersOES()\n", n, framebuffers);
-    /* No CALL */ assert(0/*glDeleteFramebuffersOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDeleteFramebuffersOES\n");
 }
 void
 my_glGenFramebuffersOES(GLsizei n, GLuint *framebuffers)
 {
     WRAPPERS_DEBUG_PRINTF("glGenFramebuffersOES()\n", n, framebuffers);
-    /* No CALL */ assert(0/*glGenFramebuffersOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGenFramebuffersOES\n");
 }
 GLenum
 my_glCheckFramebufferStatusOES(GLenum target)
 {
     WRAPPERS_DEBUG_PRINTF("glCheckFramebufferStatusOES()\n", target);
-    /* No CALL */ assert(0/*glCheckFramebufferStatusOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glCheckFramebufferStatusOES\n");
 }
 void
 my_glFramebufferRenderbufferOES(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)
 {
     WRAPPERS_DEBUG_PRINTF("glFramebufferRenderbufferOES()\n", target, attachment, renderbuffertarget, renderbuffer);
-    /* No CALL */ assert(0/*glFramebufferRenderbufferOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glFramebufferRenderbufferOES\n");
 }
 void
 my_glFramebufferTexture2DOES(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level)
 {
     WRAPPERS_DEBUG_PRINTF("glFramebufferTexture2DOES()\n", target, attachment, textarget, texture, level);
-    /* No CALL */ assert(0/*glFramebufferTexture2DOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glFramebufferTexture2DOES\n");
 }
 void
 my_glGetFramebufferAttachmentParameterivOES(GLenum target, GLenum attachment, GLenum pname, GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetFramebufferAttachmentParameterivOES()\n", target, attachment, pname, params);
-    /* No CALL */ assert(0/*glGetFramebufferAttachmentParameterivOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetFramebufferAttachmentParameterivOES\n");
 }
 void
 my_glGenerateMipmapOES(GLenum target)
 {
     WRAPPERS_DEBUG_PRINTF("glGenerateMipmapOES()\n", target);
-    /* No CALL */ assert(0/*glGenerateMipmapOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGenerateMipmapOES\n");
 }
 void
 my_glCurrentPaletteMatrixOES(GLuint matrixpaletteindex)
 {
     WRAPPERS_DEBUG_PRINTF("glCurrentPaletteMatrixOES()\n", matrixpaletteindex);
-    /* No CALL */ assert(0/*glCurrentPaletteMatrixOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glCurrentPaletteMatrixOES\n");
 }
 void
 my_glLoadPaletteFromModelViewMatrixOES()
 {
     WRAPPERS_DEBUG_PRINTF("glLoadPaletteFromModelViewMatrixOES()\n");
-    /* No CALL */ assert(0/*glLoadPaletteFromModelViewMatrixOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glLoadPaletteFromModelViewMatrixOES\n");
 }
 void
 my_glMatrixIndexPointerOES(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
     WRAPPERS_DEBUG_PRINTF("glMatrixIndexPointerOES()\n", size, type, stride, pointer);
-    /* No CALL */ assert(0/*glMatrixIndexPointerOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glMatrixIndexPointerOES\n");
 }
 void
 my_glWeightPointerOES(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
     WRAPPERS_DEBUG_PRINTF("glWeightPointerOES()\n", size, type, stride, pointer);
-    /* No CALL */ assert(0/*glWeightPointerOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glWeightPointerOES\n");
 }
 GLbitfield
 my_glQueryMatrixxOES(GLfixed mantissa[16], GLint exponent[16])
 {
     WRAPPERS_DEBUG_PRINTF("glQueryMatrixxOES()\n", mantissa, exponent);
-    /* No CALL */ assert(0/*glQueryMatrixxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glQueryMatrixxOES\n");
 }
 void
 my_glDepthRangefOES(GLclampf zNear, GLclampf zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glDepthRangefOES()\n", zNear, zFar);
-    /* No CALL */ assert(0/*glDepthRangefOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDepthRangefOES\n");
 }
 void
 my_glFrustumfOES(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glFrustumfOES()\n", left, right, bottom, top, zNear, zFar);
-    /* No CALL */ assert(0/*glFrustumfOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glFrustumfOES\n");
 }
 void
 my_glOrthofOES(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glOrthofOES()\n", left, right, bottom, top, zNear, zFar);
-    /* No CALL */ assert(0/*glOrthofOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glOrthofOES\n");
 }
 void
 my_glClipPlanefOES(GLenum plane, const GLfloat *equation)
 {
     WRAPPERS_DEBUG_PRINTF("glClipPlanefOES()\n", plane, equation);
-    /* No CALL */ assert(0/*glClipPlanefOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glClipPlanefOES\n");
 }
 void
 my_glGetClipPlanefOES(GLenum pname, GLfloat eqn[4])
 {
     WRAPPERS_DEBUG_PRINTF("glGetClipPlanefOES()\n", pname, eqn);
-    /* No CALL */ assert(0/*glGetClipPlanefOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetClipPlanefOES\n");
 }
 void
 my_glClearDepthfOES(GLclampf depth)
 {
     WRAPPERS_DEBUG_PRINTF("glClearDepthfOES()\n", depth);
-    /* No CALL */ assert(0/*glClearDepthfOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glClearDepthfOES\n");
 }
 void
 my_glTexGenfOES(GLenum coord, GLenum pname, GLfloat param)
 {
     WRAPPERS_DEBUG_PRINTF("glTexGenfOES()\n", coord, pname, param);
-    /* No CALL */ assert(0/*glTexGenfOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexGenfOES\n");
 }
 void
 my_glTexGenfvOES(GLenum coord, GLenum pname, const GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glTexGenfvOES()\n", coord, pname, params);
-    /* No CALL */ assert(0/*glTexGenfvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexGenfvOES\n");
 }
 void
 my_glTexGeniOES(GLenum coord, GLenum pname, GLint param)
 {
     WRAPPERS_DEBUG_PRINTF("glTexGeniOES()\n", coord, pname, param);
-    /* No CALL */ assert(0/*glTexGeniOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexGeniOES\n");
 }
 void
 my_glTexGenivOES(GLenum coord, GLenum pname, const GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glTexGenivOES()\n", coord, pname, params);
-    /* No CALL */ assert(0/*glTexGenivOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexGenivOES\n");
 }
 void
 my_glTexGenxOES(GLenum coord, GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glTexGenxOES()\n", coord, pname, param);
-    /* No CALL */ assert(0/*glTexGenxOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexGenxOES\n");
 }
 void
 my_glTexGenxvOES(GLenum coord, GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glTexGenxvOES()\n", coord, pname, params);
-    /* No CALL */ assert(0/*glTexGenxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexGenxvOES\n");
 }
 void
 my_glGetTexGenfvOES(GLenum coord, GLenum pname, GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexGenfvOES()\n", coord, pname, params);
-    /* No CALL */ assert(0/*glGetTexGenfvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetTexGenfvOES\n");
 }
 void
 my_glGetTexGenivOES(GLenum coord, GLenum pname, GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexGenivOES()\n", coord, pname, params);
-    /* No CALL */ assert(0/*glGetTexGenivOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetTexGenivOES\n");
 }
 void
 my_glGetTexGenxvOES(GLenum coord, GLenum pname, GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexGenxvOES()\n", coord, pname, params);
-    /* No CALL */ assert(0/*glGetTexGenxvOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetTexGenxvOES\n");
 }
 void
 my_glEGLImageTargetTexture2DOES(GLenum target, GLeglImageOES image)
 {
     WRAPPERS_DEBUG_PRINTF("glEGLImageTargetTexture2DOES()\n", target, image);
-    /* No CALL */ assert(0/*glEGLImageTargetTexture2DOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glEGLImageTargetTexture2DOES\n");
 }
 void
 my_glEGLImageTargetRenderbufferStorageOES(GLenum target, GLeglImageOES image)
 {
     WRAPPERS_DEBUG_PRINTF("glEGLImageTargetRenderbufferStorageOES()\n", target, image);
-    /* No CALL */ assert(0/*glEGLImageTargetRenderbufferStorageOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glEGLImageTargetRenderbufferStorageOES\n");
 }
 void *
 my_glMapBufferOES(GLenum target, GLenum access)
 {
     WRAPPERS_DEBUG_PRINTF("glMapBufferOES()\n", target, access);
-    /* No CALL */ assert(0/*glMapBufferOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glMapBufferOES\n");
 }
 GLboolean
 my_glUnmapBufferOES(GLenum target)
 {
     WRAPPERS_DEBUG_PRINTF("glUnmapBufferOES()\n", target);
-    /* No CALL */ assert(0/*glUnmapBufferOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glUnmapBufferOES\n");
 }
 void
 my_glGetBufferPointervOES(GLenum target, GLenum pname, void **params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetBufferPointervOES()\n", target, pname, params);
-    /* No CALL */ assert(0/*glGetBufferPointervOES*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetBufferPointervOES\n");
 }
 void
 my_glTexBindStreamIMG(GLint device, GLint deviceoffset)
 {
     WRAPPERS_DEBUG_PRINTF("glTexBindStreamIMG()\n", device, deviceoffset);
-    /* No CALL */ assert(0/*glTexBindStreamIMG*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glTexBindStreamIMG\n");
 }
 void
 my_glGetTexStreamDeviceAttributeivIMG(GLint device, GLenum pname, GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexStreamDeviceAttributeivIMG()\n", device, pname, params);
-    /* No CALL */ assert(0/*glGetTexStreamDeviceAttributeivIMG*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetTexStreamDeviceAttributeivIMG\n");
 }
 const GLubyte *
 my_glGetTexStreamDeviceNameIMG(GLint device)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexStreamDeviceNameIMG()\n", device);
-    /* No CALL */ assert(0/*glGetTexStreamDeviceNameIMG*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGetTexStreamDeviceNameIMG\n");
 }
 void
 my_glVertexAttrib4fARB(GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
     WRAPPERS_DEBUG_PRINTF("glVertexAttrib4fARB()\n", index, x, y, z, w);
-    /* No CALL */ assert(0/*glVertexAttrib4fARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glVertexAttrib4fARB\n");
 }
 void
 my_glProgramEnvParameter4fARB(GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
     WRAPPERS_DEBUG_PRINTF("glProgramEnvParameter4fARB()\n", target, index, x, y, z, w);
-    /* No CALL */ assert(0/*glProgramEnvParameter4fARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glProgramEnvParameter4fARB\n");
 }
 void
 my_glProgramEnvParameter4fvARB(GLenum target, GLuint index, const GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glProgramEnvParameter4fvARB()\n", target, index, params);
-    /* No CALL */ assert(0/*glProgramEnvParameter4fvARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glProgramEnvParameter4fvARB\n");
 }
 void
 my_glProgramLocalParameter4fARB(GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w)
 {
     WRAPPERS_DEBUG_PRINTF("glProgramLocalParameter4fARB()\n", target, index, x, y, z, w);
-    /* No CALL */ assert(0/*glProgramLocalParameter4fARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glProgramLocalParameter4fARB\n");
 }
 void
 my_glProgramLocalParameter4fvARB(GLenum target, GLuint index, const GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glProgramLocalParameter4fvARB()\n", target, index, params);
-    /* No CALL */ assert(0/*glProgramLocalParameter4fvARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glProgramLocalParameter4fvARB\n");
 }
 void
 my_glVertexAttrib4xIMG(GLuint index, GLfixed x, GLfixed y, GLfixed z, GLfixed w)
 {
     WRAPPERS_DEBUG_PRINTF("glVertexAttrib4xIMG()\n", index, x, y, z, w);
-    /* No CALL */ assert(0/*glVertexAttrib4xIMG*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glVertexAttrib4xIMG\n");
 }
 void
 my_glProgramLocalParameter4xIMG(GLenum target, GLuint index, GLfixed x, GLfixed y, GLfixed z, GLfixed w)
 {
     WRAPPERS_DEBUG_PRINTF("glProgramLocalParameter4xIMG()\n", target, index, x, y, z, w);
-    /* No CALL */ assert(0/*glProgramLocalParameter4xIMG*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glProgramLocalParameter4xIMG\n");
 }
 void
 my_glProgramLocalParameter4xvIMG(GLenum target, GLuint index, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glProgramLocalParameter4xvIMG()\n", target, index, params);
-    /* No CALL */ assert(0/*glProgramLocalParameter4xvIMG*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glProgramLocalParameter4xvIMG\n");
 }
 void
 my_glProgramEnvParameter4xIMG(GLenum target, GLuint index, GLfixed x, GLfixed y, GLfixed z, GLfixed w)
 {
     WRAPPERS_DEBUG_PRINTF("glProgramEnvParameter4xIMG()\n", target, index, x, y, z, w);
-    /* No CALL */ assert(0/*glProgramEnvParameter4xIMG*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glProgramEnvParameter4xIMG\n");
 }
 void
 my_glProgramEnvParameter4xvIMG(GLenum target, GLuint index, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glProgramEnvParameter4xvIMG()\n", target, index, params);
-    /* No CALL */ assert(0/*glProgramEnvParameter4xvIMG*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glProgramEnvParameter4xvIMG\n");
 }
 void
 my_glVertexAttribPointerARB(GLuint index, GLsizei size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer)
 {
     WRAPPERS_DEBUG_PRINTF("glVertexAttribPointerARB()\n", index, size, type, normalized, stride, pointer);
-    /* No CALL */ assert(0/*glVertexAttribPointerARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glVertexAttribPointerARB\n");
 }
 void
 my_glEnableVertexAttribArrayARB(GLuint index)
 {
     WRAPPERS_DEBUG_PRINTF("glEnableVertexAttribArrayARB()\n", index);
-    /* No CALL */ assert(0/*glEnableVertexAttribArrayARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glEnableVertexAttribArrayARB\n");
 }
 void
 my_glDisableVertexAttribArrayARB(GLuint index)
 {
     WRAPPERS_DEBUG_PRINTF("glDisableVertexAttribArrayARB()\n", index);
-    /* No CALL */ assert(0/*glDisableVertexAttribArrayARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDisableVertexAttribArrayARB\n");
 }
 void
 my_glProgramStringARB(GLenum target, GLenum format, GLsizei len, const void *string)
 {
     WRAPPERS_DEBUG_PRINTF("glProgramStringARB()\n", target, format, len, string);
-    /* No CALL */ assert(0/*glProgramStringARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glProgramStringARB\n");
 }
 void
 my_glBindProgramARB(GLenum target, GLuint program)
 {
     WRAPPERS_DEBUG_PRINTF("glBindProgramARB()\n", target, program);
-    /* No CALL */ assert(0/*glBindProgramARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glBindProgramARB\n");
 }
 void
 my_glDeleteProgramsARB(GLsizei n, const GLuint *programs)
 {
     WRAPPERS_DEBUG_PRINTF("glDeleteProgramsARB()\n", n, programs);
-    /* No CALL */ assert(0/*glDeleteProgramsARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glDeleteProgramsARB\n");
 }
 void
 my_glGenProgramsARB(GLsizei n, GLuint *programs)
 {
     WRAPPERS_DEBUG_PRINTF("glGenProgramsARB()\n", n, programs);
-    /* No CALL */ assert(0/*glGenProgramsARB*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glGenProgramsARB\n");
 }
 void
 my_glMultiDrawArraysEXT(GLenum mode, GLint *first, GLsizei *count, GLsizei primcount)
 {
     WRAPPERS_DEBUG_PRINTF("glMultiDrawArraysEXT()\n", mode, first, count, primcount);
-    /* No CALL */ assert(0/*glMultiDrawArraysEXT*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glMultiDrawArraysEXT\n");
 }
 void
 my_glMultiDrawElementsEXT(GLenum mode, const GLsizei *count, GLenum type, const GLvoid **indices, GLsizei primcount)
 {
     WRAPPERS_DEBUG_PRINTF("glMultiDrawElementsEXT()\n", mode, count, type, indices, primcount);
-    /* No CALL */ assert(0/*glMultiDrawElementsEXT*/);
+    /* No CALL */ printf("UNIMPLEMENTED: glMultiDrawElementsEXT\n");
 }
 #endif /* APKENV_GLES */
