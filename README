@@ -17,6 +17,18 @@ this example module from:
     http://thp.io/2011/trg2/
 
 
+"Installing" applications
+=========================
+
+apkenv now includes a very rudimentary facility to "install" an .apk as an
+application. What it really does is extract the icon from the .apk (this might
+not work for all .apks - we'd need to read the manifest to get the real file
+name and application name in all cases) and create a launcher icon that starts
+apkenv with the apk file as its argument. To use it, type:
+
+   apkenv --install /path/to/your.apk
+
+
 softfp vs. hardfp
 =================
 
