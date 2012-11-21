@@ -34,7 +34,7 @@
 #include "jni/jni.h"
 
 #define APKENV_NAME "apkenv"
-#define APKENV_VERSION "42.1.0"
+#define APKENV_VERSION "42.1.1"
 #define APKENV_WEBSITE "http://thp.io/2012/apkenv/"
 #define APKENV_HEADLINE APKENV_NAME " " APKENV_VERSION " - " APKENV_WEBSITE
 #define APKENV_COPYRIGHT "Copyright (c) 2012 Thomas Perl <m@thp.io>"
