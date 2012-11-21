@@ -16,6 +16,10 @@ MODULES_SOURCES=$(wildcard modules/*.c)
 
 TARGET = apkenv
 
+DESTDIR ?= /
+PREFIX ?= /opt/$(TARGET)/
+BIONIC_LIBS = $(wildcard libs/*.so)
+
 SOURCES += $(TARGET).c
 SOURCES += $(LINKER_SOURCES)
 SOURCES += $(COMPAT_SOURCES)
@@ -43,7 +47,7 @@ ifeq ($(FREMANTLE),1)
     LDFLAGS += -lSDL_gles
 endif
 
-DEBUG ?= 1
+DEBUG ?= 0
 ifeq ($(DEBUG),1)
     CFLAGS += -g -Wall -DLINKER_DEBUG=1 -DAPKENV_DEBUG -Wformat=0
 else
@@ -68,6 +72,22 @@ strip:
 	@echo -e "\tSTRIP"
 	@strip $(TARGET) $(MODULES)
 
+install: $(TARGET) $(MODULES)
+	@echo -e "\tMKDIR"
+	@mkdir -p $(DESTDIR)$(PREFIX)/{modules,bionic}
+	@mkdir -p $(DESTDIR)/usr/bin
+	@echo -e "\tINSTALL\t$(TARGET)"
+	@install -m755 $(TARGET) $(DESTDIR)/usr/bin
+	@echo -e "\tINSTALL\tMODULES"
+	@install -m644 $(MODULES) $(DESTDIR)$(PREFIX)/modules
+	@echo -e "\tINSTALL\tBIONIC"
+	@install -m644 $(BIONIC_LIBS) $(DESTDIR)$(PREFIX)/bionic
+
 clean:
-	rm -rf $(TARGET) $(OBJS) $(MODULES)
+	@echo -e "\tCLEAN"
+	@rm -rf $(TARGET) $(OBJS) $(MODULES)
+
+
+.DEFAULT: all
+.PHONY: strip install clean
 

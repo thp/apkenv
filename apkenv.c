@@ -128,7 +128,9 @@ void load_module(const char *filename)
 void load_modules(const char *dirname)
 {
     DIR *dir = opendir(dirname);
-    assert(dir != NULL);
+    if (dir == NULL) {
+        return;
+    }
 
     char tmp[PATH_MAX];
     strcpy(tmp, dirname);
@@ -173,21 +175,143 @@ void install_overrides(struct SupportModule *module)
     }
 }
 
+void
+usage()
+{
+    printf("Usage: %s [--install] <file.apk>\n",
+            global.apkenv_executable);
+    exit(1);
+}
+
+char *
+apk_basename(const char *filename)
+{
+    char *fn = strrchr(filename, '/');
+    if (fn != NULL) {
+        return fn + 1;
+    }
+    return filename;
+}
+
+void
+recursive_mkdir(const char *directory)
+{
+    char *tmp = strdup(directory);
+    struct stat st;
+    int len = strlen(directory);
+    int i;
+
+    /* Dirty? Works for me... */
+    for (i=1; i<len; i++) {
+        if (tmp[i] == '/') {
+            tmp[i] = '\0';
+            if (stat(tmp, &st) != 0) {
+                mkdir(tmp, 0700);
+            }
+            tmp[i] = '/';
+        }
+    }
+
+    free(tmp);
+}
+
+#define LOCAL_SHARE_APPLICATIONS "/home/user/.local/share/applications/"
+
+void
+operation(const char *operation, const char *filename)
+{
+    if (strcmp(operation, "--install") == 0) {
+        char apkenv_absolute[PATH_MAX];
+        char apk_absolute[PATH_MAX];
+
+        readlink("/proc/self/exe", apkenv_absolute, sizeof(apkenv_absolute));
+        /* On Linux, realpath(3) always returns an absolute path */
+        assert(realpath(filename, apk_absolute) != NULL);
+
+        char *app_name = apk_basename(filename);
+
+        char icon_filename[PATH_MAX];
+        sprintf(icon_filename, "%s%s.png", DATA_DIRECTORY_BASE, app_name);
+
+        struct stat st;
+        if (stat(icon_filename, &st) != 0) {
+            // Extract icon from .apk here
+            AndroidApk *apk = apk_open(filename);
+            assert(apk != NULL);
+
+            char *icon_buffer;
+            size_t icon_size;
+            /**
+             * FIXME: The icon isn't always called like that, we should look
+             * into the Android manifest and get the icon filename and also
+             * the "nice" application name (for the .desktop file below) from
+             * there (see also: http://stackoverflow.com/questions/2097813/)
+             **/
+            enum ApkResult result = apk_read_file(apk,
+                    "res/drawable-hdpi/icon.png", &icon_buffer, &icon_size);
+            apk_close(apk);
+
+            if (result == APK_OK) {
+                FILE *fp = fopen(icon_filename, "wb");
+                assert(fp != NULL);
+                fwrite(icon_buffer, icon_size, 1, fp);
+                fclose(fp);
+                printf("Extracted icon: %s\n", icon_filename);
+                free(icon_buffer);
+            } else {
+                printf("Cannot extract icon from %s\n", filename);
+                exit(2);
+            }
+        }
+
+        char desktop_filename[PATH_MAX];
+        recursive_mkdir(LOCAL_SHARE_APPLICATIONS);
+        sprintf(desktop_filename, "%s/%s.desktop", LOCAL_SHARE_APPLICATIONS,
+                app_name);
+
+        FILE *desktop = fopen(desktop_filename, "w");
+        assert(desktop != NULL);
+        fprintf(desktop,
+                "[Desktop Entry]\n"
+                "Name=%s\n"
+                "Exec=invoker --single-instance --type=e %s %s\n"
+                "Icon=%s\n"
+                "Terminal=false\n"
+                "Type=Application\n"
+                "Categories=Game;\n",
+                app_name, apkenv_absolute, apk_absolute, icon_filename);
+        fclose(desktop);
+        printf("Installed: %s\n", desktop_filename);
+        exit(0);
+    }
+
+    usage();
+}
+
 #define MEEGOTOUCH_BORDER 16
 
 int main(int argc, char **argv)
 {
     char **tmp;
 
+    recursive_mkdir(DATA_DIRECTORY_BASE);
     global.apkenv_executable = argv[0];
     global.apkenv_headline = APKENV_HEADLINE;
     global.apkenv_copyright = APKENV_COPYRIGHT;
 
     printf("%s\n%s\n\n", global.apkenv_headline, global.apkenv_copyright);
 
-    if (argc != 2) {
-        printf("Usage: %s <file.apk>\n", global.apkenv_executable);
-        return 1;
+    switch (argc) {
+        case 2:
+            /* One argument - the .apk (continue below) */
+            break;
+        case 3:
+            /* Two arguments - operation + the apk */
+            operation(argv[1], argv[2]);
+            break;
+        default:
+            /* Wrong number of arguments */
+            usage();
     }
 
     global.lookup_symbol = lookup_symbol_impl;
@@ -195,8 +319,8 @@ int main(int argc, char **argv)
     global.read_file = read_file_impl;
     jnienv_init(&global);
     javavm_init(&global);
-    global.apk_filename = strdup(argv[1]);
-    global.apklib_handle = apk_open(argv[1]);
+    global.apk_filename = strdup(argv[argc-1]);
+    global.apklib_handle = apk_open(global.apk_filename);
     global.support_modules = NULL;
 
     const char *shlib = apk_get_shared_library(global.apklib_handle);
@@ -264,6 +388,7 @@ int main(int argc, char **argv)
     }
 
     load_modules(".");
+    load_modules("/opt/apkenv/modules");
     if (global.support_modules == NULL) {
         printf("No support modules found.\n");
     }
@@ -291,28 +416,11 @@ int main(int argc, char **argv)
     printf("Using module: %s\n", module->filename);
     install_overrides(module);
 
-    struct stat st;
-    if (stat(DATA_DIRECTORY_BASE, &st) != 0) {
-        mkdir(DATA_DIRECTORY_BASE, 0700);
-    }
-
     char data_directory[PATH_MAX];
     strcpy(data_directory, DATA_DIRECTORY_BASE);
-
-    char *fn = strdup(global.apk_filename);
-    char *start = strrchr(fn, '/');
-    if (start != NULL) {
-        start++;
-    } else {
-        start = fn;
-    }
-    strcat(data_directory, start);
+    strcat(data_directory, apk_basename(global.apk_filename));
     strcat(data_directory, "/");
-    free(fn);
-
-    if (stat(data_directory, &st) != 0) {
-        mkdir(data_directory, 0700);
-    }
+    recursive_mkdir(data_directory);
 
     module->init(module, screen->w, screen->h, data_directory);
 

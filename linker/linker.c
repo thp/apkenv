@@ -591,6 +591,7 @@ static void dump(soinfo *si)
 static const char *sopaths[] = {
     "/vendor/lib",
     "/system/lib",
+    "/opt/apkenv/bionic/",
     0
 };
 
