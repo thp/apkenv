@@ -100,8 +100,15 @@ struct GlobalState {
 #define ACTION_UP 1
 #define ACTION_MOVE 2
 
-/* Attribute for softfp-calling-style functions */
-#define SOFTFP __attribute__((pcs("aapcs")))
+/**
+ * Attribute for softfp-calling-style functions
+ * (only on Harmattan - Fremantle *is* softfp)
+ **/
+#ifdef FREMANTLE
+#    define SOFTFP
+#else
+#    define SOFTFP __attribute__((pcs("aapcs")))
+#endif
 
 /* Forward-declarations for the Bionic linker */
 void *android_dlopen(const char *filename, int flag);
