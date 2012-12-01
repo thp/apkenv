@@ -1,0 +1,14 @@
+Source: apkenv
+Section: user/games
+Priority: extra
+Maintainer: Thomas Perl <m@thp.io>
+Build-Depends: debhelper (>= 7.0.0)
+Standards-Version: 3.9.3
+Homepage: http://thp.io/2012/apkenv/
+Vcs-Git: git://github.com/thp/apkenv.git
+
+Package: apkenv
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libgles1-sgx-img, libgles2-sgx-img
+Description: apkenv
+ That's apkenv.
