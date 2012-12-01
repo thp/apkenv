@@ -2,7 +2,7 @@ Source: apkenv
 Section: user/games
 Priority: extra
 Maintainer: Thomas Perl <m@thp.io>
-Build-Depends: debhelper (>= 7.0.0)
+Build-Depends: debhelper7 (>= 7.0.0), libsdl-gles1.2-dev
 Standards-Version: 3.9.3
 Homepage: http://thp.io/2012/apkenv/
 Vcs-Git: git://github.com/thp/apkenv.git

@@ -274,7 +274,7 @@ operation(const char *operation, const char *filename)
         fprintf(desktop,
                 "[Desktop Entry]\n"
                 "Name=%s\n"
-                "Exec=invoker --single-instance --type=e %s %s\n"
+                "Exec=%s %s\n"
                 "Icon=%s\n"
                 "Terminal=false\n"
                 "Type=Application\n"

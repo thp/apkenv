@@ -9,6 +9,15 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+#dh7
+PATH:=/usr/bin/dh7:/usr/bin:$(PATH)
+export PATH
+SBOX_REDIRECT_IGNORE=/usr/bin/perl
+export SBOX_REDIRECT_IGNORE
+
+#fremantle build
+export FREMANTLE=1
+
 # This is necessary to avoid shlibdeps complain about the bionic libs
 override_dh_shlibdeps:
 	dh_shlibdeps --exclude=bionic
