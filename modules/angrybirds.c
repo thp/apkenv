@@ -29,7 +29,7 @@
  **/
 
 /**
- * Angry Birds Space support module 0.5 - By: Arto Rusanen
+ * Angry Birds Space support module 0.6 - By: Arto Rusanen
  * 
  **/
 
@@ -53,8 +53,6 @@ typedef void (*angrybirds_input_t)(JNIEnv *env, jobject obj, jint action, jfloat
 typedef jboolean (*angrybirds_update_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*angrybirds_pause_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*angrybirds_resume_t)(JNIEnv *env, jobject obj) SOFTFP;
-typedef jint (*angrybirds_gpo_t)(JNIEnv *env, jobject obj) SOFTFP;
-typedef void (*angrybirds_loadfromurl_t)(JNIEnv *env, jobject obj, jstring paramString) SOFTFP;
 typedef void (*angrybirds_mixdata_t)(JNIEnv *env, jobject obj, jlong paramLong, jbyteArray paramArrayOfByte, jint paramInt) SOFTFP;
 typedef void (*angrybirds_deinit_t)(JNIEnv *env, jobject obj) SOFTFP;
 
@@ -67,8 +65,6 @@ struct SupportModulePriv {
     angrybirds_input_t native_input;
     angrybirds_pause_t native_pause;
     angrybirds_resume_t native_resume;
-    angrybirds_gpo_t native_gpo;
-    angrybirds_loadfromurl_t native_loadfromurl;
     angrybirds_mixdata_t native_mixdata;
     angrybirds_deinit_t native_deinit;
     const char *myHome;
@@ -112,7 +108,7 @@ jobject
 JNIEnv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
 {
     struct dummy_jclass *clazz = p1;
-    MODULE_DEBUG_PRINTF("JNIEnv_NewObjectV(%x, %s, %s)\n", p1, p2->name, clazz->name);
+    MODULE_DEBUG_PRINTF("module_JNIEnv_NewObjectV(%x, %s, %s)\n", p1, p2->name, clazz->name);
     if (strcmp(clazz->name, "com/rovio/ka3d/AudioOutput") == 0)
     {
         /* Open the audio device */
@@ -128,7 +124,7 @@ JNIEnv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
         desired->samples = va_arg(p3, int) / 8;
         desired->callback=my_audio_callback;
         desired->userdata=NULL;
-        MODULE_DEBUG_PRINTF("Handle: %lld, freq: %i, channels: %i, bitrate: %i, samples: %i\n",
+        MODULE_DEBUG_PRINTF("Module: Handle: %lld, freq: %i, channels: %i, bitrate: %i, samples: %i\n",
             audioHandle,desired->freq,desired->channels,bitrate,desired->samples);
 
         assert( SDL_OpenAudio(desired, obtained) == 0 );
@@ -176,15 +172,12 @@ JNIEnv_DeleteLocalRef(JNIEnv* p0, jobject p1)
 static int
 angrybirds_try_init(struct SupportModule *self)
 {
-    self->priv->JNI_OnLoad = (jni_onload_t)LOOKUP_M("JNI_OnLoad");
     self->priv->native_init = (angrybirds_init_t)LOOKUP_M("ka3d_MyRenderer_nativeInit");
     self->priv->native_resize = (angrybirds_resize_t)LOOKUP_M("ka3d_MyRenderer_nativeResize");
     self->priv->native_input = (angrybirds_input_t)LOOKUP_M("ka3d_MyRenderer_nativeInput");
     self->priv->native_update = (angrybirds_update_t)LOOKUP_M("ka3d_MyRenderer_nativeUpdate");
     self->priv->native_pause = (angrybirds_pause_t)LOOKUP_M("ka3d_MyRenderer_nativePause");
     self->priv->native_resume = (angrybirds_resume_t)LOOKUP_M("ka3d_MyRenderer_nativeResume");
-    self->priv->native_gpo = (angrybirds_gpo_t)LOOKUP_M("ka3d_MyRenderer_nativeGetPossibleOrientations");
-    self->priv->native_loadfromurl = (angrybirds_loadfromurl_t)LOOKUP_M("ka3d_MyRenderer_nativeLoadFromUrl");
     self->priv->native_mixdata = (angrybirds_mixdata_t)LOOKUP_M("ka3d_AudioOutput_nativeMixData");
     self->priv->native_deinit = (angrybirds_deinit_t)LOOKUP_M("ka3d_MyRenderer_nativeDeinit");
 
@@ -194,15 +187,12 @@ angrybirds_try_init(struct SupportModule *self)
     self->override_env.CallVoidMethodV = JNIEnv_CallVoidMethodV;
     self->override_env.NewObjectV = JNIEnv_NewObjectV;
 
-    return (self->priv->JNI_OnLoad != NULL &&
-            self->priv->native_init != NULL &&
+    return (self->priv->native_init != NULL &&
             self->priv->native_resize != NULL &&
             self->priv->native_input != NULL &&
             self->priv->native_update != NULL &&
             self->priv->native_pause != NULL &&
             self->priv->native_resume != NULL &&
-            self->priv->native_gpo != NULL &&
-            self->priv->native_loadfromurl != NULL &&
             self->priv->native_mixdata != NULL &&
             self->priv->native_deinit != NULL);
 }
@@ -214,7 +204,6 @@ angrybirds_init(struct SupportModule *self, int width, int height, const char *h
 
     self->priv->myHome = strdup(home);
     global = GLOBAL_M;
-    self->priv->JNI_OnLoad(VM_M, NULL);
     self->priv->native_init(ENV_M, GLOBAL_M, width, height, GLOBAL_M->env->NewStringUTF(ENV_M, home));
 }
 
