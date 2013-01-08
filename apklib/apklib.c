@@ -38,6 +38,9 @@
 
 #include "apklib.h"
 
+
+#define DBG(msg) fprintf(stderr,"%s(%d): %s\n",__FILE__,__LINE__,#msg)
+
 AndroidApk *
 apk_open(const char *filename)
 {
@@ -51,7 +54,7 @@ apk_get_shared_library(AndroidApk *apk)
 {
     assert(apk != NULL);
 
-    char filename[PATH_MAX];
+    char filename[PATH_MAX], tmpname[PATH_MAX];
     FILE *result = NULL;
     char buf[64*1024];
     int read;
@@ -61,13 +64,21 @@ apk_get_shared_library(AndroidApk *apk)
     }
 
     do {
-        if (unzGetCurrentFileInfo(apk->zip, NULL, filename, sizeof(filename),
-                    NULL, 0, NULL, 0) == UNZ_OK) {
+        if (unzGetCurrentFileInfo(apk->zip, NULL, filename, sizeof(filename), NULL, 0, NULL, 0) == UNZ_OK) {
             if (memcmp(filename, "lib/armeabi", 11) == 0) {
                 if (unzOpenCurrentFile(apk->zip) == UNZ_OK) {
+
+
+
+#if !defined(PANDORA)
                     strcpy(filename, "/home/user/.apkenv-XXXXXX");
                     int fd = mkstemp(filename);
                     result = fdopen(fd, "w+b");
+#else
+                    sprintf(filename,"./%s",strdup(filename));
+                    recursive_mkdir(filename);
+                    result = fopen(filename, "w+b");
+#endif
                     while (!unzeof(apk->zip)) {
                         read = unzReadCurrentFile(apk->zip, buf, sizeof(buf));
                         if (read) {
@@ -76,6 +87,9 @@ apk_get_shared_library(AndroidApk *apk)
                     }
                     fclose(result);
                     unzCloseCurrentFile(apk->zip);
+#if defined(PANDORA)
+                    sync();
+#endif
                     return strdup(filename);
                 }
                 break;

@@ -93,7 +93,22 @@ struct GlobalState {
 #define VM(global_ptr) (&((global_ptr)->vm))
 #define ENV(global_ptr) (&((global_ptr)->env))
 
+#if defined(PANDORA)
+#define DATA_DIRECTORY_BASE "./data/"
+#else
 #define DATA_DIRECTORY_BASE "/home/user/.apkenv/"
+#endif
+
+
+#if defined(PANDORA)
+#define MODULE_DIRECTORY_BASE "./modules/"
+#undef LOCAL_SHARE_APPLICATIONS
+#else
+#define MODULE_DIRECTORY_BASE "/opt/apkenv/modules/"
+#define LOCAL_SHARE_APPLICATIONS "/home/user/.local/share/applications/"
+#endif
+
+
 
 /* Android MotionEvent */
 #define ACTION_DOWN 0
@@ -104,7 +119,7 @@ struct GlobalState {
  * Attribute for softfp-calling-style functions
  * (only on Harmattan - Fremantle *is* softfp)
  **/
-#ifdef FREMANTLE
+#if defined(FREMANTLE) || defined(PANDORA)
 #    define SOFTFP
 #else
 #    define SOFTFP __attribute__((pcs("aapcs")))

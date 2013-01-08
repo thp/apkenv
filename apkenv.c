@@ -37,6 +37,8 @@
 #include <SDL/SDL.h>
 #ifdef FREMANTLE
 #    include <SDL/SDL_gles.h>
+#elif defined(PANDORA)
+#    include "pandora/glesinit.h"
 #endif
 
 #include <SDL/SDL_syswm.h>
@@ -178,8 +180,11 @@ void install_overrides(struct SupportModule *module)
 void
 usage()
 {
-    printf("Usage: %s [--install] <file.apk>\n",
-            global.apkenv_executable);
+#if !defined(LOCAL_SHARE_APPLICATIONS)
+    printf("Usage: %s <file.apk>\n",global.apkenv_executable);
+#else
+    printf("Usage: %s [--install] <file.apk>\n",global.apkenv_executable);
+#endif
     exit(1);
 }
 
@@ -215,11 +220,10 @@ recursive_mkdir(const char *directory)
     free(tmp);
 }
 
-#define LOCAL_SHARE_APPLICATIONS "/home/user/.local/share/applications/"
-
 void
 operation(const char *operation, const char *filename)
 {
+#if defined(LOCAL_SHARE_APPLICATIONS)
     if (strcmp(operation, "--install") == 0) {
         char apkenv_absolute[PATH_MAX];
         char apk_absolute[PATH_MAX];
@@ -265,7 +269,7 @@ operation(const char *operation, const char *filename)
         }
 
         char desktop_filename[PATH_MAX];
-        recursive_mkdir(LOCAL_SHARE_APPLICATIONS);
+        recursive_mkdir();
         sprintf(desktop_filename, "%s/%s.desktop", LOCAL_SHARE_APPLICATIONS,
                 app_name);
 
@@ -286,9 +290,13 @@ operation(const char *operation, const char *filename)
     }
 
     usage();
+#endif
 }
 
 #define MEEGOTOUCH_BORDER 16
+
+//#define NOSDL
+
 
 int main(int argc, char **argv)
 {
@@ -317,11 +325,13 @@ int main(int argc, char **argv)
     global.lookup_symbol = lookup_symbol_impl;
     global.foreach_file = foreach_file_impl;
     global.read_file = read_file_impl;
+
     jnienv_init(&global);
     javavm_init(&global);
     global.apk_filename = strdup(argv[argc-1]);
     global.apklib_handle = apk_open(global.apk_filename);
     global.support_modules = NULL;
+
 
     const char *shlib = apk_get_shared_library(global.apklib_handle);
     if (shlib == NULL) {
@@ -329,12 +339,12 @@ int main(int argc, char **argv)
         return 0;
     }
 
+    SDL_Surface* screen;
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
         printf("SDL Init failed.\n");
         return 0;
     }
 
-    SDL_Surface *screen;
 
     /**
      * The following block looks scary, but it just creates an SDL surface
@@ -343,6 +353,14 @@ int main(int argc, char **argv)
      * (where the GLES features are integrated directly into libSDL), only
      * SDL is used.
      **/
+#ifdef PANDORA
+    screen = SDL_SetVideoMode(SCREEN_WIDTH,SCREEN_HEIGHT,0,SDL_FULLSCREEN);
+    void* gles = GLES_Init(1);
+    if (!gles) {
+        fprintf(stderr,"ERROR: GLES_Init failed.\n");
+        return 0;
+    }
+#else
 #ifdef FREMANTLE
 #ifdef APKENV_GLES2
     SDL_GLES_Init(SDL_GLES_VERSION_2_0);
@@ -359,10 +377,11 @@ int main(int argc, char **argv)
 #endif /* APKENV_GLES2 */
     screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGLES | SDL_FULLSCREEN);
 #endif /* FREMANTLE */
+#endif /* PANDORA */
 
     SDL_ShowCursor(0);
 
-#ifndef FREMANTLE
+#if !defined(FREMANTLE) && !defined(PANDORA)
     /* Set up swipe lock (left and right) */
     SDL_SysWMinfo wm;
     SDL_VERSION(&wm.version);
@@ -388,7 +407,8 @@ int main(int argc, char **argv)
     }
 
     load_modules(".");
-    load_modules("/opt/apkenv/modules");
+    load_modules(MODULE_DIRECTORY_BASE);
+
     if (global.support_modules == NULL) {
         printf("No support modules found.\n");
     }
@@ -425,9 +445,16 @@ int main(int argc, char **argv)
     module->init(module, screen->w, screen->h, data_directory);
 
     while (1) {
+
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_MOUSEBUTTONDOWN) {
+            if (e.type == SDL_KEYDOWN) {
+                if (e.key.keysym.sym==SDLK_ESCAPE) {
+                    module->deinit(module);
+                    goto finish;
+                }
+            }
+            else if (e.type == SDL_MOUSEBUTTONDOWN) {
                 module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
             } else if (e.type == SDL_MOUSEBUTTONUP) {
                 module->input(module, ACTION_UP, e.button.x, e.button.y, e.button.which);
@@ -455,7 +482,9 @@ int main(int argc, char **argv)
             }
         }
         module->update(module);
-#ifdef FREMANTLE
+#ifdef PANDORA
+        GLES_SwapBuffers(gles);
+#elif defined(FREMANTLE)
         SDL_GLES_SwapBuffers();
 #else
         SDL_GL_SwapBuffers();
@@ -469,6 +498,10 @@ finish:
     }
     free(global.method_table);
     apk_close(global.apklib_handle);
+
+#ifdef PANDORA
+    GLES_Exit(gles);
+#endif
 
     return 0;
 }
