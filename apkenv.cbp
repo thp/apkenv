@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="apkenv" />
+		<Option pch_mode="2" />
+		<Option compiler="pandora_compiler" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/apkenv" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="pandora_compiler" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="-DDEBUG=1" />
+				</Compiler>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/apkenv" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="pandora_compiler" />
+				<Compiler>
+					<Add option="-O2" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-Wall" />
+			<Add option="-DPANDORA" />
+			<Add option="-DLINKER_DEBUG=1" />
+			<Add option="-DAPKENV_GLES" />
+			<Add option="-DAPKENV_DEBUGx" />
+		</Compiler>
+		<Linker>
+			<Add library="SDL" />
+			<Add library="z" />
+			<Add library="rt" />
+			<Add library="dl" />
+			<Add library="EGL" />
+			<Add library="X11" />
+			<Add library="GLES_CM" />
+		</Linker>
+		<Unit filename="apkenv.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="apkenv.h" />
+		<Unit filename="apklib/apklib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="apklib/apklib.h" />
+		<Unit filename="apklib/ioapi.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="apklib/ioapi.h" />
+		<Unit filename="apklib/ioapi_mem.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="apklib/ioapi_mem.h" />
+		<Unit filename="apklib/unzip.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="apklib/unzip.h" />
+		<Unit filename="compat/gles2_mapping.h" />
+		<Unit filename="compat/gles2_wrappers.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="compat/gles2_wrappers.h" />
+		<Unit filename="compat/gles_mapping.h" />
+		<Unit filename="compat/gles_wrappers.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="compat/gles_wrappers.h" />
+		<Unit filename="compat/hooks.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="compat/hooks.h" />
+		<Unit filename="compat/libc_mapping.h" />
+		<Unit filename="compat/libc_wrappers.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="compat/libc_wrappers.h" />
+		<Unit filename="compat/liblog_mapping.h" />
+		<Unit filename="compat/liblog_wrappers.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="compat/liblog_wrappers.h" />
+		<Unit filename="compat/pthread_mapping.h" />
+		<Unit filename="compat/pthread_wrappers.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="compat/pthread_wrappers.h" />
+		<Unit filename="jni/jni.h" />
+		<Unit filename="jni/jnienv.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="jni/jnienv.h" />
+		<Unit filename="jni/shlib.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="jni/shlib.h" />
+		<Unit filename="linker/bionic_tls.h" />
+		<Unit filename="linker/dlfcn.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="linker/linker.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="linker/linker.h" />
+		<Unit filename="linker/linker_debug.h" />
+		<Unit filename="linker/linker_environ.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="linker/linker_environ.h" />
+		<Unit filename="linker/linker_format.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="linker/linker_format.h" />
+		<Unit filename="linker/rt.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="linker/strlcpy.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="linker/strlcpy.h" />
+		<Unit filename="modules/common.h" />
+		<Unit filename="pandora/glesinit.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="pandora/glesinit.h" />
+		<Extensions>
+			<code_completion />
+			<debugger>
+				<remote_debugging>
+					<options conn_type="0" serial_baud="115200" ip_address="pandora" ip_port="2345" />
+				</remote_debugging>
+				<remote_debugging target="Debug">
+					<options conn_type="0" serial_baud="115200" ip_address="pandora" ip_port="2345" />
+				</remote_debugging>
+			</debugger>
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
