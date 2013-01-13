@@ -211,7 +211,7 @@ Elf32_Sym *find_containing_symbol(const void *addr, soinfo *si);
 const char *linker_get_error(void);
 void call_constructors_recursive(soinfo *si);
 
-#ifdef ANDROID_ARM_LINKER 
+#ifdef ANDROID_ARM_LINKER
 typedef long unsigned int *_Unwind_Ptr;
 _Unwind_Ptr dl_unwind_find_exidx(_Unwind_Ptr pc, int *pcount);
 #elif defined(ANDROID_X86_LINKER)

@@ -590,9 +590,9 @@ static void dump(soinfo *si)
 
 #if defined(PANDORA)
 static const char *sopaths[] = {
-    "./vendor/lib/",
-    "./system/lib/",
-    "./lib/",
+    "./vendor/lib",
+    "./system/lib",
+    "./lib",
     0
 };
 #else

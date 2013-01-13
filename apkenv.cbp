@@ -14,7 +14,13 @@
 				<Compiler>
 					<Add option="-g" />
 					<Add option="-DDEBUG=1" />
+					<Add option="-DLINKER_DEBUG=0" />
+					<Add option="-DAPKENV_DEBUG" />
+					<Add option="-DAPKENV_GLES" />
 				</Compiler>
+				<Linker>
+					<Add library="GLES_CM" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/apkenv" prefix_auto="1" extension_auto="1" />
@@ -23,18 +29,34 @@
 				<Option compiler="pandora_compiler" />
 				<Compiler>
 					<Add option="-O2" />
+					<Add option="-DLINKER_DEBUG=0" />
+					<Add option="-DAPKENV_GLES" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
+					<Add library="GLES_CM" />
+				</Linker>
+			</Target>
+			<Target title="Debug GLES2">
+				<Option output="bin/Debug/apkenv" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="pandora_compiler" />
+				<Compiler>
+					<Add option="-g" />
+					<Add option="-DDEBUG=1" />
+					<Add option="-DLINKER_DEBUG=0" />
+					<Add option="-DAPKENV_DEBUG" />
+					<Add option="-DAPKENV_GLES2" />
+				</Compiler>
+				<Linker>
+					<Add library="GLESv2" />
 				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-DPANDORA" />
-			<Add option="-DLINKER_DEBUG=1" />
-			<Add option="-DAPKENV_GLES" />
-			<Add option="-DAPKENV_DEBUGx" />
 		</Compiler>
 		<Linker>
 			<Add library="SDL" />
@@ -43,7 +65,7 @@
 			<Add library="dl" />
 			<Add library="EGL" />
 			<Add library="X11" />
-			<Add library="GLES_CM" />
+			<Add library="SDL_mixer" />
 		</Linker>
 		<Unit filename="apkenv.c">
 			<Option compilerVar="CC" />
@@ -136,10 +158,7 @@
 			<code_completion />
 			<debugger>
 				<remote_debugging>
-					<options conn_type="0" serial_baud="115200" ip_address="pandora" ip_port="2345" />
-				</remote_debugging>
-				<remote_debugging target="Debug">
-					<options conn_type="0" serial_baud="115200" ip_address="pandora" ip_port="2345" />
+					<options conn_type="0" serial_baud="115200" ip_address="pandora" ip_port="2222" />
 				</remote_debugging>
 			</debugger>
 		</Extensions>

@@ -725,3 +725,7 @@ int my_vsnprintf(char *str, size_t size, const char *format, va_list ap)
     return vsnprintf(str, size, format, ap);
 }
 
+int my_munmap(void* __addr, size_t __len)
+{
+    return munmap(__addr,__len);
+}

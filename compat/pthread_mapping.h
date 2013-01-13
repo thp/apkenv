@@ -2,6 +2,11 @@
 {"pthread_attr_setdetachstate", my_pthread_attr_setdetachstate},
 {"pthread_attr_setstacksize", my_pthread_attr_setstacksize},
 {"pthread_attr_destroy", my_pthread_attr_destroy},
+{"pthread_attr_getdetachstate", my_pthread_attr_getdetachstate},
+{"pthread_attr_getstack",my_pthread_attr_getstack},
+{"pthread_attr_setschedpolicy",my_pthread_attr_setschedpolicy},
+{"pthread_attr_setschedparam",my_pthread_attr_setschedparam},
+{"pthread_getattr_np",my_pthread_getattr_np},
 
 {"pthread_cond_init", my_pthread_cond_init},
 {"pthread_cond_broadcast", my_pthread_cond_broadcast},
@@ -18,6 +23,7 @@
 {"pthread_join", pthread_join},
 {"pthread_detach", pthread_detach},
 {"pthread_exit", pthread_exit},
+{"pthread_kill",pthread_kill},
 
 {"pthread_key_create", pthread_key_create},
 {"pthread_getspecific", pthread_getspecific},
@@ -41,3 +47,9 @@
 {"pthread_rwlock_unlock", pthread_rwlock_unlock},
 {"pthread_rwlock_wrlock", pthread_rwlock_wrlock},
 {"pthread_rwlock_destroy", pthread_rwlock_destroy},
+
+
+{"pthread_sigmask",pthread_sigmask},
+
+{"__pthread_cleanup_pop",my_pthread_cleanup_pop},
+{"__pthread_cleanup_push",my_pthread_cleanup_push},

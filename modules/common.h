@@ -38,6 +38,7 @@
 #define ENV_M ENV(GLOBAL_M)
 #define VM_M VM(GLOBAL_M)
 #define LOOKUP_M(method) (GLOBAL_M->lookup_symbol(method))
+#define LOOKUP_LIBM(lib,method) (GLOBAL_M->lookup_lib_symbol(lib,method))
 
 /* Version check (for compatibility) */
 #define APKENV_MODULE_CHECK_VERSION(version) \

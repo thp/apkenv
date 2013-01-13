@@ -14,6 +14,9 @@ JNIENV_SOURCES=$(wildcard jni/*.c)
 # Support modules for specific applications
 MODULES_SOURCES=$(wildcard modules/*.c)
 
+# Pandora specific stuff
+PANDORA_SOURCES=$(wildcard pandora/*.c)
+
 TARGET = apkenv
 
 DESTDIR ?= /
@@ -26,10 +29,19 @@ SOURCES += $(COMPAT_SOURCES)
 SOURCES += $(APKLIB_SOURCES)
 SOURCES += $(JNIENV_SOURCES)
 
+PANDORA ?= 0
+ifeq ($(PANDORA),1)
+SOURCES += $(PANDORA_SOURCES)
+endif
+
 OBJS = $(patsubst %.c,%.o,$(SOURCES))
 MODULES = $(patsubst modules/%.c,%.apkenv.so,$(MODULES_SOURCES))
 
 LDFLAGS = -fPIC -ldl -lz -lSDL -lSDL_mixer -pthread
+
+ifeq ($(PANDORA),1)
+LDFLAGS += -lrt
+endif
 
 # Selection of OpenGL ES version support (if any) to include
 GLES ?= 1

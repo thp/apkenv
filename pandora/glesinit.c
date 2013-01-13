@@ -1,8 +1,13 @@
 
 #include "glesinit.h"
 
+#ifdef APKENV_GLES2
+#include <GLES2/gl2.h>
+#include <EGL/egl.h>
+#else
 #include <GLES/gl.h>
-#include <GLES/egl.h>
+#include <EGL/egl.h>
+#endif
 
 #include <SDL/SDL_syswm.h>
 
@@ -27,7 +32,6 @@
         GLES_Exit(ptr); \
         return ret; \
     }
-
 
 int GLES_TestError(const char* msg)
 {
@@ -56,6 +60,7 @@ typedef struct
     int fbdev;
 } GLES_Data;
 
+GLES_Data* G_Data = NULL;
 
 void* GLES_Init( int version )
 {
@@ -101,7 +106,13 @@ void* GLES_Init( int version )
     CHK_FREE_RET(data->eglSurface==EGL_NO_SURFACE,data,NULL);
     CHK_FREE_RET(GLES_TestError("eglCreateWindowSurface"),data,NULL);
 
-    data->eglContext = eglCreateContext(data->eglDisplay,data->eglConfig,NULL,NULL);
+	EGLint contextAttribs[] =
+	{
+        EGL_CONTEXT_CLIENT_VERSION, version,
+        EGL_NONE
+	};
+
+    data->eglContext = eglCreateContext(data->eglDisplay,data->eglConfig,NULL,contextAttribs);
     CHK_FREE_RET(data->eglContext==EGL_NO_CONTEXT,data,NULL);
     CHK_FREE_RET(GLES_TestError("eglCreateContext"),data,NULL);
 
@@ -109,6 +120,8 @@ void* GLES_Init( int version )
     GLES_TestError("eglMakeCurrent");
 
     data->fbdev = open(FRAMEBUFFERDEVICE,O_RDONLY);
+
+    G_Data = data;
 
     return data;
 }
@@ -129,6 +142,9 @@ int GLES_SwapBuffers( void* rawptr )
             eglSwapBuffers(data->eglDisplay,data->eglSurface);
 
             GLES_TestError("eglSwapBuffers");
+#ifdef APKENV_DEBUG
+            // printf("%d swap\n",pthread_self());
+#endif
             return 1;
         }
     }
@@ -154,4 +170,11 @@ int GLES_Exit( void* rawptr )
         return 1;
     }
     return 0;
+}
+
+void GLES_SetCurrentContext()
+{
+    if (G_Data)
+        eglMakeCurrent(G_Data->eglDisplay,G_Data->eglSurface,G_Data->eglSurface,G_Data->eglContext);
+
 }
