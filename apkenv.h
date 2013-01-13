@@ -63,8 +63,17 @@ struct SupportModule {
 };
 
 typedef void *(*lookup_symbol_t)(const char *method);
+typedef void *(*lookup_lib_symbol_t)(const char *lib, const char *method);
 typedef void (*foreach_file_t)(const char *prefix, apk_for_each_file_callback callback);
 typedef int (*read_file_t)(const char *filename, char **buffer, size_t *size);
+
+struct JniLibrary {
+    struct JniLibrary *next;
+    char *name;
+    void *lib;
+    char **method_table;
+};
+
 
 struct GlobalState {
     const char *apkenv_executable;
@@ -79,13 +88,13 @@ struct GlobalState {
     const char *apk_filename;
     AndroidApk *apklib_handle;
 
-    void *jni_library;
-    char **method_table;
+    struct JniLibrary *libraries;
 
     struct SupportModule *support_modules;
     struct SupportModule *active_module;
 
     lookup_symbol_t lookup_symbol;
+    lookup_lib_symbol_t lookup_lib_symbol;
     foreach_file_t foreach_file;
     read_file_t read_file;
 };

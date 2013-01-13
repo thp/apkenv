@@ -1581,12 +1581,16 @@ JNIEnv_GetBooleanArrayRegion(JNIEnv* p0, jbooleanArray p1, jsize p2, jsize p3, j
 }
 
 
+//#include <sys/mman.h>
+
+
 void
 JNIEnv_GetByteArrayRegion(JNIEnv *env, jbyteArray arrayobj, jsize start, jsize len, jbyte* buf)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetByteArrayRegion(%x, %d, %d, %x)\n", arrayobj, start, len, buf);
     if (arrayobj != GLOBAL_J(env)) {
         struct dummy_byte_array *array = arrayobj;
+        //mprotect(buf, len, PROT_WRITE);
         memcpy(buf, array->data+start, len);
     }
 }

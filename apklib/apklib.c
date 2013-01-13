@@ -49,8 +49,8 @@ apk_open(const char *filename)
     return apk;
 }
 
-char *
-apk_get_shared_library(AndroidApk *apk)
+struct SharedLibrary*
+apk_get_shared_libraries(AndroidApk *apk, const char* libdir)
 {
     assert(apk != NULL);
 
@@ -58,6 +58,9 @@ apk_get_shared_library(AndroidApk *apk)
     FILE *result = NULL;
     char buf[64*1024];
     int read;
+    struct SharedLibrary *libs = 0;
+    struct SharedLibrary *head = 0;
+    int libdirlen = strlen(libdir);
 
     if (unzGoToFirstFile(apk->zip) != UNZ_OK) {
         return NULL;
@@ -65,10 +68,8 @@ apk_get_shared_library(AndroidApk *apk)
 
     do {
         if (unzGetCurrentFileInfo(apk->zip, NULL, filename, sizeof(filename), NULL, 0, NULL, 0) == UNZ_OK) {
-            if (memcmp(filename, "lib/armeabi", 11) == 0) {
+            if (memcmp(filename, libdir, libdirlen) == 0) {
                 if (unzOpenCurrentFile(apk->zip) == UNZ_OK) {
-
-
 
 #if !defined(PANDORA)
                     strcpy(filename, "/home/user/.apkenv-XXXXXX");
@@ -90,14 +91,22 @@ apk_get_shared_library(AndroidApk *apk)
 #if defined(PANDORA)
                     sync();
 #endif
-                    return strdup(filename);
+                    if (libs==0) {
+                        libs = malloc(sizeof(struct SharedLibrary));
+                        head = libs;
+                        libs->next = 0;
+                    } else {
+                        libs->next = malloc(sizeof(struct SharedLibrary));
+                        libs->next->next = 0;
+                        libs = libs->next;
+                    }
+                    libs->filename = strdup(filename);
                 }
-                break;
             }
         }
     } while (unzGoToNextFile(apk->zip) == UNZ_OK);
 
-    return NULL;
+    return head;
 }
 
 enum ApkResult

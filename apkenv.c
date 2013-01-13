@@ -60,6 +60,12 @@ lookup_symbol_impl(const char *method)
     return jni_shlib_resolve(&global, method);
 }
 
+void *
+lookup_lib_symbol_impl(const char *lib, const char *method)
+{
+    return jni_shlib_lib_resolve(&global, lib, method);
+}
+
 void
 foreach_file_impl(const char *prefix, apk_for_each_file_callback callback)
 {
@@ -295,50 +301,10 @@ operation(const char *operation, const char *filename)
 
 #define MEEGOTOUCH_BORDER 16
 
-//#define NOSDL
+void* platform_data = 0;
 
-
-int main(int argc, char **argv)
+SDL_Surface* platform_init()
 {
-    char **tmp;
-
-    recursive_mkdir(DATA_DIRECTORY_BASE);
-    global.apkenv_executable = argv[0];
-    global.apkenv_headline = APKENV_HEADLINE;
-    global.apkenv_copyright = APKENV_COPYRIGHT;
-
-    printf("%s\n%s\n\n", global.apkenv_headline, global.apkenv_copyright);
-
-    switch (argc) {
-        case 2:
-            /* One argument - the .apk (continue below) */
-            break;
-        case 3:
-            /* Two arguments - operation + the apk */
-            operation(argv[1], argv[2]);
-            break;
-        default:
-            /* Wrong number of arguments */
-            usage();
-    }
-
-    global.lookup_symbol = lookup_symbol_impl;
-    global.foreach_file = foreach_file_impl;
-    global.read_file = read_file_impl;
-
-    jnienv_init(&global);
-    javavm_init(&global);
-    global.apk_filename = strdup(argv[argc-1]);
-    global.apklib_handle = apk_open(global.apk_filename);
-    global.support_modules = NULL;
-
-
-    const char *shlib = apk_get_shared_library(global.apklib_handle);
-    if (shlib == NULL) {
-        printf("Not a native APK.\n");
-        return 0;
-    }
-
     SDL_Surface* screen;
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
         printf("SDL Init failed.\n");
@@ -355,8 +321,12 @@ int main(int argc, char **argv)
      **/
 #ifdef PANDORA
     screen = SDL_SetVideoMode(SCREEN_WIDTH,SCREEN_HEIGHT,0,SDL_FULLSCREEN);
-    void* gles = GLES_Init(1);
-    if (!gles) {
+#if defined(APKENV_GLES2)
+    platform_data = GLES_Init(2);
+#else
+    platform_data = GLES_Init(1);
+#endif
+    if (!platform_data) {
         fprintf(stderr,"ERROR: GLES_Init failed.\n");
         return 0;
     }
@@ -397,14 +367,114 @@ int main(int argc, char **argv)
     XChangeProperty(dpy, wm.info.x11.wmwindow, atom, XA_CARDINAL, 32,
             PropModeReplace, (unsigned char*)region, 4);
 #endif
+    return screen;
+}
 
-    global.method_table = jni_shlib_find_methods(shlib);
-    global.jni_library = android_dlopen(shlib, RTLD_LAZY);
-    unlink(shlib);
-    if (!(global.jni_library)) {
-        printf("Missing library dependencies.\n");
+void platform_swap()
+{
+#ifdef PANDORA
+        GLES_SwapBuffers(platform_data);
+#elif defined(FREMANTLE)
+        SDL_GLES_SwapBuffers();
+#else
+        SDL_GL_SwapBuffers();
+#endif
+}
+
+void platform_exit()
+{
+#ifdef PANDORA
+    GLES_Exit(platform_data);
+#endif
+}
+
+int main(int argc, char **argv)
+{
+    char **tmp;
+
+    recursive_mkdir(DATA_DIRECTORY_BASE);
+
+    global.apkenv_executable = argv[0];
+    global.apkenv_headline = APKENV_HEADLINE;
+    global.apkenv_copyright = APKENV_COPYRIGHT;
+
+    printf("%s\n%s\n\n", global.apkenv_headline, global.apkenv_copyright);
+
+    switch (argc) {
+        case 2:
+            /* One argument - the .apk (continue below) */
+            break;
+        case 3:
+            /* Two arguments - operation + the apk */
+            operation(argv[1], argv[2]);
+            break;
+        default:
+            /* Wrong number of arguments */
+            usage();
+    }
+
+    global.lookup_symbol = lookup_symbol_impl;
+    global.lookup_lib_symbol = lookup_lib_symbol_impl;
+    global.foreach_file = foreach_file_impl;
+    global.read_file = read_file_impl;
+
+    jnienv_init(&global);
+    javavm_init(&global);
+    global.apk_filename = strdup(argv[argc-1]);
+    global.apklib_handle = apk_open(global.apk_filename);
+    global.support_modules = NULL;
+
+
+    /*
+    const char *shlib = apk_get_shared_library(global.apklib_handle,"");
+    if (shlib == NULL) {
+        printf("Not a native APK.\n");
         return 0;
     }
+    */
+    const char* libdir[] = {
+        "assets/libs/armeabi-v7a",
+        "assets/libs/armeabi",
+        "lib/armeabi-v7a",
+        "lib/armeabi",
+        0
+    };
+    int ilib = 0;
+    struct SharedLibrary *shlibs = 0;
+    while (libdir[ilib]!=0) {
+        shlibs = apk_get_shared_libraries(global.apklib_handle,libdir[ilib]);
+        if (shlibs!=0)
+            break;
+        ilib ++;
+    }
+    if (shlibs==0) {
+        printf("Not a native APK.\n");
+        return 0;
+    }
+
+    struct JniLibrary *lib = malloc(sizeof(struct JniLibrary));
+    struct JniLibrary *head = lib;
+    lib->next = 0;
+
+    struct SharedLibrary *shlib = shlibs;
+    while (shlib!=0) {
+        lib->lib = android_dlopen(shlib->filename,RTLD_LAZY);
+        if (!(lib->lib)) {
+            printf("Missing library dependencies.\n");
+            return 0;
+        }
+        lib->method_table = jni_shlib_find_methods(shlib->filename);
+        lib->name = strdup(shlib->filename);
+    // unlink(shlib->filename);
+        shlib = shlib->next;
+        if (shlib!=0) {
+            lib->next = malloc(sizeof(struct JniLibrary));
+            lib = lib->next;
+            lib->next = 0;
+        }
+    }
+
+    global.libraries = head;
 
     load_modules(".");
     load_modules(MODULE_DIRECTORY_BASE);
@@ -424,12 +494,22 @@ int main(int argc, char **argv)
 
     if (module == NULL) {
         printf("Not supported yet, but found JNI methods:\n");
-        tmp = global.method_table;
-        while (*tmp) {
-            printf("    %s\n", *tmp);
-            tmp++;
+
+        struct JniLibrary *lib = global.libraries;
+        while (lib!=0) {
+            tmp = lib->method_table;
+            while (*tmp) {
+                printf("    %s\n", *tmp);
+                tmp++;
+            }
+            lib = lib->next;
         }
         goto finish;
+    }
+
+    SDL_Surface* screen = platform_init();
+    if (screen==0) {
+        return 0;
     }
 
     global.active_module = module;
@@ -482,26 +562,26 @@ int main(int argc, char **argv)
             }
         }
         module->update(module);
-#ifdef PANDORA
-        GLES_SwapBuffers(gles);
-#elif defined(FREMANTLE)
-        SDL_GLES_SwapBuffers();
-#else
-        SDL_GL_SwapBuffers();
-#endif
+
+        platform_swap();
     }
 
 finish:
-    tmp = global.method_table;
-    while (*tmp) {
-        free(*tmp++);
+
+    lib = global.libraries;
+    while (lib!=0) {
+        tmp = lib->method_table;
+        while (*tmp) {
+            free(*tmp++);
+        }
+        free(lib->method_table);
+        struct JniLibrary *next = lib->next;
+        free(lib);
+        lib = next;
     }
-    free(global.method_table);
+
     apk_close(global.apklib_handle);
 
-#ifdef PANDORA
-    GLES_Exit(gles);
-#endif
 
     return 0;
 }
