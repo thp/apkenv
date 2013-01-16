@@ -30,7 +30,7 @@
 
 /**
  * Fruit Ninja support module 0.5 - By: Arto Rusanen
- * 
+ *
  **/
 
 #ifdef APKENV_DEBUG
@@ -58,6 +58,7 @@ typedef void (*fruitninja_saveonexit_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*fruitninja_gamerequestedquit_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*fruitninja_setapplicensed_t)(JNIEnv *env, jobject obj, jboolean value) SOFTFP;
 typedef void (*fruitninja_initfilemanager_t)(JNIEnv *env, jobject obj, jstring paramString1, jstring paramString2, jboolean paramBoolean) SOFTFP;
+typedef void (*fruitninja_initjavasoundmanager_t)(JNIEnv *env, jobject obj) SOFTFP;
 
 struct SupportModulePriv {
     jni_onload_t JNI_OnLoad;
@@ -70,6 +71,7 @@ struct SupportModulePriv {
     fruitninja_gamerequestedquit_t native_gamerequestedquit;
     fruitninja_setapplicensed_t native_setapplicensed;
     fruitninja_initfilemanager_t native_initfilemanager;
+    fruitninja_initjavasoundmanager_t native_initjavasoundmanager;
     const char *myHome;
 };
 static struct SupportModulePriv fruitninja_priv;
@@ -115,7 +117,7 @@ JNIEnv_CallStaticObjectMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
         struct dummy_jstring *str = va_arg(p3,struct dummy_jstring*); //Sound file?
         char* soundname = strdup(str->data);
         int i;
-        for(i = 0; soundname[i]; i++) { 
+        for(i = 0; soundname[i]; i++) {
             soundname[i] = tolower(soundname[i]); // LowerCase soundname
         }
 
@@ -130,7 +132,7 @@ JNIEnv_CallStaticObjectMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
             }
         }
         MODULE_DEBUG_PRINTF("module: Sound not found: %s\n", soundname);
-        
+
     }
     else
     {
@@ -144,15 +146,17 @@ JNIEnv_CallStaticObjectMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
 /* Backround music support. I didn't find documentation about playing
    music from memory buffer. So extract music and play it from there */
 void
-extract_music_callback(const char *filename, char *buffer, size_t size)
+extract_files_callback(const char *filename, char *buffer, size_t size)
 {
-    char* fname = strrchr (filename, '/') + 1;
+    char* fname = strchr (filename, '/') + 1;
 
     char tmp[PATH_MAX];
     strcpy(tmp, fruitninja_priv.myHome);
     strcat(tmp, fname);
 
-    MODULE_DEBUG_PRINTF("module: Extract music to: %s\n", tmp);
+    MODULE_DEBUG_PRINTF("module: Extract file to: %s\n", tmp);
+
+    global->recursive_mkdir(tmp);
 
     FILE *my_file = fopen(tmp, "wb");
     fwrite(buffer, size, 1, my_file);
@@ -162,7 +166,7 @@ extract_music_callback(const char *filename, char *buffer, size_t size)
 /* If music is started with Mix_PlayMusic( music, -1 ) it should loop right?
    At least for me it did not so reload music and start again... */
 void
-musicFinished() 
+musicFinished()
 {
    MODULE_DEBUG_PRINTF("module: Music finished, trying to restart...\n");
    music = Mix_LoadMUS( Music_Path );
@@ -183,7 +187,7 @@ JNIEnv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
 
         char* musicname = strdup(str->data);
         int i;
-        for(i = 0; musicname[i]; i++) { 
+        for(i = 0; musicname[i]; i++) {
             musicname[i] = tolower(musicname[i]); // LowerCase musicname
         }
 
@@ -196,7 +200,7 @@ JNIEnv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
         music = Mix_LoadMUS( Music_Path );
         Mix_PlayMusic( music, 0 ); // -1 should loop music? Not for me?
         Mix_HookMusicFinished(musicFinished);
-    } else if( strcmp( p2->name, "SetMusicVolume" ) == 0 ){ 
+    } else if( strcmp( p2->name, "SetMusicVolume" ) == 0 ){
         int musicvol = va_arg(p3, double) * MIX_MAX_VOLUME;
         MODULE_DEBUG_PRINTF("module: SetMusicVolume: %i\n", musicvol);
         Mix_VolumeMusic(musicvol);
@@ -251,10 +255,7 @@ JNIEnv_FindClass(JNIEnv* p0, const char* p1)
 jmethodID
 JNIEnv_GetStaticMethodID(JNIEnv* p0, jclass clazz, const char* name, const char* sig)
 {
-    if( !strcmp( name, "isNetworkConnected" ) == 0 && 
-            !strcmp( name, "SetMusicVolume" ) == 0 &&
-            !strcmp( name, "SFXPlayInternal" ) == 0)
-        MODULE_DEBUG_PRINTF("module_JNIEnv_GetStaticMethodID(%x, %s, %s)\n", clazz, name, sig);
+    MODULE_DEBUG_PRINTF("module_JNIEnv_GetStaticMethodID(%x, %s, %s)\n", clazz, name, sig);
     jmethodID id = malloc(sizeof(struct _jmethodID));
     id->clazz = clazz;
     id->name = strdup(name);
@@ -267,6 +268,14 @@ JNIEnv_CallStaticBooleanMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
     //struct dummy_jclass *clazz = (struct dummy_jclass*)p1;
     if( !strcmp( p2->name, "isNetworkConnected" ) == 0 )
         MODULE_DEBUG_PRINTF("module_JNIEnv_CallStaticBooleanMethodV(%x, %s, %s)\n", p2->clazz, p2->name, p2->sig);
+    return 0;
+}
+jboolean
+JNIEnv_CallStaticIntMethodMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
+{
+    MODULE_DEBUG_PRINTF("module_JNIEnv_CallStaticIntMethodMethodV(%x, %s, %s)\n", p2->clazz, p2->name, p2->sig);
+    if (strcmp(p2->name,"GetWifi")==0) return 0;
+    if (strcmp(p2->name,"GetTouchscreenCapabilities")==0) return 0;
     return 0;
 }
 void
@@ -284,16 +293,20 @@ JNIEnv_ExceptionOccurred(JNIEnv* p0)
 static int
 fruitninja_try_init(struct SupportModule *self)
 {
+    // Java_com_halfbrick_fruitninja_ < prefix in 1.5.4
+    // Java_com_halfbrick_mortar_ < prefix in 1.7.6
+
     //self->priv->JNI_OnLoad = (jni_onload_t)LOOKUP_M("JNI_OnLoad"); //No JNI_Onload function in fruitninja
-    self->priv->native_init = (fruitninja_init_t)LOOKUP_M("NativeGameLib_native_1init");
-    self->priv->native_touchevent = (fruitninja_touchevent_t)LOOKUP_M("NativeGameLib_native_1touchEvent");
-    self->priv->native_step = (fruitninja_step_t)LOOKUP_M("NativeGameLib_native_1step");
-    self->priv->native_pause = (fruitninja_pause_t)LOOKUP_M("NativeGameLib_native_1onPause");
-    self->priv->native_resume = (fruitninja_resume_t)LOOKUP_M("NativeGameLib_native_1onResume");
-    self->priv->native_saveonexit = (fruitninja_saveonexit_t)LOOKUP_M("NativeGameLib_native_1saveOnExit");
-    self->priv->native_gamerequestedquit = (fruitninja_gamerequestedquit_t)LOOKUP_M("NativeGameLib_native_1gameRequestedQuit");
-    self->priv->native_setapplicensed = (fruitninja_setapplicensed_t)LOOKUP_M("NativeGameLib_native_1SetAppLicensed");
-    self->priv->native_initfilemanager = (fruitninja_initfilemanager_t)LOOKUP_M("NativeGameLib_native_1InitFileManager");
+    self->priv->native_init = (fruitninja_init_t)LOOKUP_M("_NativeGameLib_native_1init");
+    self->priv->native_touchevent = (fruitninja_touchevent_t)LOOKUP_M("_NativeGameLib_native_1touchEvent");
+    self->priv->native_step = (fruitninja_step_t)LOOKUP_M("_NativeGameLib_native_1step");
+    self->priv->native_pause = (fruitninja_pause_t)LOOKUP_M("_NativeGameLib_native_1onPause");
+    self->priv->native_resume = (fruitninja_resume_t)LOOKUP_M("_NativeGameLib_native_1onResume");
+    self->priv->native_saveonexit = (fruitninja_saveonexit_t)LOOKUP_M("_NativeGameLib_native_1saveOnExit");
+    self->priv->native_gamerequestedquit = (fruitninja_gamerequestedquit_t)LOOKUP_M("_NativeGameLib_native_1gameRequestedQuit");
+    self->priv->native_setapplicensed = (fruitninja_setapplicensed_t)LOOKUP_M("_NativeGameLib_native_1SetAppLicensed");
+    self->priv->native_initfilemanager = (fruitninja_initfilemanager_t)LOOKUP_M("_NativeGameLib_native_1InitFileManager");
+    self->priv->native_initjavasoundmanager = (fruitninja_initjavasoundmanager_t)LOOKUP_M("_NativeGameLib_native_1InitJavaSoundManager");
 
     /* override for JNIEnv_ */
     self->override_env.CallStaticObjectMethodV = JNIEnv_CallStaticObjectMethodV;
@@ -306,6 +319,7 @@ fruitninja_try_init(struct SupportModule *self)
     self->override_env.CallStaticBooleanMethodV = JNIEnv_CallStaticBooleanMethodV;
     self->override_env.CallStaticVoidMethodV = JNIEnv_CallStaticVoidMethodV;
     self->override_env.ExceptionOccurred = JNIEnv_ExceptionOccurred;
+    self->override_env.CallStaticIntMethodV = JNIEnv_CallStaticIntMethodMethodV;
 
     return (//self->priv->JNI_OnLoad != NULL &&
             self->priv->native_init != NULL &&
@@ -325,13 +339,13 @@ fruitninja_init(struct SupportModule *self, int width, int height, const char *h
     global = GLOBAL_M;
     self->priv->myHome = strdup(home);
 
-    /* Init audio. I am too lazy to find out if fruitninja reports right 
+    /* Init audio. I am too lazy to find out if fruitninja reports right
        settings so I just hardcode these into here... */
     int audio_rate = 22050;
     Uint16 audio_format = AUDIO_S16SYS;
     int audio_channels = 2;
     int audio_buffers = 1024;
- 
+
     if(Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) != 0) {
         fprintf(stderr, "Unable to initialize audio: %s\n", Mix_GetError());
         exit(1);
@@ -341,12 +355,19 @@ fruitninja_init(struct SupportModule *self, int width, int height, const char *h
     /* Load sounds */
     global->foreach_file("assets/sound", load_sound_callback);
 
-    /* Extract backround music */
-    global->foreach_file("assets/music", extract_music_callback);
+    /* Extract files */
+    //global->foreach_file("assets/", extract_files_callback);
+
+#ifdef PANDORA
+    sync();
+#endif
+
 
     jstring jSource = GLOBAL_M->env->NewStringUTF(ENV_M, global->apk_filename); //APK path & filename
     jstring jHome = GLOBAL_M->env->NewStringUTF(ENV_M, home); // Save file location
     self->priv->native_initfilemanager(ENV_M, GLOBAL_M, jSource, jHome, 0);
+    if (self->priv->native_initjavasoundmanager!=0)
+        self->priv->native_initjavasoundmanager(ENV_M, GLOBAL_M);
     self->priv->native_init(ENV_M, GLOBAL_M, width, height, GLOBAL_M->env->NewStringUTF(ENV_M, "en"));
     self->priv->native_setapplicensed(ENV_M, GLOBAL_M, 1);
 }
@@ -389,6 +410,12 @@ static void
 fruitninja_resume(struct SupportModule *self)
 {
     self->priv->native_resume(ENV_M, GLOBAL_M);
+}
+
+static int
+fruitninja_requests_exit(struct SupportModule *self)
+{
+    return 0;
 }
 
 APKENV_MODULE(fruitninja, MODULE_PRIORITY_GAME)

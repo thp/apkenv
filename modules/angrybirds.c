@@ -257,5 +257,11 @@ angrybirds_resume(struct SupportModule *self)
     self->priv->native_resume(ENV_M, GLOBAL_M);
 }
 
+static int
+angrybirds_requests_exit(struct SupportModule *self)
+{
+    return 0;
+}
+
 APKENV_MODULE(angrybirds, MODULE_PRIORITY_GAME)
 

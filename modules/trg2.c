@@ -119,5 +119,11 @@ trg2_resume(struct SupportModule *self)
 {
 }
 
+static int
+trg2_requests_exit()
+{
+    return 0;
+}
+
 APKENV_MODULE(trg2, MODULE_PRIORITY_GAME)
 

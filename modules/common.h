@@ -60,6 +60,7 @@
         module->deinit = modulename ## _deinit; \
         module->pause = modulename ## _pause; \
         module->resume = modulename ## _resume; \
+        module->requests_exit = modulename ## _requests_exit; \
         return APKENV_MODULE_VERSION; \
     }
 
