@@ -14,7 +14,7 @@
 				<Compiler>
 					<Add option="-g" />
 					<Add option="-DDEBUG=1" />
-					<Add option="-DLINKER_DEBUG=0" />
+					<Add option="-DLINKER_DEBUG=2" />
 					<Add option="-DAPKENV_DEBUG" />
 					<Add option="-DAPKENV_GLES" />
 				</Compiler>
@@ -57,6 +57,7 @@
 		<Compiler>
 			<Add option="-Wall" />
 			<Add option="-DPANDORA" />
+			<Add option="-DARCH_ARM_HAVE_TLS_REGISTER" />
 		</Compiler>
 		<Linker>
 			<Add library="SDL" />
@@ -116,6 +117,10 @@
 			<Option compilerVar="CC" />
 		</Unit>
 		<Unit filename="compat/pthread_wrappers.h" />
+		<Unit filename="debug/debug.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="debug/debug.h" />
 		<Unit filename="jni/jni.h" />
 		<Unit filename="jni/jnienv.c">
 			<Option compilerVar="CC" />
@@ -150,10 +155,15 @@
 		</Unit>
 		<Unit filename="linker/strlcpy.h" />
 		<Unit filename="modules/common.h" />
-		<Unit filename="pandora/glesinit.c">
+		<Unit filename="n9xx/platform.c">
+			<Option compilerVar="CC" />
+			<Option compile="0" />
+			<Option link="0" />
+		</Unit>
+		<Unit filename="pandora/platform.c">
 			<Option compilerVar="CC" />
 		</Unit>
-		<Unit filename="pandora/glesinit.h" />
+		<Unit filename="platform.h" />
 		<Extensions>
 			<code_completion />
 			<debugger>

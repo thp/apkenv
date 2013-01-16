@@ -74,7 +74,7 @@ jni_shlib_find_methods(const char *filename)
                 tmp[i] = fgetc(fp);
                 remaining_bytes--;
                 if (tmp[i] == '\0') {
-                    JNISHLIB_DEBUG_PRINTF("[SHLIB] %s\n",tmp);
+                    //JNISHLIB_DEBUG_PRINTF("[SHLIB] %s\n",tmp);
 
                     if ((memcmp(tmp, "Java_", 5) == 0) ||
                             (memcmp(tmp, "JNI_", 4) == 0)) {
@@ -117,6 +117,7 @@ jni_shlib_resolve(struct GlobalState *global, const char *method)
         }
         lib = lib->next;
     }
+    JNISHLIB_DEBUG_PRINTF("[shlib] Symbol not found: %s\n",method);
 
     return NULL;
 }

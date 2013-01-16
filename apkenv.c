@@ -35,21 +35,14 @@
 #include <dirent.h>
 
 #include <SDL/SDL.h>
-#ifdef FREMANTLE
-#    include <SDL/SDL_gles.h>
-#elif defined(PANDORA)
-#    include "pandora/glesinit.h"
-#endif
-
-#include <SDL/SDL_syswm.h>
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
 
 #include "jni/jnienv.h"
 #include "jni/shlib.h"
 #include "apklib/apklib.h"
+#include "debug/debug.h"
 
 #include "apkenv.h"
+#include "platform.h"
 
 /* Global application state */
 struct GlobalState global;
@@ -186,11 +179,11 @@ void install_overrides(struct SupportModule *module)
 void
 usage()
 {
-#if !defined(LOCAL_SHARE_APPLICATIONS)
-    printf("Usage: %s <file.apk>\n",global.apkenv_executable);
-#else
-    printf("Usage: %s [--install] <file.apk>\n",global.apkenv_executable);
-#endif
+    if (platform_getinstalldirectory()==0) {
+        printf("Usage: %s <file.apk>\n",global.apkenv_executable);
+    } else {
+        printf("Usage: %s [--install] <file.apk>\n",global.apkenv_executable);
+    }
     exit(1);
 }
 
@@ -229,8 +222,7 @@ recursive_mkdir(const char *directory)
 void
 operation(const char *operation, const char *filename)
 {
-#if defined(LOCAL_SHARE_APPLICATIONS)
-    if (strcmp(operation, "--install") == 0) {
+    if (strcmp(operation, "--install") == 0 && platform_getinstalldirectory()!=0) {
         char apkenv_absolute[PATH_MAX];
         char apk_absolute[PATH_MAX];
 
@@ -241,7 +233,7 @@ operation(const char *operation, const char *filename)
         char *app_name = apk_basename(filename);
 
         char icon_filename[PATH_MAX];
-        sprintf(icon_filename, "%s%s.png", DATA_DIRECTORY_BASE, app_name);
+        sprintf(icon_filename, "%s%s.png", platform_getdatadirectory(), app_name);
 
         struct stat st;
         if (stat(icon_filename, &st) != 0) {
@@ -275,8 +267,8 @@ operation(const char *operation, const char *filename)
         }
 
         char desktop_filename[PATH_MAX];
-        recursive_mkdir();
-        sprintf(desktop_filename, "%s/%s.desktop", LOCAL_SHARE_APPLICATIONS,
+        recursive_mkdir(platform_getinstalldirectory());
+        sprintf(desktop_filename, "%s/%s.desktop", platform_getinstalldirectory(),
                 app_name);
 
         FILE *desktop = fopen(desktop_filename, "w");
@@ -296,103 +288,46 @@ operation(const char *operation, const char *filename)
     }
 
     usage();
-#endif
 }
 
-#define MEEGOTOUCH_BORDER 16
 
-void* platform_data = 0;
-
-SDL_Surface* platform_init()
+int system_init()
 {
-    SDL_Surface* screen;
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
         printf("SDL Init failed.\n");
         return 0;
     }
 
-
-    /**
-     * The following block looks scary, but it just creates an SDL surface
-     * with the right OpenGL ES context version. The block looks so scary,
-     * because on Fremantle, javispedro's SDL_gles is used and on Harmattan
-     * (where the GLES features are integrated directly into libSDL), only
-     * SDL is used.
-     **/
-#ifdef PANDORA
-    screen = SDL_SetVideoMode(SCREEN_WIDTH,SCREEN_HEIGHT,0,SDL_FULLSCREEN);
-#if defined(APKENV_GLES2)
-    platform_data = GLES_Init(2);
-#else
-    platform_data = GLES_Init(1);
-#endif
-    if (!platform_data) {
-        fprintf(stderr,"ERROR: GLES_Init failed.\n");
+    if ( !platform_init() ) {
+        printf("platform_init failed.\n");
         return 0;
     }
-#else
-#ifdef FREMANTLE
-#ifdef APKENV_GLES2
-    SDL_GLES_Init(SDL_GLES_VERSION_2_0);
-#else /* APKENV_GLES2 */
-    SDL_GLES_Init(SDL_GLES_VERSION_1_1);
-#endif /* APKENV_GLES2 */
-    screen = SDL_SetVideoMode(0, 0, 0, SDL_FULLSCREEN);
-    SDL_GLES_MakeCurrent(SDL_GLES_CreateContext());
-#else /* FREMANTLE */
-#ifdef APKENV_GLES2
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-#else /* APKENV_GLES2 */
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
-#endif /* APKENV_GLES2 */
-    screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGLES | SDL_FULLSCREEN);
-#endif /* FREMANTLE */
-#endif /* PANDORA */
 
     SDL_ShowCursor(0);
 
-#if !defined(FREMANTLE) && !defined(PANDORA)
-    /* Set up swipe lock (left and right) */
-    SDL_SysWMinfo wm;
-    SDL_VERSION(&wm.version);
-    SDL_GetWMInfo(&wm);
-    Display *dpy = wm.info.x11.display;
-    Atom atom = XInternAtom(dpy, "_MEEGOTOUCH_CUSTOM_REGION", False);
-    unsigned int region[] = {
-        0,
-        MEEGOTOUCH_BORDER,
-        screen->w,
-        screen->h - 2*MEEGOTOUCH_BORDER,
-    };
-    XChangeProperty(dpy, wm.info.x11.wmwindow, atom, XA_CARDINAL, 32,
-            PropModeReplace, (unsigned char*)region, 4);
-#endif
-    return screen;
+    return 1;
 }
 
-void platform_swap()
+void system_update()
 {
-#ifdef PANDORA
-        GLES_SwapBuffers(platform_data);
-#elif defined(FREMANTLE)
-        SDL_GLES_SwapBuffers();
-#else
-        SDL_GL_SwapBuffers();
-#endif
+    platform_update();
 }
 
-void platform_exit()
+void system_exit()
 {
-#ifdef PANDORA
-    GLES_Exit(platform_data);
-#endif
+    platform_exit();
 }
+
 
 int main(int argc, char **argv)
 {
+#ifdef APKENV_DEBUG
+    debug_init();
+#endif
+
     char **tmp;
 
-    recursive_mkdir(DATA_DIRECTORY_BASE);
+    recursive_mkdir(platform_getdatadirectory());
 
     global.apkenv_executable = argv[0];
     global.apkenv_headline = APKENV_HEADLINE;
@@ -400,6 +335,7 @@ int main(int argc, char **argv)
 
     printf("%s\n%s\n\n", global.apkenv_headline, global.apkenv_copyright);
 
+#if 0
     switch (argc) {
         case 2:
             /* One argument - the .apk (continue below) */
@@ -412,11 +348,13 @@ int main(int argc, char **argv)
             /* Wrong number of arguments */
             usage();
     }
+#endif
 
     global.lookup_symbol = lookup_symbol_impl;
     global.lookup_lib_symbol = lookup_lib_symbol_impl;
     global.foreach_file = foreach_file_impl;
     global.read_file = read_file_impl;
+    global.recursive_mkdir = recursive_mkdir;
 
     jnienv_init(&global);
     javavm_init(&global);
@@ -424,14 +362,6 @@ int main(int argc, char **argv)
     global.apklib_handle = apk_open(global.apk_filename);
     global.support_modules = NULL;
 
-
-    /*
-    const char *shlib = apk_get_shared_library(global.apklib_handle,"");
-    if (shlib == NULL) {
-        printf("Not a native APK.\n");
-        return 0;
-    }
-    */
     const char* libdir[] = {
         "assets/libs/armeabi-v7a",
         "assets/libs/armeabi",
@@ -477,7 +407,7 @@ int main(int argc, char **argv)
     global.libraries = head;
 
     load_modules(".");
-    load_modules(MODULE_DIRECTORY_BASE);
+    load_modules(platform_getmoduledirectory());
 
     if (global.support_modules == NULL) {
         printf("No support modules found.\n");
@@ -507,8 +437,7 @@ int main(int argc, char **argv)
         goto finish;
     }
 
-    SDL_Surface* screen = platform_init();
-    if (screen==0) {
+    if (!system_init()) {
         return 0;
     }
 
@@ -517,14 +446,19 @@ int main(int argc, char **argv)
     install_overrides(module);
 
     char data_directory[PATH_MAX];
-    strcpy(data_directory, DATA_DIRECTORY_BASE);
+    strcpy(data_directory, platform_getdatadirectory());
     strcat(data_directory, apk_basename(global.apk_filename));
     strcat(data_directory, "/");
     recursive_mkdir(data_directory);
 
-    module->init(module, screen->w, screen->h, data_directory);
+    module->init(module, platform_getscreenwidth(), platform_getscreenheight(), data_directory);
 
     while (1) {
+
+        if (module->requests_exit(module)) {
+            module->deinit(module);
+            break;
+        }
 
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
@@ -562,8 +496,7 @@ int main(int argc, char **argv)
             }
         }
         module->update(module);
-
-        platform_swap();
+        system_update();
     }
 
 finish:
@@ -581,7 +514,7 @@ finish:
     }
 
     apk_close(global.apklib_handle);
-
+    system_exit();
 
     return 0;
 }

@@ -58,6 +58,7 @@ struct SupportModule {
     void (*deinit)(struct SupportModule *self);
     void (*pause)(struct SupportModule *self);
     void (*resume)(struct SupportModule *self);
+    int (*requests_exit)(struct SupportModule *self);
 
     struct SupportModule *next;
 };
@@ -66,6 +67,7 @@ typedef void *(*lookup_symbol_t)(const char *method);
 typedef void *(*lookup_lib_symbol_t)(const char *lib, const char *method);
 typedef void (*foreach_file_t)(const char *prefix, apk_for_each_file_callback callback);
 typedef int (*read_file_t)(const char *filename, char **buffer, size_t *size);
+typedef void (*recursive_mkdir_t)(const char* path);
 
 struct JniLibrary {
     struct JniLibrary *next;
@@ -97,26 +99,11 @@ struct GlobalState {
     lookup_lib_symbol_t lookup_lib_symbol;
     foreach_file_t foreach_file;
     read_file_t read_file;
+    recursive_mkdir_t recursive_mkdir;
 };
 
 #define VM(global_ptr) (&((global_ptr)->vm))
 #define ENV(global_ptr) (&((global_ptr)->env))
-
-#if defined(PANDORA)
-#define DATA_DIRECTORY_BASE "./data/"
-#else
-#define DATA_DIRECTORY_BASE "/home/user/.apkenv/"
-#endif
-
-
-#if defined(PANDORA)
-#define MODULE_DIRECTORY_BASE "./modules/"
-#undef LOCAL_SHARE_APPLICATIONS
-#else
-#define MODULE_DIRECTORY_BASE "/opt/apkenv/modules/"
-#define LOCAL_SHARE_APPLICATIONS "/home/user/.local/share/applications/"
-#endif
-
 
 
 /* Android MotionEvent */
