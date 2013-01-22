@@ -74,7 +74,7 @@
 
 {"ioctl", ioctl},
 {"mmap", mmap},
-{"munmap", my_munmap},
+{"munmap", munmap},
 {"poll", poll},
 
 {"mkdir", mkdir},

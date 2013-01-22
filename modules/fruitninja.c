@@ -55,7 +55,7 @@ typedef jboolean (*fruitninja_step_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*fruitninja_pause_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*fruitninja_resume_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*fruitninja_saveonexit_t)(JNIEnv *env, jobject obj) SOFTFP;
-typedef void (*fruitninja_gamerequestedquit_t)(JNIEnv *env, jobject obj) SOFTFP;
+typedef jboolean (*fruitninja_gamerequestedquit_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*fruitninja_setapplicensed_t)(JNIEnv *env, jobject obj, jboolean value) SOFTFP;
 typedef void (*fruitninja_initfilemanager_t)(JNIEnv *env, jobject obj, jstring paramString1, jstring paramString2, jboolean paramBoolean) SOFTFP;
 typedef void (*fruitninja_initjavasoundmanager_t)(JNIEnv *env, jobject obj) SOFTFP;
@@ -72,6 +72,7 @@ struct SupportModulePriv {
     fruitninja_setapplicensed_t native_setapplicensed;
     fruitninja_initfilemanager_t native_initfilemanager;
     fruitninja_initjavasoundmanager_t native_initjavasoundmanager;
+    jmethodID isNetworkConnected;
     const char *myHome;
 };
 static struct SupportModulePriv fruitninja_priv;
@@ -108,7 +109,7 @@ load_sound_callback(const char *filename, char *buffer, size_t size)
 }
 
 jobject
-JNIEnv_CallStaticObjectMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
+JNIEnv_CallStaticObjectMethodV(JNIEnv*env, jclass p1, jmethodID p2, va_list p3)
 {
     struct dummy_jclass *jcl = p1;
 
@@ -135,6 +136,10 @@ JNIEnv_CallStaticObjectMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
 
     }
     else
+    if (strcmp(p2->name,"GetPackageName")==0){
+        return (*env)->NewStringUTF(env,global->apk_filename);
+    }
+    else
     {
         MODULE_DEBUG_PRINTF("module_JNIEnv_CallStaticObjectMethodV(%s, %s, %s)\n",
             jcl->name, p2->name, p2->sig);
@@ -148,7 +153,7 @@ JNIEnv_CallStaticObjectMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
 void
 extract_files_callback(const char *filename, char *buffer, size_t size)
 {
-    char* fname = strchr (filename, '/') + 1;
+    char* fname = strrchr (filename, '/') + 1;
 
     char tmp[PATH_MAX];
     strcpy(tmp, fruitninja_priv.myHome);
@@ -177,6 +182,9 @@ void
 JNIEnv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
 {
     struct dummy_jclass *jcl = p1;
+
+    MODULE_DEBUG_PRINTF("module_JNIEnv_CallStaticVoidMethodV(%x, %s, %s)\n", jcl->name, p2->name, p2->sig);
+
 
     if( strcmp( p2->name, "SongPlay" ) == 0 ) // Play some sweet backround music?
     {
@@ -246,8 +254,8 @@ JNIEnv_GetFieldID(JNIEnv* p0, jclass p1, const char* p2, const char* p3)
 jclass
 JNIEnv_FindClass(JNIEnv* p0, const char* p1)
 {
-    /*if( !strcmp( p1, "com/openfeint/api/OpenFeint" ) == 0 )
-        MODULE_DEBUG_PRINTF("module_JNIEnv_FindClass('%s')\n", p1);*/
+    if( !strcmp( p1, "com/openfeint/api/OpenFeint" ) == 0 )
+        MODULE_DEBUG_PRINTF("module_JNIEnv_FindClass('%s')\n", p1);
     struct dummy_jclass *class = malloc(sizeof(struct dummy_jclass));
     class->name = strdup(p1);
     return class;
@@ -255,6 +263,15 @@ JNIEnv_FindClass(JNIEnv* p0, const char* p1)
 jmethodID
 JNIEnv_GetStaticMethodID(JNIEnv* p0, jclass clazz, const char* name, const char* sig)
 {
+    if (strcmp(name,"isNetworkConnected")==0) {
+        if (fruitninja_priv.isNetworkConnected==0) {
+            fruitninja_priv.isNetworkConnected = malloc(sizeof(struct _jmethodID));
+            fruitninja_priv.isNetworkConnected->clazz = clazz;
+            fruitninja_priv.isNetworkConnected->name = strdup(name);
+            fruitninja_priv.isNetworkConnected->sig = strdup(sig);
+        }
+        return fruitninja_priv.isNetworkConnected;
+    }
     MODULE_DEBUG_PRINTF("module_JNIEnv_GetStaticMethodID(%x, %s, %s)\n", clazz, name, sig);
     jmethodID id = malloc(sizeof(struct _jmethodID));
     id->clazz = clazz;
@@ -266,12 +283,13 @@ jboolean
 JNIEnv_CallStaticBooleanMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
 {
     //struct dummy_jclass *clazz = (struct dummy_jclass*)p1;
-    if( !strcmp( p2->name, "isNetworkConnected" ) == 0 )
+    if( strcmp( p2->name, "isNetworkConnected" ) != 0 ) {
         MODULE_DEBUG_PRINTF("module_JNIEnv_CallStaticBooleanMethodV(%x, %s, %s)\n", p2->clazz, p2->name, p2->sig);
+    }
     return 0;
 }
-jboolean
-JNIEnv_CallStaticIntMethodMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
+jint
+JNIEnv_CallStaticIntMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
 {
     MODULE_DEBUG_PRINTF("module_JNIEnv_CallStaticIntMethodMethodV(%x, %s, %s)\n", p2->clazz, p2->name, p2->sig);
     if (strcmp(p2->name,"GetWifi")==0) return 0;
@@ -281,12 +299,13 @@ JNIEnv_CallStaticIntMethodMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p
 void
 JNIEnv_ExceptionClear(JNIEnv* p0)
 {
-    //MODULE_DEBUG_PRINTF("JNIEnv_ExceptionClear()\n");
+    //MODULE_DEBUG_PRINTF("module_JNIEnv_ExceptionClear()\n");
 }
+
 jthrowable
 JNIEnv_ExceptionOccurred(JNIEnv* p0)
 {
-    //MODULE_DEBUG_PRINTF("JNIEnv_ExceptionOccurred()\n");
+    //MODULE_DEBUG_PRINTF("module_JNIEnv_ExceptionOccurred()\n");
     return NULL;
 }
 
@@ -307,6 +326,7 @@ fruitninja_try_init(struct SupportModule *self)
     self->priv->native_setapplicensed = (fruitninja_setapplicensed_t)LOOKUP_M("_NativeGameLib_native_1SetAppLicensed");
     self->priv->native_initfilemanager = (fruitninja_initfilemanager_t)LOOKUP_M("_NativeGameLib_native_1InitFileManager");
     self->priv->native_initjavasoundmanager = (fruitninja_initjavasoundmanager_t)LOOKUP_M("_NativeGameLib_native_1InitJavaSoundManager");
+    self->priv->isNetworkConnected = 0;
 
     /* override for JNIEnv_ */
     self->override_env.CallStaticObjectMethodV = JNIEnv_CallStaticObjectMethodV;
@@ -319,7 +339,8 @@ fruitninja_try_init(struct SupportModule *self)
     self->override_env.CallStaticBooleanMethodV = JNIEnv_CallStaticBooleanMethodV;
     self->override_env.CallStaticVoidMethodV = JNIEnv_CallStaticVoidMethodV;
     self->override_env.ExceptionOccurred = JNIEnv_ExceptionOccurred;
-    self->override_env.CallStaticIntMethodV = JNIEnv_CallStaticIntMethodMethodV;
+    self->override_env.CallStaticIntMethodV = JNIEnv_CallStaticIntMethodV;
+
 
     return (//self->priv->JNI_OnLoad != NULL &&
             self->priv->native_init != NULL &&
@@ -356,7 +377,7 @@ fruitninja_init(struct SupportModule *self, int width, int height, const char *h
     global->foreach_file("assets/sound", load_sound_callback);
 
     /* Extract files */
-    //global->foreach_file("assets/", extract_files_callback);
+    global->foreach_file("assets/music", extract_files_callback);
 
 #ifdef PANDORA
     sync();
@@ -387,8 +408,6 @@ fruitninja_update(struct SupportModule *self)
 static void
 fruitninja_deinit(struct SupportModule *self)
 {
-    self->priv->native_gamerequestedquit(ENV_M, GLOBAL_M);
-
     if( Mix_PlayingMusic() != 0 ) Mix_FreeMusic( music );
 
     int i;
@@ -415,6 +434,8 @@ fruitninja_resume(struct SupportModule *self)
 static int
 fruitninja_requests_exit(struct SupportModule *self)
 {
+    if (self->priv->native_gamerequestedquit(ENV_M,GLOBAL_M))
+        return 1;
     return 0;
 }
 

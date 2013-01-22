@@ -45,6 +45,11 @@ struct dummy_byte_array {
     long size;
 };
 
+struct dummy_float_array {
+    float *data;
+    long size;
+};
+
 struct dummy_jclass {
     char *name;
 };

@@ -37,6 +37,18 @@
 			<Add option="-DPANDORA" />
 			<Add option="-DAPKENV_DEBUG" />
 		</Compiler>
+		<Linker>
+			<Add library="png12" />
+			<Add library="z" />
+			<Add library="jpeg" />
+		</Linker>
+		<Unit filename="../imagelib/imagelib.h" />
+		<Unit filename="../imagelib/loadjpeg.c">
+			<Option compilerVar="CC" />
+		</Unit>
+		<Unit filename="../imagelib/loadpng.c">
+			<Option compilerVar="CC" />
+		</Unit>
 		<Unit filename="cuttherope.c">
 			<Option compilerVar="CC" />
 		</Unit>

@@ -69,13 +69,13 @@ int GLES_TestError(const char* msg)
 {
     EGLint err = eglGetError();
     if (err!=EGL_SUCCESS) {
-        fprintf(stderr,"EGL ERROR: %x near %s\n",err,msg);
+        fprintf(stderr,"EGL ERROR: 0x%x near %s\n",err,msg);
         return 1;
     }
 
     err = glGetError();
     if(err!=GL_NO_ERROR) {
-        fprintf(stderr,"GL ERROR: %x near %s\n",err,msg);
+        fprintf(stderr,"GL ERROR: 0x%x near %s\n",err,msg);
         return 1;
     }
 
@@ -105,7 +105,7 @@ const char* platform_getdatadirectory()
 
 const char* platform_getmoduledirectory()
 {
-    return "./modules/";
+    return "./modules";
 }
 
 const char* platform_getinstalldirectory()
@@ -207,7 +207,7 @@ int platform_update()
         }
         eglSwapBuffers(data->eglDisplay,data->eglSurface);
 
-        GLES_TestError("eglSwapBuffers");
+       // GLES_TestError("eglSwapBuffers");
 #ifdef APKENV_DEBUG
         // printf("%d swap\n",pthread_self());
 #endif

@@ -78,6 +78,11 @@ static void
 generic_resume(struct SupportModule *self)
 {
 }
+static int
+generic_requests_exit(struct SupportModule *self)
+{
+    return 0;
+}
 
 APKENV_MODULE(generic, MODULE_PRIORITY_GENERIC)
 

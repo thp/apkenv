@@ -67,7 +67,8 @@ typedef void *(*lookup_symbol_t)(const char *method);
 typedef void *(*lookup_lib_symbol_t)(const char *lib, const char *method);
 typedef void (*foreach_file_t)(const char *prefix, apk_for_each_file_callback callback);
 typedef int (*read_file_t)(const char *filename, char **buffer, size_t *size);
-typedef void (*recursive_mkdir_t)(const char* path);
+typedef void (*recursive_mkdir_t)(const char *path);
+typedef void (*patch_symbol_t)(const char *symbol, void *function);
 
 struct JniLibrary {
     struct JniLibrary *next;

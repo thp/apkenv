@@ -3,8 +3,10 @@
 #include <assert.h>
 #ifdef APKENV_DEBUG
 #  define WRAPPERS_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#  define GL_TEST_ERROR if (glGetError()!=GL_NO_ERROR) { printf("GL ERROR near %s\n", __FUNCTION__); }
 #else
 #  define WRAPPERS_DEBUG_PRINTF(...)
+#  define GL_TEST_ERROR
 #endif
 void
 my_glAlphaFunc(GLenum func, GLclampf ref)
@@ -165,7 +167,10 @@ my_glNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 void
 my_glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
 {
-    WRAPPERS_DEBUG_PRINTF("glOrthof()\n", left, right, bottom, top, zNear, zFar);
+    WRAPPERS_DEBUG_PRINTF("glOrthof(%f, %f, %f, %f)\n", left, right, bottom, top, zNear, zFar);
+#ifdef LANDSCAPE_TO_PORTRAIT
+    glRotatef(-90,0,0,1);
+#endif
     glOrthof(left, right, bottom, top, zNear, zFar);
 }
 void
@@ -429,7 +434,7 @@ my_glEnable(GLenum cap)
 void
 my_glEnableClientState(GLenum array)
 {
-    WRAPPERS_DEBUG_PRINTF("glEnableClientState()\n", array);
+    WRAPPERS_DEBUG_PRINTF("glEnableClientState(0x%x)\n", array);
     glEnableClientState(array);
 }
 void
@@ -868,7 +873,11 @@ void
 my_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
     WRAPPERS_DEBUG_PRINTF("glViewport()\n", x, y, width, height);
+#ifdef LANDSCAPE_TO_PORTRAIT
+    glViewport(x, y, height, width);
+#else
     glViewport(x, y, width, height);
+#endif
 }
 void
 my_glPointSizePointerOES(GLenum type, GLsizei stride, const GLvoid *pointer)

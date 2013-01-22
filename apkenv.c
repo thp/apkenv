@@ -321,9 +321,7 @@ void system_exit()
 
 int main(int argc, char **argv)
 {
-#ifdef APKENV_DEBUG
     debug_init();
-#endif
 
     char **tmp;
 
@@ -453,6 +451,9 @@ int main(int argc, char **argv)
 
     module->init(module, platform_getscreenwidth(), platform_getscreenheight(), data_directory);
 
+    int emulate_multitouch = 0;
+    const int emulate_finger_id = 2;
+
     while (1) {
 
         if (module->requests_exit(module)) {
@@ -467,13 +468,34 @@ int main(int argc, char **argv)
                     module->deinit(module);
                     goto finish;
                 }
+#ifdef PANDORA
+                else if (e.key.keysym.sym==SDLK_RSHIFT) {
+                    //emulate_multitouch = 1;
+                    module->input(module,ACTION_DOWN, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
+                }
             }
+            else if (e.type == SDL_KEYUP) {
+                if (e.key.keysym.sym==SDLK_RSHIFT) {
+                    //emulate_multitouch = 0;
+                    module->input(module,ACTION_UP, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
+                }
+            }
+#endif
             else if (e.type == SDL_MOUSEBUTTONDOWN) {
                 module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
+                if (emulate_multitouch) {
+                    module->input(module,ACTION_DOWN, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+                }
             } else if (e.type == SDL_MOUSEBUTTONUP) {
                 module->input(module, ACTION_UP, e.button.x, e.button.y, e.button.which);
+                if (emulate_multitouch) {
+                    module->input(module,ACTION_UP, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+                }
             } else if (e.type == SDL_MOUSEMOTION) {
                 module->input(module, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
+                if (emulate_multitouch) {
+                    module->input(module,ACTION_MOVE, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+                }
             } else if (e.type == SDL_QUIT) {
                 module->deinit(module);
                 goto finish;

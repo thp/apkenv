@@ -17,6 +17,9 @@ MODULES_SOURCES=$(wildcard modules/*.c)
 # Pandora specific stuff
 PANDORA_SOURCES=$(wildcard pandora/*.c)
 
+# segfault catch
+DEBUG_SOURCES=$(wildcard debug/*.c)
+
 TARGET = apkenv
 
 DESTDIR ?= /
@@ -28,6 +31,7 @@ SOURCES += $(LINKER_SOURCES)
 SOURCES += $(COMPAT_SOURCES)
 SOURCES += $(APKLIB_SOURCES)
 SOURCES += $(JNIENV_SOURCES)
+SOURCES += $(DEBUG_SOURCES)
 
 PANDORA ?= 0
 ifeq ($(PANDORA),1)

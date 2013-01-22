@@ -15,7 +15,7 @@
 					<Add option="-g" />
 					<Add option="-DDEBUG=1" />
 					<Add option="-DLINKER_DEBUG=2" />
-					<Add option="-DAPKENV_DEBUG" />
+					<Add option="-DAPKENV_DEBUGx" />
 					<Add option="-DAPKENV_GLES" />
 				</Compiler>
 				<Linker>

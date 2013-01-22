@@ -159,8 +159,8 @@ const char *linker_get_error(void)
  */
 extern void __attribute__((noinline)) rtld_db_dlactivity(void);
 
-static struct r_debug _r_debug = {1, NULL, &rtld_db_dlactivity,
-                                  RT_CONSISTENT, 0};
+//static struct r_debug _r_debug = {1, NULL, &rtld_db_dlactivity,
+//                                  RT_CONSISTENT, 0};
 static struct link_map *r_debug_tail = 0;
 
 static pthread_mutex_t _r_debug_lock = PTHREAD_MUTEX_INITIALIZER;
