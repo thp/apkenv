@@ -42,6 +42,11 @@
 struct GlobalState;
 struct SupportModulePriv;
 
+struct ModuleHacks {
+    int gles_landscape_to_portrait;
+    int gles_downscale_images;
+};
+
 struct SupportModule {
     struct GlobalState *global;
     struct SupportModulePriv *priv;
@@ -95,6 +100,7 @@ struct GlobalState {
 
     struct SupportModule *support_modules;
     struct SupportModule *active_module;
+    struct ModuleHacks *module_hacks;
 
     lookup_symbol_t lookup_symbol;
     lookup_lib_symbol_t lookup_lib_symbol;
@@ -130,6 +136,6 @@ void *android_dlsym(void *handle, const char *symbol);
 typedef int (*apkenv_module_init_t)(int version, struct SupportModule *module);
 #define APKENV_MODULE_INIT "apkenv_module_init"
 #define APKENV_MODULE_SUFFIX ".apkenv.so"
-#define APKENV_MODULE_VERSION 0x010000
+#define APKENV_MODULE_VERSION 0x010001
 
 #endif /* APKENV_H */

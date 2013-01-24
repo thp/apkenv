@@ -13,9 +13,10 @@
 				<Option compiler="pandora_compiler" />
 				<Compiler>
 					<Add option="-g" />
+					<Add option="-rdynamic" />
 					<Add option="-DDEBUG=1" />
 					<Add option="-DLINKER_DEBUG=2" />
-					<Add option="-DAPKENV_DEBUGx" />
+					<Add option="-DAPKENV_DEBUG" />
 					<Add option="-DAPKENV_GLES" />
 				</Compiler>
 				<Linker>
@@ -160,9 +161,11 @@
 			<Option compile="0" />
 			<Option link="0" />
 		</Unit>
+		<Unit filename="pandora/compatibility.txt" />
 		<Unit filename="pandora/platform.c">
 			<Option compilerVar="CC" />
 		</Unit>
+		<Unit filename="pandora/sdlkeys.txt" />
 		<Unit filename="platform.h" />
 		<Extensions>
 			<code_completion />

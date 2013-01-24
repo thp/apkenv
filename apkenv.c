@@ -46,6 +46,7 @@
 
 /* Global application state */
 struct GlobalState global;
+struct ModuleHacks global_module_hacks;
 
 void *
 lookup_symbol_impl(const char *method)
@@ -303,6 +304,8 @@ int system_init()
         return 0;
     }
 
+    gles_extensions_init();
+
     SDL_ShowCursor(0);
 
     return 1;
@@ -333,7 +336,6 @@ int main(int argc, char **argv)
 
     printf("%s\n%s\n\n", global.apkenv_headline, global.apkenv_copyright);
 
-#if 0
     switch (argc) {
         case 2:
             /* One argument - the .apk (continue below) */
@@ -346,13 +348,15 @@ int main(int argc, char **argv)
             /* Wrong number of arguments */
             usage();
     }
-#endif
+
+    memset(&global_module_hacks,0,sizeof(global_module_hacks));
 
     global.lookup_symbol = lookup_symbol_impl;
     global.lookup_lib_symbol = lookup_lib_symbol_impl;
     global.foreach_file = foreach_file_impl;
     global.read_file = read_file_impl;
     global.recursive_mkdir = recursive_mkdir;
+    global.module_hacks = &global_module_hacks;
 
     jnienv_init(&global);
     javavm_init(&global);

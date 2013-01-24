@@ -53,10 +53,11 @@ typedef void (*cuttherope_tick_t)(JNIEnv *env, jobject object, jlong tick) SOFTF
 typedef void (*cuttherope_render_t)(JNIEnv *env, jobject object) SOFTFP;
 typedef void (*cuttherope_videobannerfinished_t)(JNIEnv *env, jobject object) SOFTFP;
 typedef void (*cuttherope_resume_t)(JNIEnv*,jobject) SOFTFP;
+typedef void (*cuttherope_pause_t)(JNIEnv*,jobject) SOFTFP;
 typedef void (*cuttherope_imageloaded_t)(JNIEnv*,jobject,jint p1, jbyteArray p2, jint p3, jint p4) SOFTFP;
 typedef void (*cuttherope_nativetouchadd_t)(JNIEnv *env, jobject p0, jint p1, jint p2, jfloat p3, jfloat p4) SOFTFP;
 typedef void (*cuttherope_nativetouchprocess_t)(JNIEnv *env, jobject p0) SOFTFP;
-typedef void (*cuttherope_nativeplaybackfinished_t)(JNIEnv *env, jobject p0, jint p1);
+typedef void (*cuttherope_nativeplaybackfinished_t)(JNIEnv *env, jobject p0, jint p1) SOFTFP;
 
 
 struct SupportModulePriv {
@@ -67,6 +68,7 @@ struct SupportModulePriv {
     cuttherope_render_t nativeRender;
     cuttherope_videobannerfinished_t videoBannerFinished;
     cuttherope_resume_t nativeResume;
+    cuttherope_pause_t nativePause;
     cuttherope_imageloaded_t imageLoaded;
     cuttherope_nativetouchadd_t nativeTouchAdd;
     cuttherope_nativetouchprocess_t nativeTouchProcess;
@@ -192,6 +194,16 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
 
         char filepath[PATH_MAX]; sprintf(filepath,"assets/%s",filename->data);
 
+#if 0 //def PANDORA
+            // the hd version of the character is too big for the pandora,
+            // so replace it with the normal one (crow_riot)
+            // DNW: texcoords are messed
+            if (strcmp(filename->data,"char_animations_hd.png")==0) {
+                strcpy(filepath,"assets/char_animations.png");
+                return;
+            }
+#endif
+
         if (GLOBAL_J(env)->read_file(filepath, &buf, &buf_size)) {
 
             MODULE_DEBUG_PRINTF("CallVoidMethodV(%s): filename=%s ok\n",p2->name,filename->data);
@@ -203,6 +215,7 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
                 fclose(fp);
 
                 image_t* image = 0;
+
                 if (strstr(filepath,".png")!=0) image = loadpng(filepath,loadsettings);
                 if (strstr(filepath,".jpeg")!=0) image = loadjpeg(filepath,loadsettings);
                 if (image!=0) {
@@ -353,6 +366,7 @@ cuttherope_try_init(struct SupportModule *self)
     self->priv->nativeTick = (cuttherope_tick_t)LOOKUP_M("CtrRenderer_nativeTick");
     self->priv->nativeRender = (cuttherope_render_t)LOOKUP_M("CtrRenderer_nativeRender");
     self->priv->nativeResume = (cuttherope_resume_t)LOOKUP_M("CtrRenderer_nativeResume");
+    self->priv->nativePause = (cuttherope_pause_t)LOOKUP_M("CtrRenderer_nativePause");
     self->priv->imageLoaded = (cuttherope_imageloaded_t)LOOKUP_M("CtrResourceLoader_imageLoaded");
     self->priv->nativeTouchAdd = (cuttherope_nativetouchadd_t)LOOKUP_M("CtrRenderer_nativeTouchAdd");
     self->priv->nativeTouchProcess = (cuttherope_nativetouchprocess_t)LOOKUP_M("CtrRenderer_nativeTouchProcess");
@@ -397,8 +411,10 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
 
 #ifdef PANDORA
     self->priv->nativeResize(ENV_M, GLOBAL_M,  height, width); //$$$ landscape-to-portrait pandora fix
+    self->priv->global->module_hacks->gles_landscape_to_portrait = 1;
+    self->priv->global->module_hacks->gles_downscale_images = 1;
 #else
-    self->priv->nativeResize(ENV_M, GLOBAL_M,  width, height); //$$$ landscape-to-portrait pandora fix
+    self->priv->nativeResize(ENV_M, GLOBAL_M,  width, height);
 #endif
 
     self->priv->nativeInit(ENV_M, GLOBAL_M, resourceLoader, soundManager, preferences,
@@ -412,10 +428,12 @@ static void
 cuttherope_input(struct SupportModule *self, int event, int x, int y, int finger)
 {
 #ifdef PANDORA
-     //$$$ landscape-to-portrait pandora fix
-    x = 800-x;
-    y = y;
-    int tmp = x; x = y; y = tmp;
+    if(self->global->module_hacks->gles_landscape_to_portrait)
+    {
+        x = 800-x;
+        y = y;
+        int tmp = x; x = y; y = tmp;
+    }
 #endif
 
     if (event==ACTION_MOVE) {
@@ -436,6 +454,20 @@ cuttherope_input(struct SupportModule *self, int event, int x, int y, int finger
 static void
 cuttherope_update(struct SupportModule *self)
 {
+#if 0 //def PANDORA
+    Uint8 *keystate = SDL_GetKeyState(NULL);
+    if(keystate[SDLK_SPACE])
+    {
+        self->priv->nativePause(ENV_M,GLOBAL_M);
+        self->global->module_hacks->gles_landscape_to_portrait ^= 1;
+        if (self->global->module_hacks->gles_landscape_to_portrait)
+            self->priv->nativeResize(ENV_M, GLOBAL_M,  480, 800);
+        else
+            self->priv->nativeResize(ENV_M, GLOBAL_M,  320, 480);
+        self->priv->nativeResume(ENV_M,GLOBAL_M);
+    }
+#endif
+
     self->priv->nativeTick(ENV_M, GLOBAL_M, 16);
     self->priv->nativeRender(ENV_M, GLOBAL_M);
 }

@@ -13,6 +13,7 @@
 				<Option compiler="pandora_compiler" />
 				<Compiler>
 					<Add option="-g" />
+					<Add option="-rdynamic" />
 					<Add option="-DAPKENV_DEBUG" />
 				</Compiler>
 			</Target>
