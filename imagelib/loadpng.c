@@ -5,33 +5,56 @@
 #include <stdlib.h>
 #include "imagelib.h"
 
-
-image_t* loadpng( const char *filepath, const imageloadersettings_t settings)
+typedef struct
 {
-    FILE *fp = fopen(filepath,"rb");
-    if (!fp)
-        return NULL;
+    char* data;
+    size_t size;
+    size_t offset;
+} png_memory_buffer;
 
+
+static void png_read_data(png_structp png_ptr, png_bytep outbuffer, png_size_t bytes_to_read)
+{
+   if(png_ptr->io_ptr==NULL)
+      return;
+
+    png_memory_buffer* readbuffer = (png_memory_buffer*)png_ptr->io_ptr;
+
+    if (readbuffer->offset+bytes_to_read>readbuffer->size)
+        return;
+
+    memcpy(outbuffer,readbuffer->data+readbuffer->offset,bytes_to_read);
+
+    readbuffer->offset += bytes_to_read;
+}
+
+
+image_t* loadpng_mem( char* buffer, size_t size, const imageloadersettings_t settings )
+{
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL,NULL,NULL);
     if ( !png_ptr ) {
-        fclose(fp);
         return NULL;
     }
 
     png_infop info = png_create_info_struct(png_ptr);
     if ( !info ) {
         png_destroy_read_struct(&png_ptr, NULL, NULL);
-        fclose(fp);
         return NULL;
     }
 
     if ( setjmp(png_jmpbuf(png_ptr)) ) {
         png_destroy_read_struct(&png_ptr, &info, NULL);
-        fclose(fp);
         return NULL;
     }
 
-    png_init_io(png_ptr,fp);
+    png_memory_buffer membuffer = {
+        .data = buffer,
+        .size = size,
+        .offset = 0
+    };
+
+    //png_init_io(png_ptr,fp);
+    png_set_read_fn(png_ptr,&membuffer,png_read_data);
     png_set_sig_bytes(png_ptr,0);
 
 
@@ -60,7 +83,6 @@ image_t* loadpng( const char *filepath, const imageloadersettings_t settings)
     }
 
     if ( bytepp==0 ) {
-        fclose(fp);
         png_destroy_read_struct(&png_ptr, &info, NULL);
         return NULL;
     }
@@ -139,7 +161,27 @@ image_t* loadpng( const char *filepath, const imageloadersettings_t settings)
     }
 
     png_destroy_read_struct(&png_ptr, &info, NULL);
+
+    return image;
+}
+
+
+image_t* loadpng_disk( const char *filepath, const imageloadersettings_t settings)
+{
+    FILE *fp = fopen(filepath,"rb");
+    if (!fp)
+        return NULL;
+
+    fseek(fp,0,SEEK_END);
+    size_t size = ftell(fp);
+    fseek(fp,0,SEEK_SET);
+
+    char* buf = malloc(sizeof(char)*size);
+    fread(buf,size,1,fp);
     fclose(fp);
+
+    image_t *image = loadpng_mem(buf,size,settings);
+    free(buf);
 
     return image;
 }

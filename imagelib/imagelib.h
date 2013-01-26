@@ -3,6 +3,8 @@
 
 /// image lib, (c) crow_riot 2013
 
+#include <stddef.h>
+
 
 typedef struct {
     unsigned char* data;
@@ -26,11 +28,17 @@ typedef struct {
 
 
 /// load png from disk
-image_t* loadpng(const char *filename, const imageloadersettings_t settings);
+image_t* loadpng_disk(const char *filename, const imageloadersettings_t settings);
+
+/// load png from memory
+image_t* loadpng_mem(char* buf, size_t size, const imageloadersettings_t settings);
 
 /// load jpeg from disk
 /// please not that only rgb jpeg images are suported by the loader, no color indexed ones!
-image_t* loadjpeg(const char *filename, const imageloadersettings_t settings);
+image_t* loadjpeg_disk(const char *filename, const imageloadersettings_t settings);
+
+/// load jpeg from memory
+image_t* loadjpeg_mem(char* buf, size_t size, const imageloadersettings_t settings);
 
 
 #endif
