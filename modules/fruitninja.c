@@ -86,7 +86,7 @@ typedef struct
     Mix_Chunk *sound;
 } SFXInfo;
 
-SFXInfo SFX[MAX_SOUNDS];
+SFXInfo SFX[MAX_SOUNDS+1]; //<bugfix, MAX_SOUNDS loops are <= (crow_riot)
 int SoundCount = 0;
 
 //The music that will be played
