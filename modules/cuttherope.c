@@ -69,9 +69,9 @@ typedef struct {
 
 #define MAX_IMAGES 200
 typedef struct {
-    char* name;
+    char filename[PATH_MAX];
     jint id;
-    image_t image;
+    image_t* image;
 } Image;
 
 
@@ -262,6 +262,57 @@ cuttherope_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
     return GLOBAL_J(env);
 }
 
+static image_t*
+cuttherope_loadImage(JNIEnv *env, const char *filename )
+{
+    int i;
+    Image* img = 0;
+    for (i=0; i<MAX_IMAGES;i++) {
+        img = &cuttherope_priv.images[i];
+        if (img->filename==0 || img->filename[0]==0) {
+            break;
+        }
+        if (strcmp(img->filename,filename)==0) {
+            MODULE_DEBUG_PRINTF("cuttherope_loadImage: returning cached image %s\n",filename);
+            return img->image;
+        }
+    }
+
+    if (i>=MAX_IMAGES) {
+        MODULE_DEBUG_PRINTF("cuttherope_loadImage: Images exceeding limits: %s\n",filename);
+        return NULL;
+    }
+
+    strcpy(img->filename,filename);
+    img->image = NULL;
+
+    char *buf;
+    size_t buf_size;
+    char filepath[PATH_MAX]; sprintf(filepath,"assets/%s",filename);
+
+    if (GLOBAL_J(env)->read_file(filepath, &buf, &buf_size)) {
+
+        imageloadersettings_t loadsettings =
+        {
+            .swapy = 0,
+            .forcergba = 1,
+            .alpha = 255,
+            .swaprb = 1,
+        };
+
+        image_t* image = 0;
+        if (strstr(filepath,".png")!=0) {
+            img->image = loadpng_mem(buf,buf_size,loadsettings);
+        }
+        else
+        if (strstr(filepath,".jpeg")!=0) {
+            img->image = loadjpeg_mem(buf,buf_size,loadsettings);
+        }
+    }
+
+    return img->image;
+}
+
 static void
 cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
 {
@@ -272,40 +323,15 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
 
     if (strcmp(p2->name,"loadImage")==0) {//public void loadImage(String paramString, int paramInt)
 
-        imageloadersettings_t loadsettings =
-        {
-            .swapy = 0,
-            .forcergba = 1,
-            .alpha = 255,
-            .swaprb = 1,
-        };
-
         struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
         jint fileId =  va_arg(p3, jint);
 
-
         MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): filename=%s fileId=%d\n",p2->name,filename->data,fileId);
 
-        char *buf;
-        size_t buf_size;
-
-        char filepath[PATH_MAX]; sprintf(filepath,"assets/%s",filename->data);
-
-        if (GLOBAL_J(env)->read_file(filepath, &buf, &buf_size)) {
-
-            MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): filename=%s ok\n",p2->name,filename->data);
-            image_t* image = 0;
-            if (strstr(filepath,".png")!=0) {
-                image = loadpng_mem(buf,buf_size,loadsettings);
-            }
-            else
-            if (strstr(filepath,".jpeg")!=0) {
-                image = loadjpeg_mem(buf,buf_size,loadsettings);
-            }
-            if (image!=NULL) {
-                MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): imageLoaded=%s (%d,%d,%d) (%x)\n",p2->name,filename->data,image->width,image->height,image->bpp,image);
-                cuttherope_priv.imageLoaded(ENV(cuttherope_priv.global),cuttherope_priv.global,fileId,image,image->width,image->height);
-            }
+        image_t *image = cuttherope_loadImage(env,filename->data);
+        if (image!=NULL) {
+            MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): imageLoaded=%s (%d,%d,%d) (%x)\n",p2->name,filename->data,image->width,image->height,image->bpp,image);
+            cuttherope_priv.imageLoaded(ENV(cuttherope_priv.global),cuttherope_priv.global,fileId,image,image->width,image->height);
         }
     }
     else
@@ -619,12 +645,16 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
     void *billingInterface = (void*)0xF07;
     void *remoteDataManager = (void*)0xF08;
 
+    memset(self->priv->images,0,sizeof(self->priv->images));
 
     self->priv->JNI_OnLoad(VM_M, NULL);
 
 #ifdef PANDORA
-    self->priv->nativeResize(ENV_M, GLOBAL_M,  height, width); //$$$ landscape-to-portrait pandora fix
     self->priv->global->module_hacks->gles_landscape_to_portrait = 1;
+    if (self->priv->global->module_hacks->gles_landscape_to_portrait)
+        self->priv->nativeResize(ENV_M, GLOBAL_M,  height, width);
+    else
+        self->priv->nativeResize(ENV_M, GLOBAL_M,  width, height);
     self->priv->global->module_hacks->gles_downscale_images = 1;
 #else
     self->priv->nativeResize(ENV_M, GLOBAL_M,  width, height);
