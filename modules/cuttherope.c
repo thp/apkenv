@@ -35,7 +35,7 @@
 #include "common.h"
 #include "../imagelib/imagelib.h"
 #include <linux/limits.h>
-
+#include <sys/stat.h>
 
 #ifdef APKENV_DEBUG
 #  define MODULE_DEBUG_PRINTF(...) printf(__VA_ARGS__)
@@ -44,6 +44,8 @@
 #endif
 
 #include <SDL/SDL.h>
+#include <SDL/SDL_mixer.h>
+
 
 typedef void (*cuttherope_init_t)(JNIEnv *env, jobject obj, jobject resourceLoader, jobject soundManager, jobject preferences,
             jobject saveManager, jobject flurry, jobject videoPlayer, jobject scorer,
@@ -58,6 +60,27 @@ typedef void (*cuttherope_imageloaded_t)(JNIEnv*,jobject,jint p1, jbyteArray p2,
 typedef void (*cuttherope_nativetouchadd_t)(JNIEnv *env, jobject p0, jint p1, jint p2, jfloat p3, jfloat p4) SOFTFP;
 typedef void (*cuttherope_nativetouchprocess_t)(JNIEnv *env, jobject p0) SOFTFP;
 typedef void (*cuttherope_nativeplaybackfinished_t)(JNIEnv *env, jobject p0, jint p1) SOFTFP;
+
+#define MAX_SOUNDS 256
+typedef struct {
+    char* name;
+    Mix_Chunk* sound;
+} Sound;
+
+#define MAX_IMAGES 200
+typedef struct {
+    char* name;
+    jint id;
+    image_t image;
+} Image;
+
+
+#define KEY_SIZE 64
+#define MAX_KEYVALUES 1024
+typedef struct {
+    char key[KEY_SIZE];
+    int value;
+} KeyValue;
 
 
 struct SupportModulePriv {
@@ -75,6 +98,11 @@ struct SupportModulePriv {
     cuttherope_nativeplaybackfinished_t nativePlaybackFinished;
     struct GlobalState *global;
     const char* home;
+    Sound sounds[MAX_SOUNDS];
+    Image images[MAX_IMAGES];
+    Mix_Music* music;
+    char musicpath[PATH_MAX];
+    KeyValue keyvalues[MAX_KEYVALUES];
 };
 static struct SupportModulePriv cuttherope_priv;
 
@@ -87,6 +115,74 @@ cuttherope_video_banner_finished()
     }
 }
 
+static KeyValue*
+get_preference(const char* key, int create) {
+    int i;
+    for (i=0; i<MAX_KEYVALUES; i++) {
+        KeyValue* kv = &cuttherope_priv.keyvalues[i];
+        if (kv->key[0]==0)
+            break;
+        if (strcmp(kv->key,key)==0) {
+            return kv;
+        }
+    }
+    if (create!=0) {
+        if (i<MAX_KEYVALUES) {
+            KeyValue* kv = &cuttherope_priv.keyvalues[i];
+            strcpy(kv->key,key);
+            kv->value = 0;
+            return kv;
+        }
+    }
+    return NULL;
+}
+
+#define PREFERENCES_FILENAME "preferences.dat"
+
+static void
+load_preferences()
+{
+    int i;
+    char tmp[PATH_MAX];
+    strcpy(tmp,cuttherope_priv.home);
+    strcat(tmp,PREFERENCES_FILENAME);
+
+    memset(cuttherope_priv.keyvalues,0,sizeof(cuttherope_priv.keyvalues));
+
+    FILE* fp = fopen(tmp,"rb");
+    if (!fp)
+        return;
+
+    for (i=0; i<MAX_KEYVALUES;i++) {
+        KeyValue kv;
+        if(fread(&kv,sizeof(KeyValue),1,fp)!=1)
+            break;
+        cuttherope_priv.keyvalues[i] = kv;
+        MODULE_DEBUG_PRINTF("Loaded key=%s value=%d\n",kv.key,kv.value);
+    }
+    fclose(fp);
+}
+
+static void
+save_preferences()
+{
+    int i;
+    char tmp[PATH_MAX];
+    strcpy(tmp,cuttherope_priv.home);
+    strcat(tmp,PREFERENCES_FILENAME);
+
+    FILE* fp = fopen(tmp,"wb");
+    if (!fp)
+        return;
+    for (i=0; i<MAX_KEYVALUES;i++) {
+        KeyValue *kv = &cuttherope_priv.keyvalues[i];
+        if(kv->key[0]==0)
+            break;
+        fwrite(kv,sizeof(KeyValue),1,fp);
+    }
+    fclose(fp);
+    sync();
+}
 
 static jobject
 cuttherope_CallObjectMethodV(JNIEnv *, jobject, jmethodID, va_list) SOFTFP;
@@ -187,56 +283,58 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
         struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
         jint fileId =  va_arg(p3, jint);
 
-        MODULE_DEBUG_PRINTF("CallVoidMethodV(%s): filename=%s fileId=%d\n",p2->name,filename->data,fileId);
+
+        MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): filename=%s fileId=%d\n",p2->name,filename->data,fileId);
 
         char *buf;
         size_t buf_size;
 
         char filepath[PATH_MAX]; sprintf(filepath,"assets/%s",filename->data);
 
-#if 0 //def PANDORA
-            // the hd version of the character is too big for the pandora,
-            // so replace it with the normal one (crow_riot)
-            // DNW: texcoords are messed
-            if (strcmp(filename->data,"char_animations_hd.png")==0) {
-                strcpy(filepath,"assets/char_animations.png");
-                return;
-            }
-#endif
-
         if (GLOBAL_J(env)->read_file(filepath, &buf, &buf_size)) {
 
-            MODULE_DEBUG_PRINTF("CallVoidMethodV(%s): filename=%s ok\n",p2->name,filename->data);
-
-            sprintf(filepath,"%s/%s",cuttherope_priv.home,filename->data);
-            FILE *fp =fopen(filepath,"wb");
-            if (fp!=0) {
-                fwrite(buf, buf_size, 1, fp);
-                fclose(fp);
-
-                image_t* image = 0;
-
-                if (strstr(filepath,".png")!=0) image = loadpng(filepath,loadsettings);
-                if (strstr(filepath,".jpeg")!=0) image = loadjpeg(filepath,loadsettings);
-                if (image!=0) {
-
-                    MODULE_DEBUG_PRINTF("CallVoidMethodV(%s): imageLoaded=%s (%d,%d,%d) (%x)\n",p2->name,filename->data,image->width,image->height,image->bpp,image);
-
-                    cuttherope_priv.imageLoaded(ENV(cuttherope_priv.global),cuttherope_priv.global,fileId,image,image->width,image->height);
-                }
+            MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): filename=%s ok\n",p2->name,filename->data);
+            image_t* image = 0;
+            if (strstr(filepath,".png")!=0) {
+                image = loadpng_mem(buf,buf_size,loadsettings);
+            }
+            else
+            if (strstr(filepath,".jpeg")!=0) {
+                image = loadjpeg_mem(buf,buf_size,loadsettings);
+            }
+            if (image!=NULL) {
+                MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): imageLoaded=%s (%d,%d,%d) (%x)\n",p2->name,filename->data,image->width,image->height,image->bpp,image);
+                cuttherope_priv.imageLoaded(ENV(cuttherope_priv.global),cuttherope_priv.global,fileId,image,image->width,image->height);
             }
         }
     }
     else
-    if (strcmp(p2->name,"loadSound")==0) {  //public void loadSound(String paramString, int paramInt)
+    if (strcmp(p2->name,"loadSound")==0) {
+        char filepath[PATH_MAX];
         struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
-        jint paramInt =  va_arg(p3, jint);
+        jint soundId =  va_arg(p3, jint);
 
-        MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): filename=%s param=%d\n",p2->name,filename->data,paramInt);
+        MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): filename=%s id=%d\n",p2->name,filename->data,soundId);
 
+        if (soundId>=MAX_SOUNDS) {
+            MODULE_DEBUG_PRINTF("loadSound id=%d exceeding limits \n",soundId,MAX_SOUNDS);
+        }
+        else
+        if (cuttherope_priv.sounds[soundId].sound==0) {
+            sprintf(filepath,"assets/%s",filename->data);
+
+            char* buffer;
+            size_t size;
+            if (GLOBAL_J(env)->read_file(filepath,&buffer,&size)) {
+                SDL_RWops *rw = SDL_RWFromMem(buffer, size);
+                Mix_Chunk *sound = Mix_LoadWAV_RW(rw, 1);
+                cuttherope_priv.sounds[soundId].sound = sound;
+                MODULE_DEBUG_PRINTF("loadSound id=%d %s.\n",soundId,sound?"ok":"failed");
+            }
+        }
     }
     else
-    if ( strcmp(p2->name, "showBanner") == 0) {
+    if (strcmp(p2->name, "showBanner")==0) {
         cuttherope_video_banner_finished();
     }
     else
@@ -248,6 +346,52 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
         if (cuttherope_priv.nativePlaybackFinished)
             cuttherope_priv.nativePlaybackFinished(ENV(cuttherope_priv.global),
                     cuttherope_priv.global,paramInt);
+    }
+    else
+    if (strcmp(p2->name,"playSoundLooped")==0) {
+        //playSoundLooped(int paramInt, boolean paramBoolean)
+        jint soundId = va_arg(p3,jint);
+        jboolean loop = va_arg(p3,jint);
+
+        if (soundId>=0 && soundId<MAX_SOUNDS && cuttherope_priv.sounds[soundId].sound!=0) {
+            MODULE_DEBUG_PRINTF("playSoundLooped id=%d loop=%d\n",soundId,loop);
+
+            Mix_PlayChannel(-1,cuttherope_priv.sounds[soundId].sound,loop);
+        }
+    }
+    else
+    if (strcmp(p2->name,"playMusic")==0) {
+        struct dummy_jstring *filename = va_arg(p3,struct dummy_jstring*);
+        MODULE_DEBUG_PRINTF("playMusic: filename=%s\n", filename->data);
+
+        char musicpath[PATH_MAX];
+        strcpy(musicpath,cuttherope_priv.home);
+        strcat(musicpath,filename->data);
+
+        if (strcmp(cuttherope_priv.musicpath,musicpath)!=0) {
+            if (cuttherope_priv.music!=NULL) {
+                Mix_HaltMusic();
+                Mix_FreeMusic(cuttherope_priv.music);
+            }
+            cuttherope_priv.music = Mix_LoadMUS(musicpath);
+            Mix_PlayMusic(cuttherope_priv.music,-1);
+        }
+    }
+    else
+    if (strcmp(p2->name,"stopMusic")==0) {
+        if(cuttherope_priv.music!=NULL) {
+            Mix_HaltMusic();
+        }
+    }
+    else
+    if (strcmp(p2->name,"setIntforKey")==0 || strcmp(p2->name,"setBooleanforKey")==0) {
+        struct dummy_jstring *key = va_arg(p3,struct dummy_jstring*);
+        jint value = va_arg(p3,jint);
+        KeyValue* kv = get_preference(key->data,1);
+        if (kv!=0) {
+            kv->value = value;
+        }
+        MODULE_DEBUG_PRINTF("set*forKey=%s value=%d\n",key->data, value);
     }
 }
 
@@ -270,23 +414,40 @@ cuttherope_CallStaticObjectMethodV(JNIEnv *env, jclass p1, jmethodID p2, va_list
     return NULL;
 }
 
-
 static jint
 cuttherope_CallIntMethodV(JNIEnv* p0, jobject p1, jmethodID p2, va_list p3)
 {
-    //MODULE_DEBUG_PRINTF("JNIEnv_CallIntMethodV(%s)\n",p2->name);
+    MODULE_DEBUG_PRINTF("cuttherope_CallIntMethodV(%s)\n",p2->name);
+
     if (strcmp(p2->name,"getIntForKey")==0) {
         struct dummy_jstring *arg;
         arg = va_arg(p3, struct dummy_jstring*);
-        MODULE_DEBUG_PRINTF("   key=%s\n",arg->data);
+        MODULE_DEBUG_PRINTF("getIntForKey: key=%s\n",arg->data);
 
-        if (strstr(arg->data,"UNLOCKED_")!=0)
-            return 1;
-        if (strstr(arg->data,"STARS_")!=0)
-            return 3;
-        if (strstr(arg->data,"SCORE_")!=0)
-            return 1;
+        KeyValue *kv = get_preference(arg->data,0);
+        if (kv!=0) {
+            MODULE_DEBUG_PRINTF("getIntForKey: key=%s -> %d\n",arg->data,kv->value);
+            return kv->value;
+        }
     }
+    return 0;
+}
+static jboolean
+cuttherope_CallBooleanMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
+{
+    MODULE_DEBUG_PRINTF("cuttherope_CallBooleanMethodV(%s)\n",p2->name);
+
+    if (strcmp(p2->name,"getBooleanForKey")==0) {
+        struct dummy_jstring *arg;
+        arg = va_arg(p3, struct dummy_jstring*);
+        MODULE_DEBUG_PRINTF("getBooleanForKey: key=%s\n",arg->data);
+
+        KeyValue *kv = get_preference(arg->data,0);
+        if (kv!=0) {
+            return kv->value;
+        }
+    }
+
     return 0;
 }
 
@@ -297,6 +458,30 @@ cuttherope_GetDirectBufferAddress(JNIEnv* p0, jobject p1)
     image_t *img = p1;
     return img->data;
 }
+
+static void
+extract_music_callback(const char *filename, char *buffer, size_t size)
+{
+    if (strstr(filename,"music")==0)
+        return;
+
+    MODULE_DEBUG_PRINTF("extract_music_callback: filename=%s\n", filename);
+
+    char* fname = strrchr(filename,'/')+1;
+
+    char tmp[PATH_MAX];
+    strcpy(tmp, cuttherope_priv.home);
+    strcat(tmp, fname);
+
+    struct stat st;
+    if (stat(tmp,&st)<0) { //dont write of not necessary ... be nice the NAND/SD card :)
+        MODULE_DEBUG_PRINTF("extract_music_callback: Extract file to: %s\n", tmp);
+        FILE *my_file = fopen(tmp, "wb");
+        fwrite(buffer, size, 1, my_file);
+        fclose(my_file);
+    }
+}
+
 
 
 static int
@@ -379,13 +564,14 @@ cuttherope_try_init(struct SupportModule *self)
     self->override_env.CallStaticObjectMethodV = cuttherope_CallStaticObjectMethodV;
     self->override_env.CallIntMethodV = cuttherope_CallIntMethodV;
     self->override_env.GetDirectBufferAddress = cuttherope_GetDirectBufferAddress;
+    self->override_env.CallBooleanMethodV = cuttherope_CallBooleanMethodV;
 
     return (self->priv->JNI_OnLoad != NULL &&
             self->priv->nativeInit != NULL &&
             self->priv->nativeResize != NULL &&
             self->priv->nativeTick != NULL &&
             self->priv->nativeRender != NULL &&
-            //self->priv->imageLoaded != NULL &&
+            self->priv->imageLoaded != NULL &&
             self->priv->nativeTouchAdd != NULL &&
             self->priv->nativeTouchProcess != NULL &&
             self->priv->nativePlaybackFinished != NULL
@@ -395,6 +581,34 @@ cuttherope_try_init(struct SupportModule *self)
 static void
 cuttherope_init(struct SupportModule *self, int width, int height, const char *home)
 {
+    // home is req. in extract callback
+    self->priv->home = strdup(home);
+
+    // init sound stuff
+    Mix_Init(MIX_INIT_OGG);
+
+    int audio_rate = 22050;
+    uint16_t audio_format = AUDIO_S16SYS;
+    int audio_channels = 2;
+    int audio_buffers = 1024;
+
+    if(Mix_OpenAudio(audio_rate,audio_format,audio_channels,audio_buffers)<0)
+    {
+        printf("Mix_OpenAudio failed %s.\n",Mix_GetError());
+        exit(-1);
+    }
+
+    Mix_AllocateChannels(16);
+
+    memset(self->priv->sounds,0,sizeof(self->priv->sounds));
+    self->priv->music = NULL;
+    self->priv->musicpath[0] = 0;
+
+    GLOBAL_M->foreach_file("assets/", extract_music_callback);
+
+    load_preferences();
+
+    // init the game
     void *resourceLoader = (void*)0xF00;
     void *soundManager = (void*)0xF01;
     void *preferences = (void*)0xF02;
@@ -405,7 +619,6 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
     void *billingInterface = (void*)0xF07;
     void *remoteDataManager = (void*)0xF08;
 
-    self->priv->home = strdup(home);
 
     self->priv->JNI_OnLoad(VM_M, NULL);
 
@@ -430,9 +643,9 @@ cuttherope_input(struct SupportModule *self, int event, int x, int y, int finger
 #ifdef PANDORA
     if(self->global->module_hacks->gles_landscape_to_portrait)
     {
-        x = 800-x;
-        y = y;
-        int tmp = x; x = y; y = tmp;
+        int tmpx = x;
+        x = y;
+        y = 800-tmpx;
     }
 #endif
 
@@ -454,20 +667,6 @@ cuttherope_input(struct SupportModule *self, int event, int x, int y, int finger
 static void
 cuttherope_update(struct SupportModule *self)
 {
-#if 0 //def PANDORA
-    Uint8 *keystate = SDL_GetKeyState(NULL);
-    if(keystate[SDLK_SPACE])
-    {
-        self->priv->nativePause(ENV_M,GLOBAL_M);
-        self->global->module_hacks->gles_landscape_to_portrait ^= 1;
-        if (self->global->module_hacks->gles_landscape_to_portrait)
-            self->priv->nativeResize(ENV_M, GLOBAL_M,  480, 800);
-        else
-            self->priv->nativeResize(ENV_M, GLOBAL_M,  320, 480);
-        self->priv->nativeResume(ENV_M,GLOBAL_M);
-    }
-#endif
-
     self->priv->nativeTick(ENV_M, GLOBAL_M, 16);
     self->priv->nativeRender(ENV_M, GLOBAL_M);
 }
@@ -475,6 +674,9 @@ cuttherope_update(struct SupportModule *self)
 static void
 cuttherope_deinit(struct SupportModule *self)
 {
+    Mix_CloseAudio();
+
+    save_preferences();
 }
 
 static void
