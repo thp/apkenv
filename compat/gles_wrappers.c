@@ -215,7 +215,6 @@ my_glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zN
 {
     WRAPPERS_DEBUG_PRINTF("glOrthof(%f, %f, %f, %f)\n", left, right, bottom, top, zNear, zFar);
     if (global_module_hacks.gles_landscape_to_portrait!=0) {
-        glLoadIdentity();
         glRotatef(-90,0,0,1);
     }
     glOrthof(left, right, bottom, top, zNear, zFar);
@@ -247,7 +246,7 @@ my_glPolygonOffset(GLfloat factor, GLfloat units)
 void
 my_glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-    WRAPPERS_DEBUG_PRINTF("glRotatef()\n", angle, x, y, z);
+    WRAPPERS_DEBUG_PRINTF("glRotatef(%f,%f,%f,%f)\n", angle, x, y, z);
     glRotatef(angle, x, y, z);
 }
 void
@@ -781,8 +780,9 @@ my_glPushMatrix()
 void
 my_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels)
 {
-    WRAPPERS_DEBUG_PRINTF("glReadPixels()\n", x, y, width, height, format, type, pixels);
-    glReadPixels(x, y, width, height, format, type, pixels);
+    WRAPPERS_DEBUG_PRINTF("glReadPixels(%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", x, y, width, height, format, type, pixels);
+    if (global_module_hacks.gles_no_readpixels==0)
+        glReadPixels(x, y, width, height, format, type, pixels);
 }
 void
 my_glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z)
@@ -876,7 +876,7 @@ my_glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width,
 
     int downscale = global_module_hacks.gles_downscale_images && (width>=maxsize || height>=maxsize);
 
-    if ( downscale && format==GL_RGBA && type==GL_UNSIGNED_SHORT_4_4_4_4 )
+    if ( downscale && format==GL_RGBA && (type==GL_UNSIGNED_SHORT_4_4_4_4 || type==GL_UNSIGNED_SHORT_5_6_5) )
     {
         int x,y;
         GLushort* src = (GLushort*)pixels;
@@ -922,7 +922,7 @@ my_glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width,
     else
     {
         if (downscale)
-            WRAPPERS_DEBUG_PRINTF("downlscale unsupported/glTexImage2D(0x%x,%d,%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", target, level, internalformat, width, height, border, format, type, pixels);
+            WRAPPERS_DEBUG_PRINTF("downscale unsupported/glTexImage2D(0x%x,%d,%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", target, level, internalformat, width, height, border, format, type, pixels);
         else
             WRAPPERS_DEBUG_PRINTF("glTexImage2D(0x%x,%d,%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", target, level, internalformat, width, height, border, format, type, pixels);
 
@@ -974,9 +974,9 @@ my_glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointe
 void
 my_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
-    WRAPPERS_DEBUG_PRINTF("glViewport()\n", x, y, width, height);
+    WRAPPERS_DEBUG_PRINTF("glViewport(%d, %d, %d, %d)\n", x, y, width, height);
     if (global_module_hacks.gles_landscape_to_portrait!=0) {
-        glViewport(x, y, height, width);
+        glViewport(y, x, height, width);
     } else {
         glViewport(x, y, width, height);
     }

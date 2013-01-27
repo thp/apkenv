@@ -278,9 +278,11 @@ cuttherope_loadImage(JNIEnv *env, const char *filename )
         }
     }
 
+    Image nocache;
     if (i>=MAX_IMAGES) {
         MODULE_DEBUG_PRINTF("cuttherope_loadImage: Images exceeding limits: %s\n",filename);
-        return NULL;
+        //return NULL;
+        img = &nocache; //dont cache
     }
 
     strcpy(img->filename,filename);
@@ -650,12 +652,10 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
     self->priv->JNI_OnLoad(VM_M, NULL);
 
 #ifdef PANDORA
-    self->priv->global->module_hacks->gles_landscape_to_portrait = 1;
-    if (self->priv->global->module_hacks->gles_landscape_to_portrait)
-        self->priv->nativeResize(ENV_M, GLOBAL_M,  height, width);
-    else
-        self->priv->nativeResize(ENV_M, GLOBAL_M,  width, height);
+    self->priv->nativeResize(ENV_M, GLOBAL_M,  height, width);
     self->priv->global->module_hacks->gles_downscale_images = 1;
+    self->priv->global->module_hacks->gles_landscape_to_portrait = 1;
+    self->priv->global->module_hacks->gles_no_readpixels = 1;
 #else
     self->priv->nativeResize(ENV_M, GLOBAL_M,  width, height);
 #endif
