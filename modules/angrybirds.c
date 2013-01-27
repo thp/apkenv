@@ -146,12 +146,18 @@ JNIEnv_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
         strcpy(tmp, "assets/");
         strcat(tmp, str->data);
 
+#ifdef PANDORA
+        if (strcmp(str->data,"data/bundleIndex.idx")==0) //ignore this file, it segfaults but the games still work afterwards
+            return NULL;
+#endif
+
         size_t file_size;
         struct dummy_byte_array *result = malloc(sizeof(struct dummy_byte_array));
 
         global->read_file(tmp, &result->data, &file_size);
 
         result->size = file_size;
+        MODULE_DEBUG_PRINTF("angrybirds_readFile: %s -> %x\n", str->data, result);
         return result;
     }
     return NULL;
@@ -169,16 +175,16 @@ JNIEnv_DeleteLocalRef(JNIEnv* p0, jobject p1)
     free(p1);
 }
 
-static int first = 1;
+
 jsize
 JNIEnv_GetArrayLength(JNIEnv* env, jarray p1)
 {
     MODULE_DEBUG_PRINTF("JNIEnv_GetArrayLength(%x)\n", p1);
-    if (first) { //dunno why but the first call to GetArrayLength is done with some invalid array. so we just skip that (crow_riot)
-        first = 0;
-        return 0;
-    }
+
     if (p1 != GLOBAL_J(env)) {
+
+        //if(access_ok())
+
         struct dummy_byte_array *array = p1;
         MODULE_DEBUG_PRINTF("JNIEnv_GetArrayLength(%x) -> %d\n", p1, array->size);
         return array->size;
