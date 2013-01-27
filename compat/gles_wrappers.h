@@ -518,4 +518,11 @@ void
 my_glMultiDrawArraysEXT(GLenum mode, GLint *first, GLsizei *count, GLsizei primcount) SOFTFP;
 void
 my_glMultiDrawElementsEXT(GLenum mode, const GLsizei *count, GLenum type, const GLvoid **indices, GLsizei primcount) SOFTFP;
+
+
+///
+void
+gles_extensions_init();
+
+
 #endif /* APKENV_GLES */

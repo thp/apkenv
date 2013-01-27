@@ -45,6 +45,11 @@ struct dummy_byte_array {
     long size;
 };
 
+struct dummy_float_array {
+    float *data;
+    long size;
+};
+
 struct dummy_jclass {
     char *name;
 };
@@ -54,6 +59,8 @@ struct _jmethodID {
     char *name;
     char *sig;
 };
+
+#define _jfieldID _jmethodID
 
 jint JNIEnv_GetVersion(JNIEnv *p0) SOFTFP;
 jclass JNIEnv_DefineClass(JNIEnv *p0, const char *p1, jobject p2, const jbyte *p3, jsize p4) SOFTFP;

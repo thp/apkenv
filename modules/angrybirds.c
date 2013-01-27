@@ -30,7 +30,7 @@
 
 /**
  * Angry Birds Space support module 0.6 - By: Arto Rusanen
- * 
+ *
  **/
 
 #ifdef APKENV_DEBUG
@@ -120,7 +120,7 @@ JNIEnv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
         desired->freq = va_arg(p3, int);
         desired->channels = va_arg(p3, int);
         desired->format = AUDIO_S16SYS;
-        jint bitrate = va_arg(p3, int); 
+        jint bitrate = va_arg(p3, int);
         desired->samples = va_arg(p3, int) / 8;
         desired->callback=my_audio_callback;
         desired->userdata=NULL;
@@ -146,12 +146,18 @@ JNIEnv_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
         strcpy(tmp, "assets/");
         strcat(tmp, str->data);
 
+#ifdef PANDORA
+        if (strcmp(str->data,"data/bundleIndex.idx")==0) //ignore this file, it segfaults but the games still work afterwards
+            return NULL;
+#endif
+
         size_t file_size;
-	struct dummy_byte_array *result = malloc(sizeof(struct dummy_byte_array));
+        struct dummy_byte_array *result = malloc(sizeof(struct dummy_byte_array));
 
         global->read_file(tmp, &result->data, &file_size);
 
         result->size = file_size;
+        MODULE_DEBUG_PRINTF("angrybirds_readFile: %s -> %x\n", str->data, result);
         return result;
     }
     return NULL;
@@ -168,6 +174,24 @@ JNIEnv_DeleteLocalRef(JNIEnv* p0, jobject p1)
     }
     free(p1);
 }
+
+
+jsize
+JNIEnv_GetArrayLength(JNIEnv* env, jarray p1)
+{
+    MODULE_DEBUG_PRINTF("JNIEnv_GetArrayLength(%x)\n", p1);
+
+    if (p1 != GLOBAL_J(env)) {
+
+        //if(access_ok())
+
+        struct dummy_byte_array *array = p1;
+        MODULE_DEBUG_PRINTF("JNIEnv_GetArrayLength(%x) -> %d\n", p1, array->size);
+        return array->size;
+    }
+    return 0;
+}
+
 
 static int
 angrybirds_try_init(struct SupportModule *self)
@@ -186,6 +210,7 @@ angrybirds_try_init(struct SupportModule *self)
     self->override_env.DeleteLocalRef = JNIEnv_DeleteLocalRef;
     self->override_env.CallVoidMethodV = JNIEnv_CallVoidMethodV;
     self->override_env.NewObjectV = JNIEnv_NewObjectV;
+    self->override_env.GetArrayLength = JNIEnv_GetArrayLength;
 
     return (self->priv->native_init != NULL &&
             self->priv->native_resize != NULL &&
@@ -236,6 +261,12 @@ static void
 angrybirds_resume(struct SupportModule *self)
 {
     self->priv->native_resume(ENV_M, GLOBAL_M);
+}
+
+static int
+angrybirds_requests_exit(struct SupportModule *self)
+{
+    return 0;
 }
 
 APKENV_MODULE(angrybirds, MODULE_PRIORITY_GAME)

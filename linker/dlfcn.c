@@ -60,6 +60,7 @@ void *android_dlopen(const char *filename, int flag)
 
     pthread_mutex_lock(&dl_lock);
     ret = find_library(filename);
+
     if (unlikely(ret == NULL)) {
         set_dlerror(DL_ERR_CANNOT_LOAD_LIBRARY);
     } else {
@@ -85,7 +86,7 @@ void *android_dlsym(void *handle, const char *symbol)
 
     pthread_mutex_lock(&dl_lock);
 
-    if(unlikely(handle == 0)) { 
+    if(unlikely(handle == 0)) {
         set_dlerror(DL_ERR_INVALID_LIBRARY_HANDLE);
         goto err;
     }
@@ -271,4 +272,4 @@ soinfo libdl_info = {
     bucket: libdl_buckets,
     chain: libdl_chains,
 };
-    
+

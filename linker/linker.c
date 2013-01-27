@@ -159,8 +159,8 @@ const char *linker_get_error(void)
  */
 extern void __attribute__((noinline)) rtld_db_dlactivity(void);
 
-static struct r_debug _r_debug = {1, NULL, &rtld_db_dlactivity,
-                                  RT_CONSISTENT, 0};
+//static struct r_debug _r_debug = {1, NULL, &rtld_db_dlactivity,
+//                                  RT_CONSISTENT, 0};
 static struct link_map *r_debug_tail = 0;
 
 static pthread_mutex_t _r_debug_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -588,12 +588,21 @@ static void dump(soinfo *si)
 }
 #endif
 
+#if defined(PANDORA)
+static const char *sopaths[] = {
+    "./vendor/lib",
+    "./system/lib",
+    "./lib",
+    0
+};
+#else
 static const char *sopaths[] = {
     "/vendor/lib",
     "/system/lib",
     "/opt/apkenv/bionic/",
     0
 };
+#endif
 
 static int _open_lib(const char *name)
 {
@@ -1698,7 +1707,7 @@ static int link_image(soinfo *si, unsigned wr_offset)
 
     if (si->flags & (FLAG_EXE | FLAG_LINKER)) {
         /* Locate the needed program segments (DYNAMIC/ARM_EXIDX) for
-         * linkage info if this is the executable or the linker itself. 
+         * linkage info if this is the executable or the linker itself.
          * If this was a dynamic lib, that would have been done at load time.
          *
          * TODO: It's unfortunate that small pieces of this are

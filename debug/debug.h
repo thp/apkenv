@@ -1,4 +1,3 @@
-
 /**
  * apkenv
  * Copyright (c) 2012, Thomas Perl <m@thp.io>
@@ -28,61 +27,8 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **/
 
-/**
- * Generic support module - can be used as a template for new modules
- * This module does not do anything useful, except for calling JNI_OnLoad
- **/
 
-#include "common.h"
+/// debug stuff (c) 2013, crow_riot
 
-struct SupportModulePriv {
-    jni_onload_t JNI_OnLoad;
-};
-static struct SupportModulePriv generic_priv;
-
-static int
-generic_try_init(struct SupportModule *self)
-{
-    self->priv->JNI_OnLoad = (jni_onload_t)LOOKUP_M("JNI_OnLoad");
-
-    return (self->priv->JNI_OnLoad != NULL);
-}
-
-static void
-generic_init(struct SupportModule *self, int width, int height, const char *home)
-{
-    self->priv->JNI_OnLoad(VM_M, NULL);
-}
-
-static void
-generic_input(struct SupportModule *self, int event, int x, int y, int finger)
-{
-}
-
-static void
-generic_update(struct SupportModule *self)
-{
-}
-
-static void
-generic_deinit(struct SupportModule *self)
-{
-}
-
-static void
-generic_pause(struct SupportModule *self)
-{
-}
-
-static void
-generic_resume(struct SupportModule *self)
-{
-}
-static int
-generic_requests_exit(struct SupportModule *self)
-{
-    return 0;
-}
-
-APKENV_MODULE(generic, MODULE_PRIORITY_GENERIC)
-
+/// initialize crash debugging utility
+void debug_init();

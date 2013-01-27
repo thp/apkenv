@@ -275,5 +275,11 @@ worldofgoo_resume(struct SupportModule *self)
 {
 }
 
+static int
+worldofgoo_requests_exit(struct SupportModule *self)
+{
+    return 0;
+}
+
 APKENV_MODULE(worldofgoo, MODULE_PRIORITY_GAME)
 

@@ -35,27 +35,29 @@
 #include <dirent.h>
 
 #include <SDL/SDL.h>
-#ifdef FREMANTLE
-#    include <SDL/SDL_gles.h>
-#endif
-
-#include <SDL/SDL_syswm.h>
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
 
 #include "jni/jnienv.h"
 #include "jni/shlib.h"
 #include "apklib/apklib.h"
+#include "debug/debug.h"
 
 #include "apkenv.h"
+#include "platform.h"
 
 /* Global application state */
 struct GlobalState global;
+struct ModuleHacks global_module_hacks;
 
 void *
 lookup_symbol_impl(const char *method)
 {
     return jni_shlib_resolve(&global, method);
+}
+
+void *
+lookup_lib_symbol_impl(const char *lib, const char *method)
+{
+    return jni_shlib_lib_resolve(&global, lib, method);
 }
 
 void
@@ -178,8 +180,11 @@ void install_overrides(struct SupportModule *module)
 void
 usage()
 {
-    printf("Usage: %s [--install] <file.apk>\n",
-            global.apkenv_executable);
+    if (platform_getinstalldirectory()==0) {
+        printf("Usage: %s <file.apk>\n",global.apkenv_executable);
+    } else {
+        printf("Usage: %s [--install] <file.apk>\n",global.apkenv_executable);
+    }
     exit(1);
 }
 
@@ -215,12 +220,10 @@ recursive_mkdir(const char *directory)
     free(tmp);
 }
 
-#define LOCAL_SHARE_APPLICATIONS "/home/user/.local/share/applications/"
-
 void
 operation(const char *operation, const char *filename)
 {
-    if (strcmp(operation, "--install") == 0) {
+    if (strcmp(operation, "--install") == 0 && platform_getinstalldirectory()!=0) {
         char apkenv_absolute[PATH_MAX];
         char apk_absolute[PATH_MAX];
 
@@ -231,7 +234,7 @@ operation(const char *operation, const char *filename)
         char *app_name = apk_basename(filename);
 
         char icon_filename[PATH_MAX];
-        sprintf(icon_filename, "%s%s.png", DATA_DIRECTORY_BASE, app_name);
+        sprintf(icon_filename, "%s%s.png", platform_getdatadirectory(), app_name);
 
         struct stat st;
         if (stat(icon_filename, &st) != 0) {
@@ -265,8 +268,8 @@ operation(const char *operation, const char *filename)
         }
 
         char desktop_filename[PATH_MAX];
-        recursive_mkdir(LOCAL_SHARE_APPLICATIONS);
-        sprintf(desktop_filename, "%s/%s.desktop", LOCAL_SHARE_APPLICATIONS,
+        recursive_mkdir(platform_getinstalldirectory());
+        sprintf(desktop_filename, "%s/%s.desktop", platform_getinstalldirectory(),
                 app_name);
 
         FILE *desktop = fopen(desktop_filename, "w");
@@ -288,13 +291,45 @@ operation(const char *operation, const char *filename)
     usage();
 }
 
-#define MEEGOTOUCH_BORDER 16
+
+int system_init()
+{
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
+        printf("SDL Init failed.\n");
+        return 0;
+    }
+
+    if ( !platform_init() ) {
+        printf("platform_init failed.\n");
+        return 0;
+    }
+
+    gles_extensions_init();
+
+    SDL_ShowCursor(0);
+
+    return 1;
+}
+
+void system_update()
+{
+    platform_update();
+}
+
+void system_exit()
+{
+    platform_exit();
+}
+
 
 int main(int argc, char **argv)
 {
+    debug_init();
+
     char **tmp;
 
-    recursive_mkdir(DATA_DIRECTORY_BASE);
+    recursive_mkdir(platform_getdatadirectory());
+
     global.apkenv_executable = argv[0];
     global.apkenv_headline = APKENV_HEADLINE;
     global.apkenv_copyright = APKENV_COPYRIGHT;
@@ -314,81 +349,68 @@ int main(int argc, char **argv)
             usage();
     }
 
+    memset(&global_module_hacks,0,sizeof(global_module_hacks));
+
     global.lookup_symbol = lookup_symbol_impl;
+    global.lookup_lib_symbol = lookup_lib_symbol_impl;
     global.foreach_file = foreach_file_impl;
     global.read_file = read_file_impl;
+    global.recursive_mkdir = recursive_mkdir;
+    global.module_hacks = &global_module_hacks;
+
     jnienv_init(&global);
     javavm_init(&global);
     global.apk_filename = strdup(argv[argc-1]);
     global.apklib_handle = apk_open(global.apk_filename);
     global.support_modules = NULL;
 
-    const char *shlib = apk_get_shared_library(global.apklib_handle);
-    if (shlib == NULL) {
+    const char* libdir[] = {
+        "assets/libs/armeabi-v7a",
+        "assets/libs/armeabi",
+        "lib/armeabi-v7a",
+        "lib/armeabi",
+        0
+    };
+    int ilib = 0;
+    struct SharedLibrary *shlibs = 0;
+    while (libdir[ilib]!=0) {
+        shlibs = apk_get_shared_libraries(global.apklib_handle,libdir[ilib]);
+        if (shlibs!=0)
+            break;
+        ilib ++;
+    }
+    if (shlibs==0) {
         printf("Not a native APK.\n");
         return 0;
     }
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
-        printf("SDL Init failed.\n");
-        return 0;
+    struct JniLibrary *lib = malloc(sizeof(struct JniLibrary));
+    struct JniLibrary *head = lib;
+    lib->next = 0;
+
+    struct SharedLibrary *shlib = shlibs;
+    while (shlib!=0) {
+        lib->lib = android_dlopen(shlib->filename,RTLD_LAZY);
+        if (!(lib->lib)) {
+            printf("Missing library dependencies.\n");
+            return 0;
+        }
+        lib->method_table = jni_shlib_find_methods(shlib->filename);
+        lib->name = strdup(shlib->filename);
+    // unlink(shlib->filename);
+        shlib = shlib->next;
+        if (shlib!=0) {
+            lib->next = malloc(sizeof(struct JniLibrary));
+            lib = lib->next;
+            lib->next = 0;
+        }
     }
 
-    SDL_Surface *screen;
-
-    /**
-     * The following block looks scary, but it just creates an SDL surface
-     * with the right OpenGL ES context version. The block looks so scary,
-     * because on Fremantle, javispedro's SDL_gles is used and on Harmattan
-     * (where the GLES features are integrated directly into libSDL), only
-     * SDL is used.
-     **/
-#ifdef FREMANTLE
-#ifdef APKENV_GLES2
-    SDL_GLES_Init(SDL_GLES_VERSION_2_0);
-#else /* APKENV_GLES2 */
-    SDL_GLES_Init(SDL_GLES_VERSION_1_1);
-#endif /* APKENV_GLES2 */
-    screen = SDL_SetVideoMode(0, 0, 0, SDL_FULLSCREEN);
-    SDL_GLES_MakeCurrent(SDL_GLES_CreateContext());
-#else /* FREMANTLE */
-#ifdef APKENV_GLES2
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-#else /* APKENV_GLES2 */
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
-#endif /* APKENV_GLES2 */
-    screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGLES | SDL_FULLSCREEN);
-#endif /* FREMANTLE */
-
-    SDL_ShowCursor(0);
-
-#ifndef FREMANTLE
-    /* Set up swipe lock (left and right) */
-    SDL_SysWMinfo wm;
-    SDL_VERSION(&wm.version);
-    SDL_GetWMInfo(&wm);
-    Display *dpy = wm.info.x11.display;
-    Atom atom = XInternAtom(dpy, "_MEEGOTOUCH_CUSTOM_REGION", False);
-    unsigned int region[] = {
-        0,
-        MEEGOTOUCH_BORDER,
-        screen->w,
-        screen->h - 2*MEEGOTOUCH_BORDER,
-    };
-    XChangeProperty(dpy, wm.info.x11.wmwindow, atom, XA_CARDINAL, 32,
-            PropModeReplace, (unsigned char*)region, 4);
-#endif
-
-    global.method_table = jni_shlib_find_methods(shlib);
-    global.jni_library = android_dlopen(shlib, RTLD_LAZY);
-    unlink(shlib);
-    if (!(global.jni_library)) {
-        printf("Missing library dependencies.\n");
-        return 0;
-    }
+    global.libraries = head;
 
     load_modules(".");
-    load_modules("/opt/apkenv/modules");
+    load_modules(platform_getmoduledirectory());
+
     if (global.support_modules == NULL) {
         printf("No support modules found.\n");
     }
@@ -404,12 +426,21 @@ int main(int argc, char **argv)
 
     if (module == NULL) {
         printf("Not supported yet, but found JNI methods:\n");
-        tmp = global.method_table;
-        while (*tmp) {
-            printf("    %s\n", *tmp);
-            tmp++;
+
+        struct JniLibrary *lib = global.libraries;
+        while (lib!=0) {
+            tmp = lib->method_table;
+            while (*tmp) {
+                printf("    %s\n", *tmp);
+                tmp++;
+            }
+            lib = lib->next;
         }
         goto finish;
+    }
+
+    if (!system_init()) {
+        return 0;
     }
 
     global.active_module = module;
@@ -417,22 +448,58 @@ int main(int argc, char **argv)
     install_overrides(module);
 
     char data_directory[PATH_MAX];
-    strcpy(data_directory, DATA_DIRECTORY_BASE);
+    strcpy(data_directory, platform_getdatadirectory());
     strcat(data_directory, apk_basename(global.apk_filename));
     strcat(data_directory, "/");
     recursive_mkdir(data_directory);
 
-    module->init(module, screen->w, screen->h, data_directory);
+    module->init(module, platform_getscreenwidth(), platform_getscreenheight(), data_directory);
+
+    int emulate_multitouch = 0;
+    const int emulate_finger_id = 2;
 
     while (1) {
+
+        if (module->requests_exit(module)) {
+            module->deinit(module);
+            break;
+        }
+
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_MOUSEBUTTONDOWN) {
+            if (e.type == SDL_KEYDOWN) {
+                if (e.key.keysym.sym==SDLK_ESCAPE) {
+                    module->deinit(module);
+                    goto finish;
+                }
+#ifdef PANDORA
+                else if (e.key.keysym.sym==SDLK_RSHIFT) {
+                    //emulate_multitouch = 1;
+                    module->input(module,ACTION_DOWN, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
+                }
+            }
+            else if (e.type == SDL_KEYUP) {
+                if (e.key.keysym.sym==SDLK_RSHIFT) {
+                    //emulate_multitouch = 0;
+                    module->input(module,ACTION_UP, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
+                }
+            }
+#endif
+            else if (e.type == SDL_MOUSEBUTTONDOWN) {
                 module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
+                if (emulate_multitouch) {
+                    module->input(module,ACTION_DOWN, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+                }
             } else if (e.type == SDL_MOUSEBUTTONUP) {
                 module->input(module, ACTION_UP, e.button.x, e.button.y, e.button.which);
+                if (emulate_multitouch) {
+                    module->input(module,ACTION_UP, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+                }
             } else if (e.type == SDL_MOUSEMOTION) {
                 module->input(module, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
+                if (emulate_multitouch) {
+                    module->input(module,ACTION_MOVE, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+                }
             } else if (e.type == SDL_QUIT) {
                 module->deinit(module);
                 goto finish;
@@ -455,20 +522,25 @@ int main(int argc, char **argv)
             }
         }
         module->update(module);
-#ifdef FREMANTLE
-        SDL_GLES_SwapBuffers();
-#else
-        SDL_GL_SwapBuffers();
-#endif
+        system_update();
     }
 
 finish:
-    tmp = global.method_table;
-    while (*tmp) {
-        free(*tmp++);
+
+    lib = global.libraries;
+    while (lib!=0) {
+        tmp = lib->method_table;
+        while (*tmp) {
+            free(*tmp++);
+        }
+        free(lib->method_table);
+        struct JniLibrary *next = lib->next;
+        free(lib);
+        lib = next;
     }
-    free(global.method_table);
+
     apk_close(global.apklib_handle);
+    system_exit();
 
     return 0;
 }

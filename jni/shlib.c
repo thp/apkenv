@@ -74,6 +74,8 @@ jni_shlib_find_methods(const char *filename)
                 tmp[i] = fgetc(fp);
                 remaining_bytes--;
                 if (tmp[i] == '\0') {
+                    //JNISHLIB_DEBUG_PRINTF("[SHLIB] %s\n",tmp);
+
                     if ((memcmp(tmp, "Java_", 5) == 0) ||
                             (memcmp(tmp, "JNI_", 4) == 0)) {
                         method_table[method_table_offset++] = strdup(tmp);
@@ -100,17 +102,46 @@ jni_shlib_find_methods(const char *filename)
 void *
 jni_shlib_resolve(struct GlobalState *global, const char *method)
 {
-    char **method_table = global->method_table;
+    struct JniLibrary *lib = global->libraries;
+    while (lib!=0) {
+        char **method_table = lib->method_table;
 
-    while (*method_table) {
-        if (strstr(*method_table, method) != NULL) {
-            JNISHLIB_DEBUG_PRINTF("[shlib] Found symbol: %s\n",
-                    *method_table);
-            return android_dlsym(global->jni_library, *method_table);
+        while (*method_table) {
+            JNISHLIB_DEBUG_PRINTF("[shlib] Available symbol: %s\n",*method_table);
+            if (strstr(*method_table, method) != NULL) {
+                JNISHLIB_DEBUG_PRINTF("[shlib] Found symbol: %s\n",
+                        *method_table);
+                return android_dlsym(lib->lib, *method_table);
+            }
+            method_table++;
         }
-        method_table++;
+        lib = lib->next;
     }
+    JNISHLIB_DEBUG_PRINTF("[shlib] Symbol not found: %s\n",method);
 
     return NULL;
 }
 
+
+void *
+jni_shlib_lib_resolve(struct GlobalState *global, const char* libname, const char *method)
+{
+    struct JniLibrary *lib = global->libraries;
+    while (lib!=0) {
+        char **method_table = lib->method_table;
+        if (strstr(lib->name,libname)!=0) {
+            while (*method_table) {
+                JNISHLIB_DEBUG_PRINTF("[shlib] Available symbol: %s in %s\n",*method_table,lib->name);
+                if (strstr(*method_table, method) != NULL) {
+                    JNISHLIB_DEBUG_PRINTF("[shlib] Found symbol: %s in %s\n",
+                            *method_table,lib->name);
+                    return android_dlsym(lib->lib, *method_table);
+                }
+                method_table++;
+            }
+        }
+        lib = lib->next;
+    }
+
+    return NULL;
+}
