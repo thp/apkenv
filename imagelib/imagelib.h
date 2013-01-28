@@ -1,5 +1,5 @@
 #ifndef IMAGELIB_H
-#define IMAGELIB_h
+#define IMAGELIB_H
 
 /// image lib, (c) crow_riot 2013
 

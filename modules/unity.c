@@ -60,7 +60,15 @@ typedef struct
 /* -------- */
 
 
-jfieldID JNIEnv_GetStaticFieldID(JNIEnv *p0, jclass p1, const char *p2, const char *p3) SOFTFP
+jfieldID JNIEnv_GetStaticFieldID(JNIEnv *p0, jclass p1, const char *p2, const char *p3) SOFTFP;
+jobject JNIEnv_GetStaticObjectField(JNIEnv *p0, jclass p1, jfieldID p2) SOFTFP;
+jclass JNIEnv_GetObjectClass(JNIEnv *p0, jobject p1) SOFTFP;
+jobject JNIEnv_CallObjectMethod(JNIEnv* env, jobject p1, jmethodID p2, ...) SOFTFP;
+jobject JNIEnv_CallStaticObjectMethod(JNIEnv* env, jclass p1, jmethodID p2, ...) SOFTFP;
+const char * JNIEnv_GetStringUTFChars(JNIEnv *env, jstring string, jboolean *isCopy) SOFTFP;
+
+
+jfieldID JNIEnv_GetStaticFieldID(JNIEnv *p0, jclass p1, const char *p2, const char *p3)
 {
     struct dummy_jclass* cls = (struct dummy_jclass*)p1;
     MODULE_DEBUG_PRINTF("GetStaticFieldID %s %s %s\n", cls->name, p2, p3);
@@ -74,7 +82,7 @@ jfieldID JNIEnv_GetStaticFieldID(JNIEnv *p0, jclass p1, const char *p2, const ch
     return (jfieldID)field;
 }
 
-jobject JNIEnv_GetStaticObjectField(JNIEnv *p0, jclass p1, jfieldID p2) SOFTFP
+jobject JNIEnv_GetStaticObjectField(JNIEnv *p0, jclass p1, jfieldID p2)
 {
     struct dummy_jclass* cls = p1;
     struct _jfieldID* fld = p2;
@@ -88,7 +96,7 @@ jobject JNIEnv_GetStaticObjectField(JNIEnv *p0, jclass p1, jfieldID p2) SOFTFP
     return obj;
 }
 
-jclass JNIEnv_GetObjectClass(JNIEnv *p0, jobject p1) SOFTFP
+jclass JNIEnv_GetObjectClass(JNIEnv *p0, jobject p1)
 {
     MODULE_DEBUG_PRINTF("GetObjectClass %x\n",p1);
     if (p1!=NULL)
@@ -100,7 +108,7 @@ jclass JNIEnv_GetObjectClass(JNIEnv *p0, jobject p1) SOFTFP
 }
 
 
-jobject JNIEnv_CallObjectMethod(JNIEnv* env, jobject p1, jmethodID p2, ...) SOFTFP
+jobject JNIEnv_CallObjectMethod(JNIEnv* env, jobject p1, jmethodID p2, ...)
 {
     MODULE_DEBUG_PRINTF("CallObjectMethod %x %x\n",p1,p2);
 
@@ -114,7 +122,7 @@ jobject JNIEnv_CallObjectMethod(JNIEnv* env, jobject p1, jmethodID p2, ...) SOFT
 }
 
 jobject
-JNIEnv_CallStaticObjectMethod(JNIEnv* env, jclass p1, jmethodID p2, ...) SOFTFP
+JNIEnv_CallStaticObjectMethod(JNIEnv* env, jclass p1, jmethodID p2, ...)
 {
     struct dummy_jclass* clazz = p1;
     jmethodID method = p2;
@@ -248,7 +256,7 @@ JNIEnv_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint p3
 }
 
 const char *
-JNIEnv_GetStringUTFChars(JNIEnv *env, jstring string, jboolean *isCopy) SOFTFP
+JNIEnv_GetStringUTFChars(JNIEnv *env, jstring string, jboolean *isCopy)
 {
     MODULE_DEBUG_PRINTF("JNIEnv_GetStringUTFChars(%x)\n", string);
     if (string == GLOBAL_J(env)) {

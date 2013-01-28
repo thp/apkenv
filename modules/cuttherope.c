@@ -34,6 +34,8 @@
 
 #include "common.h"
 #include "../imagelib/imagelib.h"
+#include "../imagelib/loadjpeg.c"
+#include "../imagelib/loadpng.c"
 #include <linux/limits.h>
 #include <sys/stat.h>
 
@@ -613,7 +615,9 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
     self->priv->home = strdup(home);
 
     // init sound stuff
+#ifdef PANDORA
     Mix_Init(MIX_INIT_OGG);
+#endif
 
     int audio_rate = 22050;
     uint16_t audio_format = AUDIO_S16SYS;
@@ -651,13 +655,12 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
 
     self->priv->JNI_OnLoad(VM_M, NULL);
 
-#ifdef PANDORA
-    self->priv->nativeResize(ENV_M, GLOBAL_M,  height, width);
-    self->priv->global->module_hacks->gles_downscale_images = 1;
+    self->priv->nativeResize(ENV_M, GLOBAL_M, width, height);
     self->priv->global->module_hacks->gles_landscape_to_portrait = 1;
+
+#ifdef PANDORA
+    self->priv->global->module_hacks->gles_downscale_images = 1;
     self->priv->global->module_hacks->gles_no_readpixels = 1;
-#else
-    self->priv->nativeResize(ENV_M, GLOBAL_M,  width, height);
 #endif
 
     self->priv->nativeInit(ENV_M, GLOBAL_M, resourceLoader, soundManager, preferences,
@@ -670,14 +673,12 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
 static void
 cuttherope_input(struct SupportModule *self, int event, int x, int y, int finger)
 {
-#ifdef PANDORA
     if(self->global->module_hacks->gles_landscape_to_portrait)
     {
         int tmpx = x;
-        x = y;
-        y = 800-tmpx;
+        x = 480-y;
+        y = tmpx;
     }
-#endif
 
     if (event==ACTION_MOVE) {
         self->priv->nativeTouchAdd(ENV_M,GLOBAL_M,0,2,x,y);

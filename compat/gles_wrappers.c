@@ -215,7 +215,7 @@ my_glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zN
 {
     WRAPPERS_DEBUG_PRINTF("glOrthof(%f, %f, %f, %f)\n", left, right, bottom, top, zNear, zFar);
     if (global_module_hacks.gles_landscape_to_portrait!=0) {
-        glRotatef(-90,0,0,1);
+        glRotatef(90, 0, 0, 1);
     }
     glOrthof(left, right, bottom, top, zNear, zFar);
 }

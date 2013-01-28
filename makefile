@@ -14,8 +14,14 @@ JNIENV_SOURCES=$(wildcard jni/*.c)
 # Support modules for specific applications
 MODULES_SOURCES=$(wildcard modules/*.c)
 
+# Maemo/MeeGo-specific stuff
+MAEMO_SOURCES=$(wildcard n9xx/*.c)
+
 # Pandora specific stuff
 PANDORA_SOURCES=$(wildcard pandora/*.c)
+
+# JPEG and PNG loaders
+IMAGELIB_SOURCES=$(wildcard imagelib/*.c)
 
 # segfault catch
 DEBUG_SOURCES=$(wildcard debug/*.c)
@@ -31,17 +37,20 @@ SOURCES += $(LINKER_SOURCES)
 SOURCES += $(COMPAT_SOURCES)
 SOURCES += $(APKLIB_SOURCES)
 SOURCES += $(JNIENV_SOURCES)
+SOURCES += $(IMAGELIB_SOURCES)
 SOURCES += $(DEBUG_SOURCES)
 
 PANDORA ?= 0
 ifeq ($(PANDORA),1)
 SOURCES += $(PANDORA_SOURCES)
+else
+SOURCES += $(MAEMO_SOURCES)
 endif
 
 OBJS = $(patsubst %.c,%.o,$(SOURCES))
 MODULES = $(patsubst modules/%.c,%.apkenv.so,$(MODULES_SOURCES))
 
-LDFLAGS = -fPIC -ldl -lz -lSDL -lSDL_mixer -pthread
+LDFLAGS = -fPIC -ldl -lz -lSDL -lSDL_mixer -pthread -lpng -ljpeg
 
 ifeq ($(PANDORA),1)
 LDFLAGS += -lrt

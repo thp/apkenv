@@ -467,12 +467,12 @@ int main(int argc, char **argv)
 
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
+#ifdef PANDORA
             if (e.type == SDL_KEYDOWN) {
                 if (e.key.keysym.sym==SDLK_ESCAPE) {
                     module->deinit(module);
                     goto finish;
                 }
-#ifdef PANDORA
                 else if (e.key.keysym.sym==SDLK_RSHIFT) {
                     //emulate_multitouch = 1;
                     module->input(module,ACTION_DOWN, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
@@ -483,9 +483,9 @@ int main(int argc, char **argv)
                     //emulate_multitouch = 0;
                     module->input(module,ACTION_UP, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
                 }
-            }
+            } else
 #endif
-            else if (e.type == SDL_MOUSEBUTTONDOWN) {
+            if (e.type == SDL_MOUSEBUTTONDOWN) {
                 module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
                 if (emulate_multitouch) {
                     module->input(module,ACTION_DOWN, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
