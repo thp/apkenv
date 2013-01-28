@@ -34,13 +34,19 @@
 #include "jni/jni.h"
 
 #define APKENV_NAME "apkenv"
-#define APKENV_VERSION "42.3.14"
+#define APKENV_VERSION "42.3.15"
 #define APKENV_WEBSITE "http://thp.io/2012/apkenv/"
 #define APKENV_HEADLINE APKENV_NAME " " APKENV_VERSION " - " APKENV_WEBSITE
 #define APKENV_COPYRIGHT "Copyright (c) 2012 Thomas Perl <m@thp.io>"
 
 struct GlobalState;
 struct SupportModulePriv;
+
+struct ModuleHacks {
+    int gles_landscape_to_portrait;
+    int gles_downscale_images;
+    int gles_no_readpixels;
+};
 
 struct SupportModule {
     struct GlobalState *global;
@@ -58,13 +64,25 @@ struct SupportModule {
     void (*deinit)(struct SupportModule *self);
     void (*pause)(struct SupportModule *self);
     void (*resume)(struct SupportModule *self);
+    int (*requests_exit)(struct SupportModule *self);
 
     struct SupportModule *next;
 };
 
 typedef void *(*lookup_symbol_t)(const char *method);
+typedef void *(*lookup_lib_symbol_t)(const char *lib, const char *method);
 typedef void (*foreach_file_t)(const char *prefix, apk_for_each_file_callback callback);
 typedef int (*read_file_t)(const char *filename, char **buffer, size_t *size);
+typedef void (*recursive_mkdir_t)(const char *path);
+typedef void (*patch_symbol_t)(const char *symbol, void *function);
+
+struct JniLibrary {
+    struct JniLibrary *next;
+    char *name;
+    void *lib;
+    char **method_table;
+};
+
 
 struct GlobalState {
     const char *apkenv_executable;
@@ -79,21 +97,22 @@ struct GlobalState {
     const char *apk_filename;
     AndroidApk *apklib_handle;
 
-    void *jni_library;
-    char **method_table;
+    struct JniLibrary *libraries;
 
     struct SupportModule *support_modules;
     struct SupportModule *active_module;
+    struct ModuleHacks *module_hacks;
 
     lookup_symbol_t lookup_symbol;
+    lookup_lib_symbol_t lookup_lib_symbol;
     foreach_file_t foreach_file;
     read_file_t read_file;
+    recursive_mkdir_t recursive_mkdir;
 };
 
 #define VM(global_ptr) (&((global_ptr)->vm))
 #define ENV(global_ptr) (&((global_ptr)->env))
 
-#define DATA_DIRECTORY_BASE "/home/user/.apkenv/"
 
 /* Android MotionEvent */
 #define ACTION_DOWN 0
@@ -104,7 +123,7 @@ struct GlobalState {
  * Attribute for softfp-calling-style functions
  * (only on Harmattan - Fremantle *is* softfp)
  **/
-#ifdef FREMANTLE
+#if defined(FREMANTLE) || defined(PANDORA)
 #    define SOFTFP
 #else
 #    define SOFTFP __attribute__((pcs("aapcs")))
@@ -118,6 +137,6 @@ void *android_dlsym(void *handle, const char *symbol);
 typedef int (*apkenv_module_init_t)(int version, struct SupportModule *module);
 #define APKENV_MODULE_INIT "apkenv_module_init"
 #define APKENV_MODULE_SUFFIX ".apkenv.so"
-#define APKENV_MODULE_VERSION 0x010000
+#define APKENV_MODULE_VERSION 0x010001
 
 #endif /* APKENV_H */

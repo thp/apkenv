@@ -42,11 +42,16 @@ enum ApkResult {
     APK_ERROR,
 };
 
+struct SharedLibrary {
+    struct SharedLibrary *next;
+    char* filename;
+};
+
 typedef void (*apk_for_each_file_callback)(const char *filename, char *buffer, size_t size);
 
 /* apklib.c */
 AndroidApk *apk_open(const char *filename);
-char *apk_get_shared_library(AndroidApk *apk);
+struct SharedLibrary* apk_get_shared_libraries(AndroidApk *apk, const char *libdir);
 enum ApkResult apk_read_file(AndroidApk *apk, const char *filename, char **buffer, size_t *size);
 void apk_for_each_file(AndroidApk *apk, const char *prefix, apk_for_each_file_callback callback);
 void apk_close(AndroidApk *apk);

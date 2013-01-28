@@ -103,7 +103,7 @@ my_exp(double __x)
 int
 my_fclose(FILE *__stream)
 {
-    //WRAPPERS_DEBUG_PRINTF("fclose(%x, %x)\n", __stream, &my___sF);
+    WRAPPERS_DEBUG_PRINTF("fclose(%x, %x)\n", __stream, &my___sF);
     int offset = ((void*)__stream - (void*)(&my___sF));
     //printf("offset: %d\n", offset);
     if (offset < 1000) {
@@ -139,8 +139,10 @@ my_fmod(double __x, double __y)
 FILE *
 my_fopen(__const char *__restrict __filename, __const char *__restrict __modes)
 {
-    //WRAPPERS_DEBUG_PRINTF("fopen(%s, %s)\n", __filename, __modes);
-    return fopen(__filename, __modes);
+    WRAPPERS_DEBUG_PRINTF("fopen(%s, %s)\n", __filename, __modes);
+    FILE  *f = fopen(__filename,__modes);
+    WRAPPERS_DEBUG_PRINTF("fopen(%s, %s) -> %x\n", __filename, __modes, f);
+    return f;
 }
 int
 my_fputc(int __c, FILE *__stream)
@@ -591,7 +593,7 @@ my_strstr(__const char *__haystack, __const char *__needle)
 double
 my_strtod(__const char *__restrict __nptr, char **__restrict __endptr)
 {
-    //WRAPPERS_DEBUG_PRINTF("strtod()\n", __nptr, __endptr);
+    WRAPPERS_DEBUG_PRINTF("strtod()\n", __nptr, __endptr);
     return strtod(__nptr, __endptr);
 }
 char *
@@ -671,7 +673,7 @@ my_write(int __fd, __const void *__buf, size_t __n)
 int
 my_fprintf(FILE *stream, const char *format, ...)
 {
-    //WRAPPERS_DEBUG_PRINTF("my_fprintf(%x, %s)\n", stream, format);
+    WRAPPERS_DEBUG_PRINTF("my_fprintf(%x, %s)\n", stream, format);
     va_list ap;
     va_start(ap, format);
     int result = vfprintf(stderr, format, ap);
@@ -682,14 +684,14 @@ my_fprintf(FILE *stream, const char *format, ...)
 int
 my_vfprintf(FILE *stream, const char *format, va_list ap)
 {
-    //WRAPPERS_DEBUG_PRINTF("my_vfprintf(%x, %s)\n", stream, format);
+    WRAPPERS_DEBUG_PRINTF("my_vfprintf(%x, %s)\n", stream, format);
     return vfprintf(stderr, format, ap);
 }
 
 int
 my_fflush(FILE *stream)
 {
-    //WRAPPERS_DEBUG_PRINTF("my_fflush(%x)\n", stream);
+    WRAPPERS_DEBUG_PRINTF("my_fflush(%x)\n", stream);
     int offset = ((void*)stream - (void*)(&my___sF));
     //printf("offset: %d\n", offset);
     if (offset < 1000) {

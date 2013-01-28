@@ -31,6 +31,7 @@
 
 #include "pthread_wrappers.h"
 
+
 /**
  * This will take care of doing the right thing for mutexes that are not
  * yet initialized correctly (e.g. because they were statically initialized
@@ -214,6 +215,25 @@ my_pthread_attr_setdetachstate(pthread_attr_t *__attr, int detachstate)
     return pthread_attr_setdetachstate(realattr, detachstate);
 }
 
+
+int
+my_pthread_attr_getdetachstate(pthread_attr_t *__attr, int* detachstate)
+{
+    assert(__attr != NULL);
+    pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+    assert(realattr != NULL);
+    return pthread_attr_getdetachstate(realattr, detachstate);
+}
+
+int
+my_pthread_attr_setschedparam (pthread_attr_t * __attr,struct sched_param * __param)
+{
+    assert(__attr != NULL);
+    pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+    assert(realattr != NULL);
+    return pthread_attr_setschedparam(realattr,__param);
+}
+
 int
 my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stacksize)
 {
@@ -221,6 +241,46 @@ my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stacksize)
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
     assert(realattr != NULL);
     return pthread_attr_setstacksize (realattr,stacksize);
+}
+
+
+int
+my_pthread_attr_getstack(pthread_attr_t *__attr, void** stackaddr, size_t* stacksize)
+{
+    assert(__attr != NULL);
+    pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+    assert(realattr != NULL);
+    return pthread_attr_getstack(realattr,stackaddr,stacksize);
+}
+
+int
+my_pthread_attr_setschedpolicy(pthread_attr_t *__attr, int __policy)
+{
+    assert(__attr != NULL);
+    pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+    assert(realattr != NULL);
+    return pthread_attr_setschedpolicy(realattr, __policy);
+}
+
+int
+my_pthread_getattr_np(pthread_t __th, pthread_attr_t *__attr)
+{
+    assert(__attr != NULL);
+    pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+    assert(realattr != NULL);
+    return pthread_getattr_np(__th,realattr);
+}
+
+void
+my_pthread_cleanup_pop(int execute)
+{
+    printf("UNIMPLEMENTED: pthread_cleanup_pop\n");
+}
+void
+my_pthread_cleanup_push(void (*routine) (void *), void *arg)
+{
+    printf("UNIMPLEMENTED: pthread_cleanup_push\n");
+
 }
 
 void *

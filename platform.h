@@ -1,3 +1,5 @@
+#ifndef PLATFORM_H
+#define PLATFORM_H
 
 /**
  * apkenv
@@ -28,61 +30,36 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **/
 
-/**
- * Generic support module - can be used as a template for new modules
- * This module does not do anything useful, except for calling JNI_OnLoad
- **/
 
-#include "common.h"
+/// platform api (c) 2013, crow_riot
 
-struct SupportModulePriv {
-    jni_onload_t JNI_OnLoad;
-};
-static struct SupportModulePriv generic_priv;
+/// return the path to the folder where apkenv should install .apk's
+/// return 0 if installation is not supported on your platform.
+const char* platform_getinstalldirectory();
 
-static int
-generic_try_init(struct SupportModule *self)
-{
-    self->priv->JNI_OnLoad = (jni_onload_t)LOOKUP_M("JNI_OnLoad");
+/// returns the path to the folder where apkenv should store data
+const char* platform_getdatadirectory();
 
-    return (self->priv->JNI_OnLoad != NULL);
-}
+/// returns the path to the folder where apkenv should look for modules
+const char* platform_getmoduledirectory();
 
-static void
-generic_init(struct SupportModule *self, int width, int height, const char *home)
-{
-    self->priv->JNI_OnLoad(VM_M, NULL);
-}
+/// initialize platform video and return an s
+int platform_init();
 
-static void
-generic_input(struct SupportModule *self, int event, int x, int y, int finger)
-{
-}
+/// returns the width of the platform screen
+int platform_getscreenwidth();
 
-static void
-generic_update(struct SupportModule *self)
-{
-}
+/// returns the height of the platform screen
+int platform_getscreenheight();
 
-static void
-generic_deinit(struct SupportModule *self)
-{
-}
+/// called per rendering frame
+int platform_update();
 
-static void
-generic_pause(struct SupportModule *self)
-{
-}
+/// free platform specific data
+int platform_exit();
 
-static void
-generic_resume(struct SupportModule *self)
-{
-}
-static int
-generic_requests_exit(struct SupportModule *self)
-{
-    return 0;
-}
 
-APKENV_MODULE(generic, MODULE_PRIORITY_GENERIC)
+
+
+#endif
 

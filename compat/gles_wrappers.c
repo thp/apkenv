@@ -3,9 +3,57 @@
 #include <assert.h>
 #ifdef APKENV_DEBUG
 #  define WRAPPERS_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#  define GL_TEST_ERROR if (glGetError()!=GL_NO_ERROR) { printf("GL ERROR near %s\n", __FUNCTION__); }
 #else
 #  define WRAPPERS_DEBUG_PRINTF(...)
+#  define GL_TEST_ERROR
 #endif
+
+
+extern struct ModuleHacks global_module_hacks;
+
+struct gles_extensions {
+    PFNGLISRENDERBUFFEROESPROC                      glIsRenderbufferOES;
+    PFNGLBINDRENDERBUFFEROESPROC                    glBindRenderbufferOES;
+    PFNGLDELETERENDERBUFFERSOESPROC                 glDeleteRenderbuffersOES;
+    PFNGLGENRENDERBUFFERSOESPROC                    glGenRenderbuffersOES;
+    PFNGLRENDERBUFFERSTORAGEOESPROC                 glRenderbufferStorageOES;
+    PFNGLGETRENDERBUFFERPARAMETERIVOESPROC          glGetRenderbufferParameterivOES;
+    PFNGLISFRAMEBUFFEROESPROC                       glIsFramebufferOES;
+    PFNGLBINDFRAMEBUFFEROESPROC                     glBindFramebufferOES;
+    PFNGLDELETEFRAMEBUFFERSOESPROC                  glDeleteFramebuffersOES;
+    PFNGLGENFRAMEBUFFERSOESPROC                     glGenFramebuffersOES;
+    PFNGLCHECKFRAMEBUFFERSTATUSOESPROC              glCheckFramebufferStatusOES;
+    PFNGLFRAMEBUFFERRENDERBUFFEROESPROC             glFramebufferRenderbufferOES;
+    PFNGLFRAMEBUFFERTEXTURE2DOESPROC                glFramebufferTexture2DOES;
+    PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVOESPROC glGetFramebufferAttachmentParameterivOES;
+    PFNGLGENERATEMIPMAPOESPROC                      glGenerateMipmapOES;
+};
+static struct gles_extensions extensions;
+
+#define init_extension(ext) \
+    extensions . ext = eglGetProcAddress(#ext); \
+    WRAPPERS_DEBUG_PRINTF("%s is at 0x%x\n", #ext, extensions . ext)
+
+void gles_extensions_init()
+{
+    init_extension(glIsRenderbufferOES);
+    init_extension(glBindRenderbufferOES);
+    init_extension(glDeleteRenderbuffersOES);
+    init_extension(glGenRenderbuffersOES);
+    init_extension(glRenderbufferStorageOES);
+    init_extension(glGetRenderbufferParameterivOES);
+    init_extension(glIsFramebufferOES);
+    init_extension(glBindFramebufferOES);
+    init_extension(glDeleteFramebuffersOES);
+    init_extension(glGenFramebuffersOES);
+    init_extension(glCheckFramebufferStatusOES);
+    init_extension(glFramebufferRenderbufferOES);
+    init_extension(glFramebufferTexture2DOES);
+    init_extension(glGetFramebufferAttachmentParameterivOES);
+    init_extension(glGenerateMipmapOES);
+}
+
 void
 my_glAlphaFunc(GLenum func, GLclampf ref)
 {
@@ -165,7 +213,10 @@ my_glNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 void
 my_glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
 {
-    WRAPPERS_DEBUG_PRINTF("glOrthof()\n", left, right, bottom, top, zNear, zFar);
+    WRAPPERS_DEBUG_PRINTF("glOrthof(%f, %f, %f, %f)\n", left, right, bottom, top, zNear, zFar);
+    if (global_module_hacks.gles_landscape_to_portrait!=0) {
+        glRotatef(-90,0,0,1);
+    }
     glOrthof(left, right, bottom, top, zNear, zFar);
 }
 void
@@ -195,7 +246,7 @@ my_glPolygonOffset(GLfloat factor, GLfloat units)
 void
 my_glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-    WRAPPERS_DEBUG_PRINTF("glRotatef()\n", angle, x, y, z);
+    WRAPPERS_DEBUG_PRINTF("glRotatef(%f,%f,%f,%f)\n", angle, x, y, z);
     glRotatef(angle, x, y, z);
 }
 void
@@ -429,7 +480,7 @@ my_glEnable(GLenum cap)
 void
 my_glEnableClientState(GLenum array)
 {
-    WRAPPERS_DEBUG_PRINTF("glEnableClientState()\n", array);
+    WRAPPERS_DEBUG_PRINTF("glEnableClientState(0x%x)\n", array);
     glEnableClientState(array);
 }
 void
@@ -729,8 +780,9 @@ my_glPushMatrix()
 void
 my_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels)
 {
-    WRAPPERS_DEBUG_PRINTF("glReadPixels()\n", x, y, width, height, format, type, pixels);
-    glReadPixels(x, y, width, height, format, type, pixels);
+    WRAPPERS_DEBUG_PRINTF("glReadPixels(%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", x, y, width, height, format, type, pixels);
+    if (global_module_hacks.gles_no_readpixels==0)
+        glReadPixels(x, y, width, height, format, type, pixels);
 }
 void
 my_glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z)
@@ -819,8 +871,63 @@ my_glTexEnvxv(GLenum target, GLenum pname, const GLfixed *params)
 void
 my_glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels)
 {
-    WRAPPERS_DEBUG_PRINTF("glTexImage2D()\n", target, level, internalformat, width, height, border, format, type, pixels);
-    glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+    int maxsize = 0;
+    glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxsize);
+
+    int downscale = global_module_hacks.gles_downscale_images && (width>=maxsize || height>=maxsize);
+
+    if ( downscale && format==GL_RGBA && (type==GL_UNSIGNED_SHORT_4_4_4_4 || type==GL_UNSIGNED_SHORT_5_6_5) )
+    {
+        int x,y;
+        GLushort* src = (GLushort*)pixels;
+        GLushort* downsized = malloc(width*height/2);
+        GLushort* ptr = downsized;
+        for (y=0; y<height;y+=2)
+        {
+            //GLbyte* row = src + y*width*4;
+            for (x=0;x<width;x+=2)
+            {
+                int off = (y*width+x);
+                *ptr ++ = src[off];
+            }
+        }
+
+        WRAPPERS_DEBUG_PRINTF("downscale/glTexImage2D(0x%x,%d,%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", target, level, internalformat, width, height, border, format, type, pixels);
+        glTexImage2D(target, level, internalformat, width>>1, height>>1, border, format, type, downsized);
+        free(downsized);
+    }
+    else
+    if ( downscale && format==GL_RGBA && type==GL_UNSIGNED_BYTE )
+    {
+        int x,y;
+        GLbyte* src = (GLbyte*)pixels;
+        GLbyte* downsized = malloc(width*height*4/2);
+        GLbyte* ptr = downsized;
+        for (y=0; y<height;y+=2)
+        {
+            //GLbyte* row = src + y*width*4;
+            for (x=0;x<width;x+=2)
+            {
+                int off = (y*width+x)*4;
+                *ptr ++ = src[off+0];
+                *ptr ++ = src[off+1];
+                *ptr ++ = src[off+2];
+                *ptr ++ = src[off+3];
+            }
+        }
+        WRAPPERS_DEBUG_PRINTF("downscale/glTexImage2D(0x%x,%d,%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", target, level, internalformat, width, height, border, format, type, pixels);
+        glTexImage2D(target, level, internalformat, width>>1, height>>1, border, format, type, downsized);
+        free(downsized);
+    }
+    else
+    {
+        if (downscale)
+            WRAPPERS_DEBUG_PRINTF("downscale unsupported/glTexImage2D(0x%x,%d,%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", target, level, internalformat, width, height, border, format, type, pixels);
+        else
+            WRAPPERS_DEBUG_PRINTF("glTexImage2D(0x%x,%d,%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", target, level, internalformat, width, height, border, format, type, pixels);
+
+        glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+    }
 }
 void
 my_glTexParameteri(GLenum target, GLenum pname, GLint param)
@@ -867,8 +974,12 @@ my_glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointe
 void
 my_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
-    WRAPPERS_DEBUG_PRINTF("glViewport()\n", x, y, width, height);
-    glViewport(x, y, width, height);
+    WRAPPERS_DEBUG_PRINTF("glViewport(%d, %d, %d, %d)\n", x, y, width, height);
+    if (global_module_hacks.gles_landscape_to_portrait!=0) {
+        glViewport(y, x, height, width);
+    } else {
+        glViewport(x, y, width, height);
+    }
 }
 void
 my_glPointSizePointerOES(GLenum type, GLsizei stride, const GLvoid *pointer)
@@ -1180,79 +1291,79 @@ GLboolean
 my_glIsRenderbufferOES(GLuint renderbuffer)
 {
     WRAPPERS_DEBUG_PRINTF("glIsRenderbufferOES()\n", renderbuffer);
-    /* No CALL */ printf("UNIMPLEMENTED: glIsRenderbufferOES\n");
+    return extensions.glIsRenderbufferOES(renderbuffer);
 }
 void
 my_glBindRenderbufferOES(GLenum target, GLuint renderbuffer)
 {
     WRAPPERS_DEBUG_PRINTF("glBindRenderbufferOES()\n", target, renderbuffer);
-    /* No CALL */ printf("UNIMPLEMENTED: glBindRenderbufferOES\n");
+    extensions.glBindRenderbufferOES(target, renderbuffer);
 }
 void
 my_glDeleteRenderbuffersOES(GLsizei n, const GLuint *renderbuffers)
 {
     WRAPPERS_DEBUG_PRINTF("glDeleteRenderbuffersOES()\n", n, renderbuffers);
-    /* No CALL */ printf("UNIMPLEMENTED: glDeleteRenderbuffersOES\n");
+    extensions.glDeleteRenderbuffersOES(n, renderbuffers);
 }
 void
 my_glGenRenderbuffersOES(GLsizei n, GLuint *renderbuffers)
 {
-    WRAPPERS_DEBUG_PRINTF("glGenRenderbuffersOES()\n", n, renderbuffers);
-    /* No CALL */ printf("UNIMPLEMENTED: glGenRenderbuffersOES\n");
+    WRAPPERS_DEBUG_PRINTF("my_glGenRenderbuffersOES()\n", n, renderbuffers);
+    extensions.glGenRenderbuffersOES(n,renderbuffers);
 }
 void
 my_glRenderbufferStorageOES(GLenum target, GLenum internalformat, GLsizei width, GLsizei height)
 {
     WRAPPERS_DEBUG_PRINTF("glRenderbufferStorageOES()\n", target, internalformat, width, height);
-    /* No CALL */ printf("UNIMPLEMENTED: glRenderbufferStorageOES\n");
+    extensions.glRenderbufferStorageOES(target, internalformat, width, height);
 }
 void
 my_glGetRenderbufferParameterivOES(GLenum target, GLenum pname, GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetRenderbufferParameterivOES()\n", target, pname, params);
-    /* No CALL */ printf("UNIMPLEMENTED: glGetRenderbufferParameterivOES\n");
+    extensions.glGetRenderbufferParameterivOES(target,pname,params);
 }
 GLboolean
 my_glIsFramebufferOES(GLuint framebuffer)
 {
     WRAPPERS_DEBUG_PRINTF("glIsFramebufferOES()\n", framebuffer);
-    /* No CALL */ printf("UNIMPLEMENTED: glIsFramebufferOES\n");
+    return extensions.glIsFramebufferOES(framebuffer);
 }
 void
 my_glBindFramebufferOES(GLenum target, GLuint framebuffer)
 {
     WRAPPERS_DEBUG_PRINTF("glBindFramebufferOES()\n", target, framebuffer);
-    /* No CALL */ printf("UNIMPLEMENTED: glBindFramebufferOES\n");
+    extensions.glBindFramebufferOES(target,framebuffer);
 }
 void
 my_glDeleteFramebuffersOES(GLsizei n, const GLuint *framebuffers)
 {
     WRAPPERS_DEBUG_PRINTF("glDeleteFramebuffersOES()\n", n, framebuffers);
-    /* No CALL */ printf("UNIMPLEMENTED: glDeleteFramebuffersOES\n");
+    extensions.glDeleteFramebuffersOES(n, framebuffers);
 }
 void
 my_glGenFramebuffersOES(GLsizei n, GLuint *framebuffers)
 {
     WRAPPERS_DEBUG_PRINTF("glGenFramebuffersOES()\n", n, framebuffers);
-    /* No CALL */ printf("UNIMPLEMENTED: glGenFramebuffersOES\n");
+    extensions.glGenFramebuffersOES(n, framebuffers);
 }
 GLenum
 my_glCheckFramebufferStatusOES(GLenum target)
 {
     WRAPPERS_DEBUG_PRINTF("glCheckFramebufferStatusOES()\n", target);
-    /* No CALL */ printf("UNIMPLEMENTED: glCheckFramebufferStatusOES\n");
+    return extensions.glCheckFramebufferStatusOES(target);
 }
 void
 my_glFramebufferRenderbufferOES(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer)
 {
     WRAPPERS_DEBUG_PRINTF("glFramebufferRenderbufferOES()\n", target, attachment, renderbuffertarget, renderbuffer);
-    /* No CALL */ printf("UNIMPLEMENTED: glFramebufferRenderbufferOES\n");
+    extensions.glFramebufferRenderbufferOES(target, attachment, renderbuffertarget, renderbuffer);
 }
 void
 my_glFramebufferTexture2DOES(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level)
 {
     WRAPPERS_DEBUG_PRINTF("glFramebufferTexture2DOES()\n", target, attachment, textarget, texture, level);
-    /* No CALL */ printf("UNIMPLEMENTED: glFramebufferTexture2DOES\n");
+    extensions.glFramebufferTexture2DOES(target,attachment,textarget,texture,level);
 }
 void
 my_glGetFramebufferAttachmentParameterivOES(GLenum target, GLenum attachment, GLenum pname, GLint *params)
@@ -1264,7 +1375,7 @@ void
 my_glGenerateMipmapOES(GLenum target)
 {
     WRAPPERS_DEBUG_PRINTF("glGenerateMipmapOES()\n", target);
-    /* No CALL */ printf("UNIMPLEMENTED: glGenerateMipmapOES\n");
+    extensions.glGenerateMipmapOES(target);
 }
 void
 my_glCurrentPaletteMatrixOES(GLuint matrixpaletteindex)

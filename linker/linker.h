@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <elf.h>
+#include <link.h>
 
 #undef PAGE_MASK
 #undef PAGE_SIZE
@@ -45,6 +46,7 @@ const char *addr_to_name(unsigned addr);
 
 /* magic shared structures that GDB knows about */
 
+#if 0
 struct link_map
 {
     uintptr_t l_addr;
@@ -79,6 +81,7 @@ struct r_debug
     int32_t r_state;
     uintptr_t r_ldbase;
 };
+#endif
 
 typedef struct soinfo soinfo;
 
@@ -211,7 +214,7 @@ Elf32_Sym *find_containing_symbol(const void *addr, soinfo *si);
 const char *linker_get_error(void);
 void call_constructors_recursive(soinfo *si);
 
-#ifdef ANDROID_ARM_LINKER 
+#ifdef ANDROID_ARM_LINKER
 typedef long unsigned int *_Unwind_Ptr;
 _Unwind_Ptr dl_unwind_find_exidx(_Unwind_Ptr pc, int *pcount);
 #elif defined(ANDROID_X86_LINKER)

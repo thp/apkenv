@@ -38,6 +38,7 @@
 #define ENV_M ENV(GLOBAL_M)
 #define VM_M VM(GLOBAL_M)
 #define LOOKUP_M(method) (GLOBAL_M->lookup_symbol(method))
+#define LOOKUP_LIBM(lib,method) (GLOBAL_M->lookup_lib_symbol(lib,method))
 
 /* Version check (for compatibility) */
 #define APKENV_MODULE_CHECK_VERSION(version) \
@@ -59,6 +60,7 @@
         module->deinit = modulename ## _deinit; \
         module->pause = modulename ## _pause; \
         module->resume = modulename ## _resume; \
+        module->requests_exit = modulename ## _requests_exit; \
         return APKENV_MODULE_VERSION; \
     }
 

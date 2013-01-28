@@ -28,6 +28,8 @@ apkenv with the apk file as its argument. To use it, type:
 
    apkenv --install /path/to/your.apk
 
+please not that installing is not support on the pandora port yet.
+
 
 softfp vs. hardfp
 =================
@@ -35,6 +37,7 @@ softfp vs. hardfp
 Android is softfp.
 Maemo 5 is softfp.
 MeeGo 1.2 Harmattan is hardfp.
+Pandora is softfp.
 
 softfp and hardfp differ in the way functions with floating point arguments
 get called. Trying to call a hardfp function with the softfp calling
@@ -121,4 +124,12 @@ jni/jni.h:
 compat/hooks.c, compat/pthread_wrapper.c:
     pthread wrapper implementation based on code from libhybris
     Copyright (C) 2012 Carsten Munk
+
+
+Pandora Port
+============
+
+All code written by me (crowriot) for apkenv's pandora port is 
+licensed under same conditions as the apkenv itself.
+
 

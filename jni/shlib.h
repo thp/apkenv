@@ -38,4 +38,7 @@ jni_shlib_find_methods(const char *filename);
 void *
 jni_shlib_resolve(struct GlobalState *global, const char *method);
 
+void *
+jni_shlib_lib_resolve(struct GlobalState *global, const char* lib, const char *method);
+
 #endif /* JNI_SHLIB_H */
