@@ -655,7 +655,7 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
 
     self->priv->JNI_OnLoad(VM_M, NULL);
 
-    self->priv->nativeResize(ENV_M, GLOBAL_M, width, height);
+    self->priv->nativeResize(ENV_M, GLOBAL_M, height, width);
     self->priv->global->module_hacks->gles_landscape_to_portrait = 1;
 
 #ifdef PANDORA

@@ -103,12 +103,12 @@ int platform_init()
 
 int platform_getscreenheight()
 {
-    return screen->w;
+    return screen->h;
 }
 
 int platform_getscreenwidth()
 {
-    return screen->h;
+    return screen->w;
 }
 
 int platform_update()
