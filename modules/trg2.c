@@ -59,7 +59,7 @@ static int
 trg2_try_init(struct SupportModule *self)
 {
     self->priv->JNI_OnLoad = (jni_onload_t)LOOKUP_M("JNI_OnLoad");
-    self->priv->native_init = (trg2_init_t)LOOKUP_M("nativeInit");
+    self->priv->native_init = (trg2_init_t)LOOKUP_M("Java_io_thp_trg2_android_GameRenderer_nativeInit");
     self->priv->native_resize = (trg2_resize_t)LOOKUP_M("nativeResize");
     self->priv->native_touch = (trg2_touch_t)LOOKUP_M("nativeTouch");
     self->priv->native_render = (trg2_render_t)LOOKUP_M("nativeRender");
