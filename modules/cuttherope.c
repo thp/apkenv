@@ -366,6 +366,7 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     else
     if (strcmp(p2->name, "showBanner")==0) {
         cuttherope_video_banner_finished();
+        save_preferences(); //fast hack to save prefences in harmattan
     }
     else
     if (strcmp(p2->name,"playVideo")==0) {
@@ -707,7 +708,7 @@ cuttherope_deinit(struct SupportModule *self)
 {
     Mix_CloseAudio();
 
-    save_preferences();
+    save_preferences(); //not saving here in harmattan
 }
 
 static void
