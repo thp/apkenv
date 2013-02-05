@@ -141,6 +141,8 @@ JNIEnv_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
     MODULE_DEBUG_PRINTF("module_JNIEnv_CallObjectMethodV(%x, %s, %s, ...)\n", p1, p2->name, p2->sig);
     if (strcmp(p2->name, "readFile") == 0)
     {
+	SDL_Event e; 
+	SDL_PollEvent(&e); //fast hack to prevent "not responding" message when game starts
         struct dummy_jstring *str = va_arg(p3,struct dummy_jstring*);
         char tmp[PATH_MAX];
         strcpy(tmp, "assets/");
