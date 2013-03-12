@@ -1,0 +1,14 @@
+
+How to obtain Bionic libraries for the Raspberry Pi
+---------------------------------------------------
+
+Download the image from http://androidpi.wikia.com/wiki/Android_Pi_Wiki
+
+Loop-mount the first ext4 partition in /mnt:
+www.linuxquestions.org/questions/linux-general-1/trouble-mounting-dd-image-file-644362/#post3660310t
+
+Copy files from the image:
+/mnt/system/lib/libm.so
+/mnt/system/lib/libc.so
+/mnt/system/lib/libstdc++.so
+
