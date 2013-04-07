@@ -10,6 +10,16 @@
 
 extern char my___sF[1024];
 
+int
+my_sscanf(const char *str, const char *format, ...)
+{
+    WRAPPERS_DEBUG_PRINTF("sscanf()\n");
+    va_list ap;
+    va_start(ap, format);
+    int result = vsscanf(str, format, ap);
+    va_end(ap);
+    return result;
+}
 void
 my_abort()
 {

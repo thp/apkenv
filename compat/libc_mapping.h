@@ -34,7 +34,7 @@
 {"fgetpos", fgetpos},
 {"fsetpos", fsetpos},
 {"fscanf", fscanf},
-{"sscanf", sscanf},
+//{"sscanf", sscanf}, TODO
 {"fseek", fseek},
 {"fileno", fileno},
 {"fsync", fsync},
