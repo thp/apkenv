@@ -142,7 +142,7 @@
 
 {"strchr", strchr},
 {"strcpy", strcpy},
-{"strcasecmp", strcasecmp},
+{"strcasecmp", my_strcasecmp},
 {"strcat", strcat},
 {"strtoul", strtoul},
 {"strrchr", strrchr},
