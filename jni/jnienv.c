@@ -36,7 +36,7 @@
 #include "../apkenv.h"
 
 #ifdef APKENV_DEBUG
-#  define JNIENV_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#  define JNIENV_DEBUG_PRINTF(...) fprintf(stderr,__VA_ARGS__)
 #else
 #  define JNIENV_DEBUG_PRINTF(...)
 #endif

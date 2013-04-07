@@ -3,7 +3,7 @@
 #include <assert.h>
 
 #ifdef APKENV_DEBUG
-#  define WRAPPERS_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#  define WRAPPERS_DEBUG_PRINTF(...) fprintf(stderr,__VA_ARGS__)
 #else
 #  define WRAPPERS_DEBUG_PRINTF(...)
 #endif

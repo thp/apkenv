@@ -40,7 +40,7 @@
 #include <sys/stat.h>
 
 #ifdef APKENV_DEBUG
-#  define MODULE_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#  define MODULE_DEBUG_PRINTF(...) fprintf(stderr,__VA_ARGS__)
 #else
 #  define MODULE_DEBUG_PRINTF(...)
 #endif
