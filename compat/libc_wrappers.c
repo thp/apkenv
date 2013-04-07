@@ -243,7 +243,7 @@ my_getenv(__const char *__name)
 int
 my_gettimeofday(struct timeval *__restrict __tv, __timezone_ptr_t __tz)
 {
-    WRAPPERS_DEBUG_PRINTF("gettimeofday()\n", __tv, __tz);
+    //WRAPPERS_DEBUG_PRINTF("gettimeofday()\n", __tv, __tz);
     return gettimeofday(__tv, __tz);
 }
 struct tm *
