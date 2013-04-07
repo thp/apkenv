@@ -46,6 +46,9 @@ struct ModuleHacks {
     int gles_landscape_to_portrait;
     int gles_downscale_images;
     int gles_no_readpixels;
+
+    int handle_update;
+    int (*system_update)(void);
 };
 
 struct SupportModule {
