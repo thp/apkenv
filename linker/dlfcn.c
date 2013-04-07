@@ -22,6 +22,15 @@
 #include "linker.h"
 #include "linker_format.h"
 
+/* for get_hooked_symbol */
+#include "../compat/hooks.h"
+
+#ifdef APKENV_DEBUG
+#  define LINKER_DEBUG_PRINTF(...) fprintf(stderr,__VA_ARGS__)
+#else
+#  define LINKER_DEBUG_PRINTF(...)
+#endif
+
 /* This file hijacks the symbols stubbed out in libdl.so. */
 
 #define DL_SUCCESS                    0
@@ -95,6 +104,12 @@ void *android_dlsym(void *handle, const char *symbol)
         goto err;
     }
 
+    if(NULL != (sym = get_hooked_symbol(symbol))) {
+        LINKER_DEBUG_PRINTF("hooked symbol %s to %p\n",symbol,sym);
+        pthread_mutex_unlock(&dl_lock);
+        return sym;
+    }
+
     if(handle == RTLD_DEFAULT) {
         sym = lookup(symbol, &found, NULL);
     } else if(handle == RTLD_NEXT) {
@@ -125,6 +140,9 @@ void *android_dlsym(void *handle, const char *symbol)
         set_dlerror(DL_ERR_SYMBOL_NOT_FOUND);
 
 err:
+    /* TODO: should we hook unhandled functions to a dummy function
+     * which tells us that an unhooked function has been called? */
+    LINKER_DEBUG_PRINTF("symbol %s has not been hooked.\n",symbol);
     pthread_mutex_unlock(&dl_lock);
     return 0;
 }
