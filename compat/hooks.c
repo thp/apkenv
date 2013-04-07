@@ -41,7 +41,7 @@
 #include "gles_wrappers.h"
 #include "gles2_wrappers.h"
 #include "pthread_wrappers.h"
-
+#include "egl_wrappers.h"
 
 char my___sF[1024];
 
@@ -51,6 +51,7 @@ static struct _hook hooks[] = {
 #include "gles_mapping.h"
 #include "gles2_mapping.h"
 #include "pthread_mapping.h"
+#include "egl_mapping.h"
 
   {"__sF", my___sF},
 
