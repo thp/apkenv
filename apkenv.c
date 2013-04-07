@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <unistd.h>
 
 #include <SDL/SDL.h>
 
@@ -40,6 +41,7 @@
 #include "jni/shlib.h"
 #include "apklib/apklib.h"
 #include "debug/debug.h"
+#include "compat/gles_wrappers.h"
 
 #include "apkenv.h"
 #include "platform.h"
@@ -192,7 +194,7 @@ usage()
     exit(1);
 }
 
-static char *
+static const char *
 apk_basename(const char *filename)
 {
     char *fn = strrchr(filename, '/');
@@ -235,7 +237,7 @@ operation(const char *operation, const char *filename)
         /* On Linux, realpath(3) always returns an absolute path */
         assert(realpath(filename, apk_absolute) != NULL);
 
-        char *app_name = apk_basename(filename);
+        const char *app_name = apk_basename(filename);
 
         char icon_filename[PATH_MAX];
         sprintf(icon_filename, "%s%s.png", platform_getdatadirectory(), app_name);

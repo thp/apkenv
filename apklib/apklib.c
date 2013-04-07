@@ -32,6 +32,7 @@
 #include <limits.h>
 #include <assert.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "unzip.h"
 #include "ioapi_mem.h"
@@ -54,7 +55,7 @@ apk_get_shared_libraries(AndroidApk *apk, const char* libdir)
 {
     assert(apk != NULL);
 
-    char filename[PATH_MAX], tmpname[PATH_MAX];
+    char filename[PATH_MAX];
     FILE *result = NULL;
     char buf[64*1024];
     int read;

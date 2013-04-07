@@ -1,6 +1,7 @@
 #ifdef APKENV_GLES
 #include "gles_wrappers.h"
 #include <assert.h>
+#include <EGL/egl.h>
 #ifdef APKENV_DEBUG
 #  define WRAPPERS_DEBUG_PRINTF(...) printf(__VA_ARGS__)
 #  define GL_TEST_ERROR if (glGetError()!=GL_NO_ERROR) { printf("GL ERROR near %s\n", __FUNCTION__); }
@@ -32,7 +33,7 @@ struct gles_extensions {
 static struct gles_extensions extensions;
 
 #define init_extension(ext) \
-    extensions . ext = eglGetProcAddress(#ext); \
+    extensions . ext = (typeof(extensions . ext))eglGetProcAddress(#ext); \
     WRAPPERS_DEBUG_PRINTF("%s is at 0x%x\n", #ext, extensions . ext)
 
 void gles_extensions_init()
