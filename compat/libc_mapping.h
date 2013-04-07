@@ -214,3 +214,7 @@
 {"gzclose", gzclose},
 {"gzgets", gzgets},
 
+{"tzset", tzset},
+{"tzname", tzname},
+
+{"valloc", valloc},
