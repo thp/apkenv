@@ -42,6 +42,7 @@
 #include "apklib/apklib.h"
 #include "debug/debug.h"
 #include "compat/gles_wrappers.h"
+#include "linker/linker.h"
 
 #include "apkenv.h"
 #include "platform.h"
@@ -315,6 +316,9 @@ system_init()
 
     SDL_ShowCursor(0);
 
+    /* SDL loads some libs.. */
+    notify_gdb_of_libraries();
+
     return 1;
 }
 
@@ -419,6 +423,7 @@ int main(int argc, char **argv)
 
     load_modules(".");
     load_modules(platform_getmoduledirectory());
+    notify_gdb_of_libraries();
 
     if (global.support_modules == NULL) {
         printf("No support modules found.\n");
