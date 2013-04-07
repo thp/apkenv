@@ -22,11 +22,13 @@
 #include "linker.h"
 #include "linker_format.h"
 
+#include "linker_debug.h"
+
 /* for get_hooked_symbol */
 #include "../compat/hooks.h"
 
 #ifdef APKENV_DEBUG
-#  define LINKER_DEBUG_PRINTF(...) fprintf(stderr,__VA_ARGS__)
+#  define LINKER_DEBUG_PRINTF(...) WARN(__VA_ARGS__)
 #else
 #  define LINKER_DEBUG_PRINTF(...)
 #endif
