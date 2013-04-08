@@ -60,8 +60,10 @@
 
 {"gmtime", gmtime},
 {"localtime", localtime},
+{"localtime_r", localtime_r},
 {"mktime", mktime},
 {"strftime", strftime},
+{"wcsftime", wcsftime},
 
 {"setlocale", setlocale},
 
@@ -161,6 +163,7 @@
 {"memchr", memchr},
 {"memcmp", memcmp},
 {"time", time},
+{"tzset", tzset},
 
 {"setjmp", setjmp},
 {"longjmp", longjmp},
