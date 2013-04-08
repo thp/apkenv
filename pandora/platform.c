@@ -45,6 +45,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/fb.h>
+#include <unistd.h>
 
 #ifndef FBIO_WAITFORVSYNC
 #define FBIO_WAITFORVSYNC _IOW('F', 0x20, __u32)

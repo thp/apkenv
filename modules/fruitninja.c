@@ -44,6 +44,7 @@
 #include "common.h"
 #include <string.h>
 #include <limits.h>
+#include <unistd.h>
 #include "SDL/SDL.h"
 #include "SDL/SDL_mixer.h"
 

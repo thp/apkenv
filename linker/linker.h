@@ -152,6 +152,8 @@ struct soinfo
     Elf32_Addr gnu_relro_start;
     unsigned gnu_relro_len;
 
+    /* apkenv stuff */
+    char fullpath[SOINFO_NAME_LEN];
 };
 
 
@@ -220,5 +222,7 @@ _Unwind_Ptr dl_unwind_find_exidx(_Unwind_Ptr pc, int *pcount);
 #elif defined(ANDROID_X86_LINKER)
 int dl_iterate_phdr(int (*cb)(struct dl_phdr_info *, size_t, void *), void *);
 #endif
+
+void notify_gdb_of_libraries(void);
 
 #endif
