@@ -456,7 +456,9 @@ int main(int argc, char **argv)
     recursive_mkdir(data_directory);
 
     module->init(module, platform_getscreenwidth(), platform_getscreenheight(), data_directory);
-
+    
+    if(global.module_hacks->handle_update) goto finish;
+    
     int emulate_multitouch = 0;
     const int emulate_finger_id = 2;
 
@@ -524,7 +526,7 @@ int main(int argc, char **argv)
             }
         }
         module->update(module);
-        if(!global.module_hacks->handle_update) system_update();
+        system_update();
     }
 
 finish:
