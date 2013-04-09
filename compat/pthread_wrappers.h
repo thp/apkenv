@@ -91,6 +91,8 @@ my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stacksize);
 int
 my_pthread_attr_getstack(pthread_attr_t *__attr, void** stackaddr, size_t* stacksize);
 int
+my_pthread_attr_setstack(pthread_attr_t *__attr, void* stackaddr, size_t stacksize);
+int
 my_pthread_attr_setschedpolicy(pthread_attr_t *__attr, int __policy);
 int
 my_pthread_attr_setschedparam (pthread_attr_t * __attr,struct sched_param * __param);

@@ -2,7 +2,7 @@
 #include "gles2_wrappers.h"
 #include <assert.h>
 #ifdef APKENV_DEBUG
-#  define WRAPPERS_DEBUG_PRINTF(...) printf("%d %s", pthread_self(), __VA_ARGS__)
+#  define WRAPPERS_DEBUG_PRINTF(...) fprintf(stderr,"%d %s", pthread_self(), __VA_ARGS__)
 #else
 #  define WRAPPERS_DEBUG_PRINTF(...)
 #endif

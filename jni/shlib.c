@@ -37,7 +37,7 @@
 #include "../apkenv.h"
 
 #ifdef APKENV_DEBUG
-#  define JNISHLIB_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#  define JNISHLIB_DEBUG_PRINTF(...) fprintf(stderr,__VA_ARGS__)
 #else
 #  define JNISHLIB_DEBUG_PRINTF(...)
 #endif

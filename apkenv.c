@@ -350,13 +350,15 @@ int main(int argc, char **argv)
     }
 
     memset(&global_module_hacks,0,sizeof(global_module_hacks));
-
+    
     global.lookup_symbol = lookup_symbol_impl;
     global.lookup_lib_symbol = lookup_lib_symbol_impl;
     global.foreach_file = foreach_file_impl;
     global.read_file = read_file_impl;
     global.recursive_mkdir = recursive_mkdir;
     global.module_hacks = &global_module_hacks;
+    
+    global.module_hacks->system_update = system_update;
 
     jnienv_init(&global);
     javavm_init(&global);
@@ -454,7 +456,9 @@ int main(int argc, char **argv)
     recursive_mkdir(data_directory);
 
     module->init(module, platform_getscreenwidth(), platform_getscreenheight(), data_directory);
-
+    
+    if(global.module_hacks->handle_update) goto finish;
+    
     int emulate_multitouch = 0;
     const int emulate_finger_id = 2;
 

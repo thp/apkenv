@@ -3,13 +3,23 @@
 #include <assert.h>
 
 #ifdef APKENV_DEBUG
-#  define WRAPPERS_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#  define WRAPPERS_DEBUG_PRINTF(...) fprintf(stderr,__VA_ARGS__)
 #else
 #  define WRAPPERS_DEBUG_PRINTF(...)
 #endif
 
 extern char my___sF[1024];
 
+int
+my_sscanf(const char *str, const char *format, ...)
+{
+    WRAPPERS_DEBUG_PRINTF("sscanf()\n");
+    va_list ap;
+    va_start(ap, format);
+    int result = vsscanf(str, format, ap);
+    va_end(ap);
+    return result;
+}
 void
 my_abort()
 {
@@ -233,7 +243,7 @@ my_getenv(__const char *__name)
 int
 my_gettimeofday(struct timeval *__restrict __tv, __timezone_ptr_t __tz)
 {
-    WRAPPERS_DEBUG_PRINTF("gettimeofday()\n", __tv, __tz);
+    //WRAPPERS_DEBUG_PRINTF("gettimeofday()\n", __tv, __tz);
     return gettimeofday(__tv, __tz);
 }
 struct tm *
@@ -494,11 +504,19 @@ my_srand48(long int __seedval)
     WRAPPERS_DEBUG_PRINTF("srand48()\n", __seedval);
     srand48(__seedval);
 }
+char
+x_tolower(char x)
+{
+    if((x >= 'A')&&(x <= 'Z')) return (x - 'A' + 'a');
+    return x;
+}
 int
 my_strcasecmp(__const char *__s1, __const char *__s2)
 {
-    WRAPPERS_DEBUG_PRINTF("strcasecmp()\n", __s1, __s2);
-    return strcasecmp(__s1, __s2);
+    //WRAPPERS_DEBUG_PRINTF("strcasecmp()\n", __s1, __s2);
+    while(x_tolower(*__s1) == x_tolower(*__s2))
+        if('\0' == *(__s1++) || '\0' == *(__s2)) return 0;
+    return (x_tolower(*__s1) - x_tolower(*__s2));
 }
 char *
 my_strcat(char *__restrict __dest, __const char *__restrict __src)

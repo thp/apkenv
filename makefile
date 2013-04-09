@@ -66,6 +66,12 @@ else
     LDFLAGS += -lGLES_CM
 endif
 
+EGL ?= 1
+ifeq ($(EGL),1)
+    CFLAGS += -DAPKENV_EGL
+    LDFLAGS += -lEGL
+endif
+
 FREMANTLE ?= 0
 ifeq ($(FREMANTLE),1)
     CFLAGS += -DFREMANTLE
