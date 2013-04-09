@@ -41,6 +41,8 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_mixer.h"
 
+#include <SDL/SDL_opengles.h>
+
 #define ORIENTATION_LANDSCAPE 2
 #define ORIENTATION_PORTRAIT 1
 
@@ -282,6 +284,7 @@ marmalade_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint
             REG_IF_MATCH(loaderthread,resumeAppThreads)
             REG_IF_MATCH(loaderthread,onAccelNative)
             REG_IF_MATCH(loaderthread,onCompassNative)
+            REG_IF_MATCH(loaderthread,onMotionEvent)
             REG_IF_MATCH(loaderthread,setViewNative)
             REG_IF_MATCH(loaderthread,runNative)
             REG_IF_MATCH(loaderthread,audioStoppedNotify)
@@ -403,6 +406,10 @@ marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
     {
         return 8; // apparently HSDPA
     }
+    else if(method_is(audioPlay))
+    {
+        return 0;
+    }
     else if(method_is(soundInit))
     {
         //(IZI)I
@@ -414,8 +421,9 @@ marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
         
         // calling my_soundInit (tbe: Mix_OpenAudio) directly crashes in __strcasecmp
 
-        request_audio_init = 1;
-        while(request_audio_init) sleep(1);
+        //my_soundInit();
+        //request_audio_init = 1;
+        //while(request_audio_init) sleep(1);
         
         return AUDIO_RATE;
     }
@@ -538,6 +546,7 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     else if(method_is(glSwapBuffers))
     {
         marmalade_priv.global->module_hacks->system_update();
+        usleep(10);
     }
     else if(method_is(videoStop))
     {
@@ -564,11 +573,26 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     else if(method_is(soundSetVolume))
     {
         jint volume = va_arg(p3,int);
-        Mix_VolumeMusic(volume);
+        //Mix_VolumeMusic(volume);
     }
     else if(method_is(doDraw))
     {
-        MODULE_DEBUG_PRINTF("TODO: implement doDraw\n");
+        GLuint doDraw_tex;
+        glGenTextures(1,&doDraw_tex);
+        glBindTexture(GL_TEXTURE_2D, doDraw_tex);
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MIN_FILTER,GL_LINEAR); 
+        glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAG_FILTER,GL_LINEAR);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, marmalade_priv.w, marmalade_priv.h, 0, GL_RGB, GL_UNSIGNED_INT, marmalade_priv.pixels);
+        GLfloat vertices[] = {-1, -1, 0,
+                              -1,  1, 0,
+                               1,  1, 0,
+                               1, -1, 0};
+        GLubyte indices[] = {0,1,2,
+                             0,2,3};
+        glVertexPointer(3, GL_FLOAT, 0, vertices);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, indices);
+        glDeleteTextures(1,&doDraw_tex);
+        marmalade_priv.global->module_hacks->system_update();
     }
     else
     {
@@ -722,13 +746,12 @@ marmalade_try_init(struct SupportModule *self)
 static void*
 marmalade_runner(void *selfptr)
 {
-    struct SupportModule *self = (struct SupportModule*)selfptr; 
+    struct SupportModule *self = (struct SupportModule*)selfptr;
     
     int width = self->priv->w;
     int height = self->priv->h;
     
     self->priv->done = 0;
-    GLOBAL_M->module_hacks->handle_update = 1;
     
     // TODO: extract files (implement dzip algorithm)
     
@@ -768,10 +791,15 @@ marmalade_runner(void *selfptr)
     return NULL;
 }
 
+static void*
+marmalade_input_thread(void *selfptr);
+
 static void
 marmalade_init(struct SupportModule *self, int width, int height, const char *home)
 {
     self->priv->global = GLOBAL_M;
+
+    GLOBAL_M->module_hacks->handle_update = 1;
 
     self->priv->w = width;
     self->priv->h = height;
@@ -785,14 +813,37 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
     self->priv->loaderthread.initNative(ENV_M,self->priv->theloaderthread);
     MODULE_DEBUG_PRINTF("initNative done.\n");
 
-    /* Marmalade SDK wants to take over the main loop, so we let it have it's own thread */
-    pthread_create(&self->priv->marmalade_thread,NULL,marmalade_runner,(void*)self);
+    pthread_create(&self->priv->marmalade_thread,NULL,marmalade_input_thread,(void*)self);
+
+    marmalade_runner(self);
 }
+
+#define ACTION_POINTER_1_DOWN   5
+#define ACTION_POINTER_1_UP     6
 
 static void
 marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
 {
-    // TODO
+   if(self->priv->loaderthread.onMotionEvent)
+   {
+       int action = 0;
+       if(ACTION_DOWN == event)
+       {
+           action = ACTION_POINTER_1_DOWN;
+       }
+       else if(ACTION_UP == event)
+       {
+           action = ACTION_POINTER_1_UP;
+       }
+       else if(ACTION_MOVE == event)
+       {
+           return; // ?
+       }
+
+       MODULE_DEBUG_PRINTF("onMotionEvent: %s\n", action == ACTION_POINTER_1_UP ? "up" : "down");
+       self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,action-1 /* duh? */, x,y);
+       MODULE_DEBUG_PRINTF("onMotionEvent done.\n");
+   }
 }
 
 static void
@@ -800,19 +851,23 @@ marmalade_update(struct SupportModule *self)
 {
     if(request_audio_init)
     {
-        my_soundInit();
+        //my_soundInit();
         request_audio_init = 0;
     }
+//    MODULE_DEBUG_PRINTF("audioStoppedNotify\n");
+//    marmalade_priv.loaderthread.audioStoppedNotify(ENV(marmalade_priv.global),marmalade_priv.theloaderthread,0/*started_audio*/);
     // everybody needs some time to sleep
-    sleep(5);
+//    MODULE_DEBUG_PRINTF("audioStoppedNotify done.\n");
+    usleep(5);
 }
 
 static void
 marmalade_deinit(struct SupportModule *self)
 {
     MODULE_DEBUG_PRINTF("marmalade_deinit\n");
-    pthread_kill(self->priv->marmalade_thread,9);
-    pthread_join(self->priv->marmalade_thread,NULL);
+    MODULE_DEBUG_PRINTF("shutdownNative\n");
+    marmalade_priv.loaderthread.shutdownNative(ENV(marmalade_priv.global),marmalade_priv.theloaderthread);
+    MODULE_DEBUG_PRINTF("shutdownNative done.\n");
 }
 
 static void
@@ -829,6 +884,75 @@ static int
 marmalade_requests_exit(struct SupportModule *self)
 {
     return self->priv->done;
+}
+
+static void*
+marmalade_input_thread(void *selfptr)
+{
+    struct SupportModule *self = (struct SupportModule*)selfptr; 
+    int emulate_multitouch = 0;
+    const int emulate_finger_id = 2;
+    for(;;)
+    {
+        SDL_Event e;
+        while (SDL_WaitEvent(&e)) {
+#ifdef PANDORA
+            if (e.type == SDL_KEYDOWN) {
+                if (e.key.keysym.sym==SDLK_ESCAPE) {
+                    marmalade_deinit(self);
+                    goto finish;
+                }
+                else if (e.key.keysym.sym==SDLK_RSHIFT) {
+                    //emulate_multitouch = 1;
+                    marmalade_input(self,ACTION_DOWN, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
+                }
+            }
+            else if (e.type == SDL_KEYUP) {
+                if (e.key.keysym.sym==SDLK_RSHIFT) {
+                    //emulate_multitouch = 0;
+                    marmalade_input(self,ACTION_UP, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
+                }
+            } else
+#endif
+            if (e.type == SDL_MOUSEBUTTONDOWN) {
+                marmalade_input(self, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
+                if (emulate_multitouch) {
+                    marmalade_input(self,ACTION_DOWN, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+                }
+            } else if (e.type == SDL_MOUSEBUTTONUP) {
+                marmalade_input(self, ACTION_UP, e.button.x, e.button.y, e.button.which);
+                if (emulate_multitouch) {
+                    marmalade_input(self,ACTION_UP, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+                }
+            } else if (e.type == SDL_MOUSEMOTION) {
+                marmalade_input(self, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
+                if (emulate_multitouch) {
+                    marmalade_input(self,ACTION_MOVE, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+                }
+            } else if (e.type == SDL_QUIT) {
+                marmalade_deinit(self);
+                goto finish;
+            } else if (e.type == SDL_ACTIVEEVENT) {
+                if (e.active.state == SDL_APPACTIVE && e.active.gain == 0) {
+                    marmalade_pause(self);
+                    while (1) {
+                        SDL_WaitEvent(&e);
+                        if (e.type == SDL_ACTIVEEVENT) {
+                            if (e.active.state == SDL_APPACTIVE &&
+                                    e.active.gain == 1) {
+                                break;
+                            }
+                        } else if (e.type == SDL_QUIT) {
+                            goto finish;
+                        }
+                    }
+                    marmalade_resume(self);
+                }
+            }
+        }
+    }
+    finish:
+    exit(0);
 }
 
 APKENV_MODULE(marmalade, MODULE_PRIORITY_GENERIC)
