@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <sys/stat.h>
 #include <dirent.h>
+#include <unistd.h>
 
 #include <SDL/SDL.h>
 
@@ -40,6 +41,8 @@
 #include "jni/shlib.h"
 #include "apklib/apklib.h"
 #include "debug/debug.h"
+#include "compat/gles_wrappers.h"
+#include "linker/linker.h"
 
 #include "apkenv.h"
 #include "platform.h"
@@ -48,32 +51,33 @@
 struct GlobalState global;
 struct ModuleHacks global_module_hacks;
 
-void *
+static void *
 lookup_symbol_impl(const char *method)
 {
     return jni_shlib_resolve(&global, method);
 }
 
-void *
+static void *
 lookup_lib_symbol_impl(const char *lib, const char *method)
 {
     return jni_shlib_lib_resolve(&global, lib, method);
 }
 
-void
+static void
 foreach_file_impl(const char *prefix, apk_for_each_file_callback callback)
 {
     apk_for_each_file(global.apklib_handle, prefix, callback);
 }
 
-int
+static int
 read_file_impl(const char *filename, char **buffer, size_t *size)
 {
     return (apk_read_file(global.apklib_handle,
                 filename, buffer, size) == APK_OK);
 }
 
-void register_module(struct SupportModule *module)
+static void
+register_module(struct SupportModule *module)
 {
     struct SupportModule **current = &(global.support_modules);
 
@@ -88,7 +92,8 @@ void register_module(struct SupportModule *module)
     *current = module;
 }
 
-void load_module(const char *filename)
+static void
+load_module(const char *filename)
 {
     void *dl = dlopen(filename, RTLD_LAZY);
     if (dl == NULL) {
@@ -127,7 +132,8 @@ void load_module(const char *filename)
     dlclose(dl);
 }
 
-void load_modules(const char *dirname)
+static void
+load_modules(const char *dirname)
 {
     DIR *dir = opendir(dirname);
     if (dir == NULL) {
@@ -153,7 +159,8 @@ void load_modules(const char *dirname)
     closedir(dir);
 }
 
-void install_overrides(struct SupportModule *module)
+static void
+install_overrides(struct SupportModule *module)
 {
     int i;
     void **override, **fake;
@@ -177,7 +184,7 @@ void install_overrides(struct SupportModule *module)
     }
 }
 
-void
+static void
 usage()
 {
     if (platform_getinstalldirectory()==0) {
@@ -188,7 +195,7 @@ usage()
     exit(1);
 }
 
-char *
+static const char *
 apk_basename(const char *filename)
 {
     char *fn = strrchr(filename, '/');
@@ -220,7 +227,7 @@ recursive_mkdir(const char *directory)
     free(tmp);
 }
 
-void
+static void
 operation(const char *operation, const char *filename)
 {
     if (strcmp(operation, "--install") == 0 && platform_getinstalldirectory()!=0) {
@@ -231,7 +238,7 @@ operation(const char *operation, const char *filename)
         /* On Linux, realpath(3) always returns an absolute path */
         assert(realpath(filename, apk_absolute) != NULL);
 
-        char *app_name = apk_basename(filename);
+        const char *app_name = apk_basename(filename);
 
         char icon_filename[PATH_MAX];
         sprintf(icon_filename, "%s%s.png", platform_getdatadirectory(), app_name);
@@ -292,7 +299,8 @@ operation(const char *operation, const char *filename)
 }
 
 
-int system_init()
+static int
+system_init()
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
         printf("SDL Init failed.\n");
@@ -308,15 +316,20 @@ int system_init()
 
     SDL_ShowCursor(0);
 
+    /* SDL loads some libs.. */
+    notify_gdb_of_libraries();
+
     return 1;
 }
 
-void system_update()
+static void
+system_update()
 {
     platform_update();
 }
 
-void system_exit()
+static void
+system_exit()
 {
     platform_exit();
 }
@@ -410,6 +423,7 @@ int main(int argc, char **argv)
 
     load_modules(".");
     load_modules(platform_getmoduledirectory());
+    notify_gdb_of_libraries();
 
     if (global.support_modules == NULL) {
         printf("No support modules found.\n");

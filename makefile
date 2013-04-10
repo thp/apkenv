@@ -53,6 +53,7 @@ MODULES = $(patsubst modules/%.c,%.apkenv.so,$(MODULES_SOURCES))
 LDFLAGS = -fPIC -ldl -lz -lSDL -lSDL_mixer -pthread -lpng -ljpeg
 
 ifeq ($(PANDORA),1)
+CFLAGS += -DPANDORA
 LDFLAGS += -lrt
 endif
 
@@ -105,8 +106,14 @@ install: $(TARGET) $(MODULES)
 	@install -m755 $(TARGET) $(DESTDIR)/usr/bin
 	@echo -e "\tINSTALL\tMODULES"
 	@install -m644 $(MODULES) $(DESTDIR)$(PREFIX)/modules
+ifneq ($(PANDORA),1)
 	@echo -e "\tINSTALL\tBIONIC"
 	@install -m644 $(BIONIC_LIBS) $(DESTDIR)$(PREFIX)/bionic
+else
+	@echo -e "\tINSTALL\tlibs"
+	@mkdir -p $(DESTDIR)$(PREFIX)/system/lib
+	@install -m644 libs/pandora/system/lib/*.so $(DESTDIR)$(PREFIX)/system/lib/
+endif
 
 clean:
 	@echo -e "\tCLEAN"

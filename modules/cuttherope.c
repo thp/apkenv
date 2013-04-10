@@ -38,6 +38,7 @@
 #include "../imagelib/loadpng.c"
 #include <linux/limits.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
 #ifdef APKENV_DEBUG
 #  define MODULE_DEBUG_PRINTF(...) printf(__VA_ARGS__)
@@ -304,7 +305,6 @@ cuttherope_loadImage(JNIEnv *env, const char *filename )
             .swaprb = 1,
         };
 
-        image_t* image = 0;
         if (strstr(filepath,".png")!=0) {
             img->image = loadpng_mem(buf,buf_size,loadsettings);
         }
@@ -371,7 +371,7 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     else
     if (strcmp(p2->name,"playVideo")==0) {
 
-        struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
+        //struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
         jint paramInt =  va_arg(p3, jint);
 
         if (cuttherope_priv.nativePlaybackFinished)

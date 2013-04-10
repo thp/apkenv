@@ -28,7 +28,7 @@ apkenv with the apk file as its argument. To use it, type:
 
    apkenv --install /path/to/your.apk
 
-please not that installing is not support on the pandora port yet.
+please note that installing is not supported on the pandora port yet.
 
 
 softfp vs. hardfp

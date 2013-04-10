@@ -85,13 +85,13 @@ jfieldID JNIEnv_GetStaticFieldID(JNIEnv *p0, jclass p1, const char *p2, const ch
 jobject JNIEnv_GetStaticObjectField(JNIEnv *p0, jclass p1, jfieldID p2)
 {
     struct dummy_jclass* cls = p1;
-    struct _jfieldID* fld = p2;
+    struct _jfieldID* fld = (void *)p2;
 
     MODULE_DEBUG_PRINTF("GetStaticObjectField %s, %s, %s\n", cls->name, fld->name, fld->sig);
 
     dummy_jobject* obj = malloc(sizeof(dummy_jobject));
     obj->clazz = cls;
-    obj->field = fld;
+    obj->field = p2;
 
     return obj;
 }
@@ -112,7 +112,7 @@ jobject JNIEnv_CallObjectMethod(JNIEnv* env, jobject p1, jmethodID p2, ...)
 {
     MODULE_DEBUG_PRINTF("CallObjectMethod %x %x\n",p1,p2);
 
-    dummy_jobject* obj = p1;
+    //dummy_jobject* obj = p1;
     jmethodID method = p2;
 
     if (strcmp(method->name,"getPackageCodePath")==0)

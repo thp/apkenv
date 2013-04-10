@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
+#include <unistd.h>
 
 #include <SDL/SDL.h>
 #include <EGL/egl.h>

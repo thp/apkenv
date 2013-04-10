@@ -157,11 +157,14 @@ const char *linker_get_error(void)
  * This function is an empty stub where GDB locates a breakpoint to get notified
  * about linker activity.
  */
-extern void __attribute__((noinline)) rtld_db_dlactivity(void);
+//extern void __attribute__((noinline)) rtld_db_dlactivity(void);
 
 //static struct r_debug _r_debug = {1, NULL, &rtld_db_dlactivity,
 //                                  RT_CONSISTENT, 0};
-static struct link_map *r_debug_tail = 0;
+/* apkenv */
+#define rtld_db_dlactivity() ((void (*)(void))_r_debug.r_brk)()
+
+static struct link_map *r_debug_head, *r_debug_tail;
 
 static pthread_mutex_t _r_debug_lock = PTHREAD_MUTEX_INITIALIZER;
 
@@ -173,8 +176,8 @@ static void insert_soinfo_into_debug_map(soinfo * info)
      */
     map = &(info->linkmap);
     map->l_addr = info->base;
-    map->l_name = (char*) info->name;
-    map->l_ld = (uintptr_t)info->dynamic;
+    map->l_name = info->fullpath;
+    map->l_ld = (void *)info->dynamic;
 
     /* Stick the new library at the end of the list.
      * gdb tends to care more about libc than it does
@@ -186,7 +189,8 @@ static void insert_soinfo_into_debug_map(soinfo * info)
         map->l_prev = r_debug_tail;
         map->l_next = 0;
     } else {
-        _r_debug.r_map = map;
+        /* apkenv: for sending to gdb */
+        r_debug_head = map;
         map->l_prev = 0;
         map->l_next = 0;
     }
@@ -221,6 +225,7 @@ void notify_gdb_of_load(soinfo * info)
     _r_debug.r_state = RT_CONSISTENT;
     rtld_db_dlactivity();
 
+    notify_gdb_of_libraries();
     pthread_mutex_unlock(&_r_debug_lock);
 }
 
@@ -241,15 +246,28 @@ void notify_gdb_of_unload(soinfo * info)
     _r_debug.r_state = RT_CONSISTENT;
     rtld_db_dlactivity();
 
+    notify_gdb_of_libraries();
     pthread_mutex_unlock(&_r_debug_lock);
 }
 
-void notify_gdb_of_libraries()
+void notify_gdb_of_libraries(void)
 {
+    struct link_map *tmap = _r_debug.r_map;
+    while (tmap->l_next != NULL)
+        tmap = tmap->l_next;
+
     _r_debug.r_state = RT_ADD;
     rtld_db_dlactivity();
+
+    /* append android libs before notifying gdb */
+    tmap->l_next = r_debug_head;
+    r_debug_head->l_prev = tmap;
+
     _r_debug.r_state = RT_CONSISTENT;
     rtld_db_dlactivity();
+
+    /* restore so that ld-linux doesn't freak out */
+    tmap->l_next = NULL;
 }
 
 static soinfo *alloc_info(const char *name)
@@ -617,7 +635,7 @@ static int _open_lib(const char *name)
     return -1;
 }
 
-static int open_library(const char *name)
+static int open_library(const char *name, char *fullpath)
 {
     int fd;
     char buf[512];
@@ -628,6 +646,8 @@ static int open_library(const char *name)
 
     if(name == 0) return -1;
     if(strlen(name) > 256) return -1;
+
+    strcpy(fullpath, name);
 
     if ((name[0] == '/') && ((fd = _open_lib(name)) >= 0))
         return fd;
@@ -641,8 +661,10 @@ static int open_library(const char *name)
             WARN("Ignoring very long library path: %s/%s\n", *path, name);
             continue;
         }
-        if ((fd = _open_lib(buf)) >= 0)
+        if ((fd = _open_lib(buf)) >= 0) {
+            strcpy(fullpath, buf);
             return fd;
+        }
     }
     for (path = sopaths; *path; path++) {
         n = format_buffer(buf, sizeof(buf), "%s/%s", *path, name);
@@ -650,8 +672,10 @@ static int open_library(const char *name)
             WARN("Ignoring very long library path: %s/%s\n", *path, name);
             continue;
         }
-        if ((fd = _open_lib(buf)) >= 0)
+        if ((fd = _open_lib(buf)) >= 0) {
+            strcpy(fullpath, buf);
             return fd;
+        }
     }
 
     return -1;
@@ -1098,7 +1122,8 @@ get_wr_offset(int fd, const char *name, Elf32_Ehdr *ehdr)
 static soinfo *
 load_library(const char *name)
 {
-    int fd = open_library(name);
+    char fullpath[512];
+    int fd = open_library(name, fullpath);
     int cnt;
     unsigned ext_sz;
     unsigned req_base;
@@ -1140,6 +1165,10 @@ load_library(const char *name)
     si = alloc_info(bname ? bname + 1 : name);
     if (si == NULL)
         goto fail;
+
+    /* apkenv */
+    strncpy(si->fullpath, fullpath, sizeof(si->fullpath));
+    si->fullpath[sizeof(si->fullpath) - 1] = 0;
 
     /* Carve out a chunk of memory where we will map in the individual
      * segments */
