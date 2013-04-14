@@ -60,6 +60,7 @@ struct SupportModule {
     int (*try_init)(struct SupportModule *self);
     void (*init)(struct SupportModule *self, int width, int height, const char *home);
     void (*input)(struct SupportModule *self, int event, int x, int y, int finger);
+    void (*key_input)(struct SupportModule *self, int event, int keycode, int unicode);
     void (*update)(struct SupportModule *self);
     void (*deinit)(struct SupportModule *self);
     void (*pause)(struct SupportModule *self);
@@ -118,10 +119,11 @@ struct GlobalState {
 #define ENV(global_ptr) (&((global_ptr)->env))
 
 
-/* Android MotionEvent */
+/* Android MotionEvent/KeyEvent */
 #define ACTION_DOWN 0
 #define ACTION_UP 1
 #define ACTION_MOVE 2
+#define ACTION_MULTIPLE 2
 
 /**
  * Attribute for softfp-calling-style functions

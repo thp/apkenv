@@ -40,6 +40,7 @@
 #include "jni/jnienv.h"
 #include "jni/shlib.h"
 #include "apklib/apklib.h"
+#include "apklib/keycodes.h"
 #include "debug/debug.h"
 #include "compat/gles_wrappers.h"
 #include "linker/linker.h"
@@ -50,6 +51,37 @@
 /* Global application state */
 struct GlobalState global;
 struct ModuleHacks global_module_hacks;
+
+static unsigned char keymap[] = {
+    /* 0-9, A-Z filled in later */
+    [SDLK_UNKNOWN]  = AKEYCODE_UNKNOWN,
+    [SDLK_UP]       = AKEYCODE_DPAD_UP,
+    [SDLK_DOWN]     = AKEYCODE_DPAD_DOWN,
+    [SDLK_RIGHT]    = AKEYCODE_DPAD_RIGHT,
+    [SDLK_LEFT]     = AKEYCODE_DPAD_LEFT,
+    [SDLK_COMMA]    = AKEYCODE_COMMA,
+    [SDLK_PERIOD]   = AKEYCODE_PERIOD,
+    [SDLK_LALT]     = AKEYCODE_ALT_LEFT,
+    [SDLK_RALT]     = AKEYCODE_ALT_RIGHT,
+    [SDLK_LSHIFT]   = AKEYCODE_SHIFT_LEFT,
+    [SDLK_RSHIFT]   = AKEYCODE_SHIFT_RIGHT,
+    [SDLK_TAB]      = AKEYCODE_TAB,
+    [SDLK_SPACE]    = AKEYCODE_SPACE,
+    [SDLK_RETURN]   = AKEYCODE_ENTER,
+    [SDLK_DELETE]   = AKEYCODE_DEL,
+    [SDLK_MINUS]    = AKEYCODE_MINUS,
+    [SDLK_EQUALS]   = AKEYCODE_EQUALS,
+    [SDLK_LEFTBRACKET]  = AKEYCODE_LEFT_BRACKET,
+    [SDLK_RIGHTBRACKET] = AKEYCODE_RIGHT_BRACKET,
+    [SDLK_BACKSLASH]    = AKEYCODE_BACKSLASH,
+    [SDLK_SEMICOLON]    = AKEYCODE_SEMICOLON,
+    [SDLK_SLASH]    = AKEYCODE_SLASH,
+    [SDLK_AT]       = AKEYCODE_AT,
+    [SDLK_PLUS]     = AKEYCODE_PLUS,
+    [SDLK_PAGEUP]   = AKEYCODE_PAGE_UP,
+    [SDLK_PAGEDOWN] = AKEYCODE_PAGE_DOWN,
+    [SDLK_LAST]     = AKEYCODE_UNKNOWN,
+};
 
 static void *
 lookup_symbol_impl(const char *method)
@@ -317,6 +349,8 @@ operation(const char *operation, const char *filename)
 static int
 system_init()
 {
+    int i, j;
+
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
         printf("SDL Init failed.\n");
         return 0;
@@ -330,6 +364,11 @@ system_init()
     gles_extensions_init();
 
     SDL_ShowCursor(0);
+
+    for (i = SDLK_0, j = AKEYCODE_0; i <= SDLK_9; i++, j++)
+        keymap[i] = j;
+    for (i = SDLK_a, j = AKEYCODE_A; i <= SDLK_z; i++, j++)
+        keymap[i] = j;
 
     /* SDL loads some libs.. */
     notify_gdb_of_libraries();
@@ -499,8 +538,8 @@ int main(int argc, char **argv)
 
         SDL_Event e;
         while (SDL_PollEvent(&e)) {
-#ifdef PANDORA
             if (e.type == SDL_KEYDOWN) {
+#ifdef PANDORA
                 if (e.key.keysym.sym==SDLK_ESCAPE) {
                     module->deinit(module);
                     goto finish;
@@ -509,15 +548,20 @@ int main(int argc, char **argv)
                     //emulate_multitouch = 1;
                     module->input(module,ACTION_DOWN, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
                 }
+                else
+#endif
+                module->key_input(module, ACTION_DOWN, keymap[e.key.keysym.sym], e.key.keysym.unicode);
             }
             else if (e.type == SDL_KEYUP) {
+#ifdef PANDORA
                 if (e.key.keysym.sym==SDLK_RSHIFT) {
                     //emulate_multitouch = 0;
                     module->input(module,ACTION_UP, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
                 }
-            } else
+                else
 #endif
-            if (e.type == SDL_MOUSEBUTTONDOWN) {
+                module->key_input(module, ACTION_UP, keymap[e.key.keysym.sym], e.key.keysym.unicode);
+            } else if (e.type == SDL_MOUSEBUTTONDOWN) {
                 module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
                 if (emulate_multitouch) {
                     module->input(module,ACTION_DOWN, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);

@@ -309,6 +309,11 @@ unity_input(struct SupportModule *self, int event, int x, int y, int finger)
 }
 
 static void
+unity_key_input(struct SupportModule *self, int event, int keycode, int unicode)
+{
+}
+
+static void
 unity_update(struct SupportModule *self)
 {
     if (self->priv->nativeRender) self->priv->nativeRender(ENV_M,GLOBAL_M);

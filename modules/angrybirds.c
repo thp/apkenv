@@ -241,6 +241,11 @@ angrybirds_input(struct SupportModule *self, int event, int x, int y, int finger
 }
 
 static void
+angrybirds_key_input(struct SupportModule *self, int event, int keycode, int unicode)
+{
+}
+
+static void
 angrybirds_update(struct SupportModule *self)
 {
     self->priv->native_update(ENV_M, GLOBAL_M);
