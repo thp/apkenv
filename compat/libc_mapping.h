@@ -34,7 +34,7 @@
 {"fgetpos", fgetpos},
 {"fsetpos", fsetpos},
 {"fscanf", fscanf},
-{"sscanf", sscanf},
+//{"sscanf", sscanf}, TODO
 {"fseek", fseek},
 {"fileno", fileno},
 {"fsync", fsync},
@@ -144,7 +144,7 @@
 
 {"strchr", strchr},
 {"strcpy", strcpy},
-{"strcasecmp", strcasecmp},
+{"strcasecmp", my_strcasecmp},
 {"strcat", strcat},
 {"strtoul", strtoul},
 {"strrchr", strrchr},
@@ -217,3 +217,7 @@
 {"gzclose", gzclose},
 {"gzgets", gzgets},
 
+{"tzset", tzset},
+{"tzname", tzname},
+
+{"valloc", valloc},

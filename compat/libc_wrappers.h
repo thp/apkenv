@@ -34,6 +34,8 @@
 
 #include "../apkenv.h"
 
+int
+my_sscanf(const char *str, const char *format, ...) SOFTFP;
 void
 my_abort() SOFTFP;
 double

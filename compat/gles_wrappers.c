@@ -3,7 +3,8 @@
 #include <assert.h>
 #include <EGL/egl.h>
 #ifdef APKENV_DEBUG
-#  define WRAPPERS_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#  define WRAPPERS_DEBUG_PRINTF(...)
+//fprintf(stderr,__VA_ARGS__)
 #  define GL_TEST_ERROR if (glGetError()!=GL_NO_ERROR) { printf("GL ERROR near %s\n", __FUNCTION__); }
 #else
 #  define WRAPPERS_DEBUG_PRINTF(...)
