@@ -180,7 +180,7 @@ jobject
 JNIEnv_NewGlobalRef(JNIEnv* p0, jobject p1)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_NewGlobalRef(%x)\n", p1);
-    return NULL;
+    return p1;
 }
 
 
