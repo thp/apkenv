@@ -1,5 +1,6 @@
 
 {"malloc", malloc},
+{"valloc", valloc},
 {"realloc", realloc},
 {"calloc", calloc},
 {"free", free},
