@@ -165,6 +165,7 @@
 {"memcmp", memcmp},
 {"time", time},
 {"tzset", tzset},
+{"tzname", tzname},
 
 {"setjmp", setjmp},
 {"longjmp", longjmp},
