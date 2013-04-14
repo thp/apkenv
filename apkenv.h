@@ -74,6 +74,7 @@ typedef void *(*lookup_lib_symbol_t)(const char *lib, const char *method);
 typedef void (*foreach_file_t)(const char *prefix, apk_for_each_file_callback callback);
 typedef int (*read_file_t)(const char *filename, char **buffer, size_t *size);
 typedef void (*recursive_mkdir_t)(const char *path);
+typedef const char *(*lookup_resource_t)(const char *key);
 typedef void (*patch_symbol_t)(const char *symbol, void *function);
 
 struct JniLibrary {
@@ -103,11 +104,14 @@ struct GlobalState {
     struct SupportModule *active_module;
     struct ModuleHacks *module_hacks;
 
+    struct ResourceStrings resource_strings;
+
     lookup_symbol_t lookup_symbol;
     lookup_lib_symbol_t lookup_lib_symbol;
     foreach_file_t foreach_file;
     read_file_t read_file;
     recursive_mkdir_t recursive_mkdir;
+    lookup_resource_t lookup_resource;
 };
 
 #define VM(global_ptr) (&((global_ptr)->vm))

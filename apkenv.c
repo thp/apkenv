@@ -76,6 +76,21 @@ read_file_impl(const char *filename, char **buffer, size_t *size)
                 filename, buffer, size) == APK_OK);
 }
 
+static const char *
+lookup_resource_impl(const char *key)
+{
+    size_t i;
+
+    if (strcmp(key, "app_name") == 0)
+        return global.resource_strings.app_name;
+
+    for (i = 0; i < global.resource_strings.count; i++)
+        if (strcmp(key, global.resource_strings.entries[i].key) == 0)
+            return global.resource_strings.entries[i].value;
+
+    return NULL;
+}
+
 static void
 register_module(struct SupportModule *module)
 {
@@ -369,6 +384,7 @@ int main(int argc, char **argv)
     global.foreach_file = foreach_file_impl;
     global.read_file = read_file_impl;
     global.recursive_mkdir = recursive_mkdir;
+    global.lookup_resource = lookup_resource_impl;
     global.module_hacks = &global_module_hacks;
 
     jnienv_init(&global);
@@ -466,6 +482,8 @@ int main(int argc, char **argv)
     strcat(data_directory, apk_basename(global.apk_filename));
     strcat(data_directory, "/");
     recursive_mkdir(data_directory);
+
+    apk_read_resources(global.apklib_handle, &global.resource_strings);
 
     module->init(module, platform_getscreenwidth(), platform_getscreenheight(), data_directory);
 
