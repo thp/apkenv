@@ -254,6 +254,15 @@ my_pthread_attr_getstack(pthread_attr_t *__attr, void** stackaddr, size_t* stack
 }
 
 int
+my_pthread_attr_setstack(pthread_attr_t *__attr, void* stackaddr, size_t stacksize)
+{
+    assert(__attr != NULL);
+    pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+    assert(realattr != NULL);
+    return pthread_attr_setstack(realattr,stackaddr,stacksize);
+}
+
+int
 my_pthread_attr_setschedpolicy(pthread_attr_t *__attr, int __policy)
 {
     assert(__attr != NULL);
