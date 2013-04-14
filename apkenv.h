@@ -132,6 +132,13 @@ struct GlobalState {
 #    define SOFTFP __attribute__((pcs("aapcs")))
 #endif
 
+/* multitouch support definitions */
+#if defined(FREMANTLE) || defined(PANDORA)
+#   define HAVE_MULTITOUCH 0
+#else
+#   define HAVE_MULTITOUCH 1
+#endif
+
 /* Forward-declarations for the Bionic linker */
 void *android_dlopen(const char *filename, int flag);
 void *android_dlsym(void *handle, const char *symbol);
