@@ -109,6 +109,11 @@ install: $(TARGET) $(MODULES)
 ifneq ($(PANDORA),1)
 	@echo -e "\tINSTALL\tBIONIC"
 	@install -m644 $(BIONIC_LIBS) $(DESTDIR)$(PREFIX)/bionic
+ifneq ($(FREMANTLE),1)
+	@echo -e "\tINSTALL\tHarmattan Resource Policy"
+	@install -d -m755 $(DESTDIR)/usr/share/policy/etc/syspart.conf.d
+	@install -m644 $(TARGET).conf $(DESTDIR)/usr/share/policy/etc/syspart.conf.d
+endif
 else
 	@echo -e "\tINSTALL\tlibs"
 	@mkdir -p $(DESTDIR)$(PREFIX)/system/lib
