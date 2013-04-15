@@ -44,6 +44,7 @@
 #include "debug/debug.h"
 #include "compat/gles_wrappers.h"
 #include "linker/linker.h"
+#include "compat/hooks.h"
 
 #include "apkenv.h"
 #include "platform.h"
@@ -426,6 +427,7 @@ int main(int argc, char **argv)
     global.lookup_resource = lookup_resource_impl;
     global.module_hacks = &global_module_hacks;
 
+    hooks_init();
     jnienv_init(&global);
     javavm_init(&global);
     global.apk_filename = strdup(argv[argc-1]);
