@@ -111,7 +111,7 @@
 {"bsearch", bsearch},
 {"shutdown", shutdown},
 {"sigaction", sigaction},
-{"siglongjmp", siglongjmp},
+//{"siglongjmp", siglongjmp},
 //{"sigsetjmp", _sigsetjmp},
 {"strtok_r", strtok_r},
 {"strncasecmp", strncasecmp},
@@ -165,8 +165,10 @@
 {"time", time},
 {"tzset", tzset},
 
-{"setjmp", setjmp},
-{"longjmp", longjmp},
+// Android's longjumps are incompatible with glibc's
+// and will corrupt stack if we use glibc ones
+//{"setjmp", setjmp},
+//{"longjmp", longjmp},
 {"raise", raise},
 
 {"srand48", srand48},

@@ -87,6 +87,11 @@ trg2_input(struct SupportModule *self, int event, int x, int y, int finger)
     self->priv->native_touch(ENV_M, GLOBAL_M, event, x, y, finger);
 }
 
+static void
+trg2_key_input(struct SupportModule *self, int event, int keycode, int unicode)
+{
+}
+
 #define CONVERT_ACCELEROMETER(x) ((float)(x) / 32768. * 9.81 * 2)
 #define GET_AXIS(j, x) CONVERT_ACCELEROMETER(SDL_JoystickGetAxis(j, x))
 

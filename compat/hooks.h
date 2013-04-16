@@ -38,5 +38,11 @@ struct _hook {
 };
 
 void *get_hooked_symbol(char *sym);
+void hooks_init(void);
+
+
+#define SIZEOF_SF 0x54 // taken from NDK
+
+extern char my___sF[SIZEOF_SF * 3];
 
 #endif /* COMPAT_HOOKS_H */

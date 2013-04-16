@@ -1,0 +1,5 @@
+*.o
+*.so
+cscope.out
+tags
+out

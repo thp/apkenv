@@ -36,6 +36,8 @@
 /* implementation into the dynamic linker since this creates */
 /* issues (it uses malloc()/free()) and increases code size  */
 
-int format_buffer(char *buffer, size_t bufsize, const char *format, ...);
+// apkenv: we can just use snprintf
+//int format_buffer(char *buffer, size_t bufsize, const char *format, ...);
+#define format_buffer snprintf
 
 #endif /* _LINKER_FORMAT_H */

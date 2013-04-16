@@ -1,4 +1,5 @@
 #include "libc_wrappers.h"
+#include "hooks.h"
 
 #include <assert.h>
 
@@ -8,7 +9,12 @@
 #  define WRAPPERS_DEBUG_PRINTF(...)
 #endif
 
-extern char my___sF[1024];
+static FILE *stdio_files[3];
+
+#define IS_STDIO_FILE(_f) \
+    ((size_t)((void *)(_f) - (void *)&my___sF) < sizeof(my___sF))
+#define TO_STDIO_FILE(_f) \
+    stdio_files[(size_t)((void *)(_f) - (void *)&my___sF) / SIZEOF_SF]
 
 void
 my_abort()
@@ -104,13 +110,10 @@ int
 my_fclose(FILE *__stream)
 {
     WRAPPERS_DEBUG_PRINTF("fclose(%x, %x)\n", __stream, &my___sF);
-    int offset = ((void*)__stream - (void*)(&my___sF));
-    //printf("offset: %d\n", offset);
-    if (offset < 1000) {
-        printf("IGNORING CLOSE\n");
-        return 0;
-    }
-    return fclose(__stream);
+    if (IS_STDIO_FILE(__stream))
+        return fclose(TO_STDIO_FILE(__stream));
+    else
+        return fclose(__stream);
 }
 int
 my_fcntl(int __fd, int __cmd, ...)
@@ -122,7 +125,10 @@ char *
 my_fgets(char *__restrict __s, int __n, FILE *__restrict __stream)
 {
     WRAPPERS_DEBUG_PRINTF("fgets()\n", __s, __n, __stream);
-    return fgets(__s, __n, __stream);
+    if (IS_STDIO_FILE(__stream))
+        return fgets(__s, __n, TO_STDIO_FILE(__stream));
+    else
+        return fgets(__s, __n, __stream);
 }
 double
 my_floor(double __x)
@@ -148,13 +154,19 @@ int
 my_fputc(int __c, FILE *__stream)
 {
     WRAPPERS_DEBUG_PRINTF("fputc()\n", __c, __stream);
-    return fputc(__c, __stream);
+    if (IS_STDIO_FILE(__stream))
+        return fputc(__c, TO_STDIO_FILE(__stream));
+    else
+        return fputc(__c, __stream);
 }
 int
 my_fputs(__const char *__restrict __s, FILE *__restrict __stream)
 {
     WRAPPERS_DEBUG_PRINTF("fputs()\n", __s, __stream);
-    return fputs(__s, __stream);
+    if (IS_STDIO_FILE(__stream))
+        return fputs(__s, TO_STDIO_FILE(__stream));
+    else
+        return fputs(__s, __stream);
 }
 size_t
 my_fread(void *__restrict __ptr, size_t __size, size_t __n, FILE *__restrict __stream)
@@ -180,6 +192,10 @@ FILE *
 my_freopen(__const char *__restrict __filename, __const char *__restrict __modes, FILE *__restrict __stream)
 {
     WRAPPERS_DEBUG_PRINTF("freopen()\n", __filename, __modes, __stream);
+    if (IS_STDIO_FILE(__stream)) {
+        printf("IGNORING freopen\n");
+        return NULL;
+    }
     return freopen(__filename, __modes, __stream);
 }
 double
@@ -462,6 +478,10 @@ int
 my_setvbuf(FILE *__restrict __stream, char *__restrict __buf, int __modes, size_t __n)
 {
     WRAPPERS_DEBUG_PRINTF("setvbuf()\n", __stream, __buf, __modes, __n);
+    if (IS_STDIO_FILE(__stream)) {
+        printf("IGNORING setvbuf\n");
+        return 0;
+    }
     return setvbuf(__stream, __buf, __modes, __n);
 }
 double
@@ -675,8 +695,12 @@ my_fprintf(FILE *stream, const char *format, ...)
 {
     WRAPPERS_DEBUG_PRINTF("my_fprintf(%x, %s)\n", stream, format);
     va_list ap;
+    int result;
     va_start(ap, format);
-    int result = vfprintf(stderr, format, ap);
+    if (IS_STDIO_FILE(stream))
+        result = vfprintf(TO_STDIO_FILE(stream), format, ap);
+    else
+        result = vfprintf(stream, format, ap);
     va_end(ap);
     return result;
 }
@@ -685,20 +709,20 @@ int
 my_vfprintf(FILE *stream, const char *format, va_list ap)
 {
     WRAPPERS_DEBUG_PRINTF("my_vfprintf(%x, %s)\n", stream, format);
-    return vfprintf(stderr, format, ap);
+    if (IS_STDIO_FILE(stream))
+        return vfprintf(TO_STDIO_FILE(stream), format, ap);
+    else
+        return vfprintf(stream, format, ap);
 }
 
 int
 my_fflush(FILE *stream)
 {
     WRAPPERS_DEBUG_PRINTF("my_fflush(%x)\n", stream);
-    int offset = ((void*)stream - (void*)(&my___sF));
-    //printf("offset: %d\n", offset);
-    if (offset < 1000) {
-        printf("IGNORING FFLUSH\n");
-        return 0;
-    }
-    return fflush(stream);
+    if (IS_STDIO_FILE(stream))
+        return fflush(TO_STDIO_FILE(stream));
+    else
+        return fflush(stream);
 }
 
 int my_sprintf(char *str, const char *format, ...)
@@ -727,3 +751,9 @@ int my_vsnprintf(char *str, size_t size, const char *format, va_list ap)
     return vsnprintf(str, size, format, ap);
 }
 
+void libc_wrappers_init(void)
+{
+    stdio_files[0] = stdin;
+    stdio_files[1] = stdout;
+    stdio_files[2] = stderr;
+}

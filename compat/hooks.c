@@ -43,7 +43,7 @@
 #include "pthread_wrappers.h"
 
 
-char my___sF[1024];
+char my___sF[SIZEOF_SF * 3];
 
 static struct _hook hooks[] = {
 #include "libc_mapping.h"
@@ -76,3 +76,7 @@ void *get_hooked_symbol(char *sym)
     return NULL;
 }
 
+void hooks_init(void)
+{
+    libc_wrappers_init();
+}

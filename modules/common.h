@@ -56,6 +56,7 @@
         module->try_init = modulename ## _try_init; \
         module->init = modulename ## _init; \
         module->input = modulename ## _input; \
+        module->key_input = modulename ## _key_input; \
         module->update = modulename ## _update; \
         module->deinit = modulename ## _deinit; \
         module->pause = modulename ## _pause; \

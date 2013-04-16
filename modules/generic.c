@@ -60,6 +60,11 @@ generic_input(struct SupportModule *self, int event, int x, int y, int finger)
 }
 
 static void
+generic_key_input(struct SupportModule *self, int event, int keycode, int unicode)
+{
+}
+
+static void
 generic_update(struct SupportModule *self)
 {
 }
