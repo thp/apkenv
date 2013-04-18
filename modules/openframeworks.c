@@ -35,12 +35,6 @@
 
 #include "common.h"
 
-#ifdef APKENV_DEBUG
-#  define MODULE_DEBUG_PRINTF(...) printf(__VA_ARGS__)
-#else
-#  define MODULE_DEBUG_PRINTF(...)
-#endif
-
 /* from OF 0.7.4 source */
 typedef void (*openframeworks_setAppDataDir_t)(JNIEnv *env, jobject thiz,
                         jstring data_dir, jstring app_name) SOFTFP;

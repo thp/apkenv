@@ -33,12 +33,6 @@
  *
  **/
 
-#ifdef APKENV_DEBUG
-#  define MODULE_DEBUG_PRINTF(...) printf(__VA_ARGS__)
-#else
-#  define MODULE_DEBUG_PRINTF(...)
-#endif
-
 #define MAX_SOUNDS  150
 
 #include "common.h"

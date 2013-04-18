@@ -40,12 +40,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#ifdef APKENV_DEBUG
-#  define MODULE_DEBUG_PRINTF(...) printf(__VA_ARGS__)
-#else
-#  define MODULE_DEBUG_PRINTF(...)
-#endif
-
 #include <SDL/SDL.h>
 #include <SDL/SDL_mixer.h>
 

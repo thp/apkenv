@@ -34,6 +34,12 @@
 #include "../jni/jnienv.h"
 
 /* Macros to be used inside extension modules */
+#ifdef APKENV_DEBUG
+#  define MODULE_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#else
+#  define MODULE_DEBUG_PRINTF(...)
+#endif
+
 #define GLOBAL_M (self->global)
 #define ENV_M ENV(GLOBAL_M)
 #define VM_M VM(GLOBAL_M)
