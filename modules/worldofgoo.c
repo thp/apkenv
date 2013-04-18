@@ -28,16 +28,6 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **/
 
-
-/**
- * World of Goo Demo - currently mostly broken (multi-threading GL issues)
- *
- * Use "r" on the hardware keyboard (so N950 only) to switch between
- * running and paused state, use spacebar to temporarily enable rendering.
- * If you time it just right (avoid rendering while background loading is
- * in progress) you can even play the first level. YMMV.
- **/
-
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -62,7 +52,6 @@ struct SupportModulePriv {
     worldofgoo_input_t nativeTouchEvent;
 
     const char *home_directory;
-    int running;
 };
 static struct SupportModulePriv worldofgoo_priv;
 
@@ -257,17 +246,7 @@ worldofgoo_key_input(struct SupportModule *self, int event, int keycode, int uni
 static void
 worldofgoo_update(struct SupportModule *self)
 {
-    Uint8 *keystate = SDL_GetKeyState(NULL);
-    if (keystate[SDLK_SPACE] || self->priv->running) {
-        self->priv->nativeRender(ENV_M, GLOBAL_M, JNI_FALSE, JNI_FALSE);
-        if (!self->priv->running) {
-            usleep(200000);
-        }
-    }
-    if (keystate[SDLK_r]) {
-        self->priv->running = !self->priv->running;
-        usleep(100000);
-    }
+    self->priv->nativeRender(ENV_M, GLOBAL_M, JNI_FALSE, JNI_FALSE);
 }
 
 static void
