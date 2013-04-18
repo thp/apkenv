@@ -736,7 +736,7 @@ my_fflush(FILE *stream)
 
 int my_sprintf(char *str, const char *format, ...)
 {
-    printf("sprintf\n");
+    WRAPPERS_DEBUG_PRINTF("sprintf\n");
     va_list ap;
     va_start(ap, format);
     int result = vsprintf(str, format, ap);
@@ -746,7 +746,7 @@ int my_sprintf(char *str, const char *format, ...)
 
 int my_snprintf(char *str, size_t size, const char *format, ...)
 {
-    printf("snprintf\n");
+    WRAPPERS_DEBUG_PRINTF("snprintf\n");
     va_list ap;
     va_start(ap, format);
     int result = vsnprintf(str, size, format, ap);
@@ -756,7 +756,7 @@ int my_snprintf(char *str, size_t size, const char *format, ...)
 
 int my_vsnprintf(char *str, size_t size, const char *format, va_list ap)
 {
-    printf("vsnprintf '%s'\n", format);
+    WRAPPERS_DEBUG_PRINTF("vsnprintf '%s'\n", format);
     return vsnprintf(str, size, format, ap);
 }
 
