@@ -164,7 +164,7 @@ worldofgoo_CallLongMethodV(JNIEnv *p0, jobject p1, jmethodID p2, va_list p3)
     struct dummy_jstring *str = va_arg(p3, struct dummy_jstring*);
     int i;
     if (strcmp(p2->name, "getAssetFileOffset") == 0) {
-        for (i=0; i<apk_index_pos-1; i++) {
+        for (i = 0; i < apk_index_pos; i++) {
             if (strstr(apk_index[i].filename, str->data) != NULL) {
                 return apk_index[i].offset;
             }
@@ -172,7 +172,7 @@ worldofgoo_CallLongMethodV(JNIEnv *p0, jobject p1, jmethodID p2, va_list p3)
         fprintf(stderr, "not found: %s\n", str->data);
         return -1;
     } else if (strcmp(p2->name, "getAssetFileLength") == 0) {
-        for (i=0; i<apk_index_pos-1; i++) {
+        for (i = 0; i < apk_index_pos; i++) {
             if (strstr(apk_index[i].filename, str->data) != NULL) {
                 return apk_index[i].length;
             }
