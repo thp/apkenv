@@ -18,7 +18,7 @@
 {"printf", printf},
 {"sprintf", sprintf},
 {"snprintf", my_snprintf},
-//{"vsnprintf", my_vsnprintf},
+{"vsnprintf", my_vsnprintf},
 
 {"fopen", my_fopen},
 {"fdopen", fdopen},
