@@ -73,8 +73,8 @@ struct ZipFileIndex {
     int length;
 };
 
-struct ZipFileIndex apk_index[2048];
-int apk_index_pos;
+static struct ZipFileIndex apk_index[4096];
+static int apk_index_pos;
 
 void
 build_apk_index(const char *filename)
@@ -102,16 +102,20 @@ build_apk_index(const char *filename)
         fread(&extrafield_length, sizeof(uint16_t), 1, fp);
 
         if (compressed_size == uncompressed_size) {
+            if (apk_index_pos >= sizeof(apk_index) / sizeof(apk_index[0])) {
+                fprintf(stderr, "apk_index too small, increase and recompile\n");
+                exit(1);
+            }
             fseek(fp, offset+30, SEEK_SET);
             fread(apk_index[apk_index_pos].filename, sizeof(char), filename_length, fp);
             apk_index[apk_index_pos].filename[filename_length] = '\0';
 
             apk_index[apk_index_pos].offset = offset+30+filename_length+extrafield_length;
             apk_index[apk_index_pos].length = compressed_size;
+            apk_index_pos++;
         }
 
         offset += 30+filename_length+extrafield_length+compressed_size;
-        apk_index_pos++;
     }
     fclose(fp);
     printf("Built APK index: %d entries\n", apk_index_pos);
