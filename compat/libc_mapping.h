@@ -13,7 +13,14 @@
 {"lseek", lseek},
 {"select", select},
 {"close", close},
-{"fstat", fstat},
+
+// must wrap because:
+// - Android's 'struct stat' is incompatible with glibc's
+// - bionic's *stat* may call errno and corrupt glibc's state
+{"stat", my_stat},
+{"fstat", my_fstat},
+{"lstat", my_lstat},
+{"fstatat", my_fstatat},
 
 {"printf", printf},
 {"sprintf", sprintf},
@@ -86,7 +93,6 @@
 {"clearerr", clearerr},
 {"remove", my_remove},
 {"rename", my_rename},
-{"stat", stat},
 
 {"accept", accept},
 {"listen", listen},

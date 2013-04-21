@@ -1,6 +1,7 @@
 #include "libc_wrappers.h"
 #include "hooks.h"
 
+#include <sys/syscall.h>
 #include <assert.h>
 
 #ifdef APKENV_DEBUG
@@ -757,6 +758,27 @@ int my_vsnprintf(char *str, size_t size, const char *format, va_list ap)
 {
     printf("vsnprintf '%s'\n", format);
     return vsnprintf(str, size, format, ap);
+}
+
+/* android uses kernel's stat64 as 'struct stat', so do direct syscalls */
+int my_stat(const char *path, void *buf)
+{
+    return syscall(__NR_stat64, path, buf);
+}
+
+int my_fstat(int fd, void *buf)
+{
+    return syscall(__NR_fstat64, fd, buf);
+}
+
+int my_lstat(const char *path, void *buf)
+{
+    return syscall(__NR_lstat64, path, buf);
+}
+
+int my_fstatat(int dirfd, const char *pathname, void *buf, int flags)
+{
+    return syscall(__NR_fstatat64, dirfd, pathname, buf, flags);
 }
 
 void libc_wrappers_init(void)
