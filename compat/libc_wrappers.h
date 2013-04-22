@@ -255,3 +255,5 @@ int my_vsnprintf(char *str, size_t size, const char *format, va_list ap) SOFTFP;
 
 // workaround for unity?
 int my_munmap(void *__addr, size_t __len);
+
+void libc_wrappers_init(void);

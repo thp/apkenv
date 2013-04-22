@@ -697,6 +697,11 @@ cuttherope_input(struct SupportModule *self, int event, int x, int y, int finger
 }
 
 static void
+cuttherope_key_input(struct SupportModule *self, int event, int keycode, int unicode)
+{
+}
+
+static void
 cuttherope_update(struct SupportModule *self)
 {
     self->priv->nativeTick(ENV_M, GLOBAL_M, 16);

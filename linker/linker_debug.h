@@ -73,10 +73,9 @@ extern int format_log(int, const char *, const char *, ...);
         if (debug_verbosity > (v)) format_log(5-(v),"linker",x);  \
     } while (0)
 #else /* !LINKER_DEBUG_TO_LOG */
-extern int format_fd(int, const char *, ...);
 #define _PRINTVF(v,f,x...)                           \
     do {                                             \
-        if (debug_verbosity > (v)) format_fd(1, x);  \
+        if (debug_verbosity > (v)) printf(x);        \
     } while (0)
 #endif /* !LINKER_DEBUG_TO_LOG */
 #else /* !LINKER_DEBUG */

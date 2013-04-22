@@ -47,6 +47,16 @@ struct SharedLibrary {
     char* filename;
 };
 
+struct ResourceStrings {
+    struct {
+        char *key;
+        char *value;
+    } *entries;
+    size_t count;
+    /* convenience pointer to appropriate entries[x].value */
+    const char *app_name;
+};
+
 typedef void (*apk_for_each_file_callback)(const char *filename, char *buffer, size_t size);
 
 /* apklib.c */
@@ -54,6 +64,7 @@ AndroidApk *apk_open(const char *filename);
 struct SharedLibrary* apk_get_shared_libraries(AndroidApk *apk, const char *libdir);
 enum ApkResult apk_read_file(AndroidApk *apk, const char *filename, char **buffer, size_t *size);
 void apk_for_each_file(AndroidApk *apk, const char *prefix, apk_for_each_file_callback callback);
+enum ApkResult apk_read_resources(AndroidApk *apk, struct ResourceStrings *rstrings);
 void apk_close(AndroidApk *apk);
 
 #endif /* APKLIB_H */
