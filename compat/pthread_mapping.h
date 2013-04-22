@@ -4,6 +4,7 @@
 {"pthread_attr_destroy", my_pthread_attr_destroy},
 {"pthread_attr_getdetachstate", my_pthread_attr_getdetachstate},
 {"pthread_attr_getstack",my_pthread_attr_getstack},
+{"pthread_attr_setstack",my_pthread_attr_setstack},
 {"pthread_attr_setschedpolicy",my_pthread_attr_setschedpolicy},
 {"pthread_attr_setschedparam",my_pthread_attr_setschedparam},
 {"pthread_getattr_np",my_pthread_getattr_np},

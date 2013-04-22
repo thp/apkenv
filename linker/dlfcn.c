@@ -22,6 +22,16 @@
 #include "linker.h"
 #include "linker_format.h"
 
+/* for get_hooked_symbol */
+#include "../compat/hooks.h"
+
+#include "linker_debug.h"
+
+#ifdef APKENV_DEBUG
+#  define LINKER_DEBUG_PRINTF(...) PRINT(__VA_ARGS__)
+#else
+#  define LINKER_DEBUG_PRINTF(...)
+#endif
 /* This file hijacks the symbols stubbed out in libdl.so. */
 
 #define DL_SUCCESS                    0
@@ -95,6 +105,14 @@ void *android_dlsym(void *handle, const char *symbol)
         goto err;
     }
 
+    unsigned sym_addr;
+    if(0 != (sym_addr = get_hooked_symbol(symbol)))
+    {
+        LINKER_DEBUG_PRINTF("symbol %s hooked to %x\n",symbol,sym_addr);
+        pthread_mutex_unlock(&dl_lock);
+        return sym_addr;
+    }
+
     if(handle == RTLD_DEFAULT) {
         sym = lookup(symbol, &found, NULL);
     } else if(handle == RTLD_NEXT) {
@@ -125,6 +143,7 @@ void *android_dlsym(void *handle, const char *symbol)
         set_dlerror(DL_ERR_SYMBOL_NOT_FOUND);
 
 err:
+    LINKER_DEBUG_PRINTF("symbol %s has not been hooked\n",symbol);
     pthread_mutex_unlock(&dl_lock);
     return 0;
 }

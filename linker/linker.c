@@ -27,7 +27,7 @@
  */
 
 #ifdef APKENV_DEBUG
-#  define LINKER_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#  define LINKER_DEBUG_PRINTF(...) PRINT(__VA_ARGS__)
 #else
 #  define LINKER_DEBUG_PRINTF(...)
 #endif
