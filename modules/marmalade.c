@@ -35,8 +35,6 @@
 #include "SDL/SDL.h"
 #include "SDL/SDL_mixer.h"
 
-#include <SDL/SDL_opengles.h>
-
 #include "../platform.h"
 
 #define ORIENTATION_LANDSCAPE 2
