@@ -214,7 +214,7 @@ my_glNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 void
 my_glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
 {
-    WRAPPERS_DEBUG_PRINTF("glOrthof(%f, %f, %f, %f)\n", left, right, bottom, top, zNear, zFar);
+    WRAPPERS_DEBUG_PRINTF("glOrthof()\n", left, right, bottom, top, zNear, zFar);
     if (global_module_hacks.gles_landscape_to_portrait!=0) {
         glRotatef(90, 0, 0, 1);
     }
@@ -247,7 +247,7 @@ my_glPolygonOffset(GLfloat factor, GLfloat units)
 void
 my_glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
-    WRAPPERS_DEBUG_PRINTF("glRotatef(%f,%f,%f,%f)\n", angle, x, y, z);
+    WRAPPERS_DEBUG_PRINTF("glRotatef()\n", angle, x, y, z);
     glRotatef(angle, x, y, z);
 }
 void

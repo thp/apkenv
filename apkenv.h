@@ -46,6 +46,9 @@ struct ModuleHacks {
     int gles_landscape_to_portrait;
     int gles_downscale_images;
     int gles_no_readpixels;
+
+    int handle_update;
+    int (*system_update)(void);
 };
 
 struct SupportModule {
@@ -127,6 +130,13 @@ struct GlobalState {
 #    define SOFTFP
 #else
 #    define SOFTFP __attribute__((pcs("aapcs")))
+#endif
+
+/* multitouch support definitions */
+#if defined(FREMANTLE) || defined(PANDORA)
+#   define HAVE_MULTITOUCH 0
+#else
+#   define HAVE_MULTITOUCH 1
 #endif
 
 /* Forward-declarations for the Bionic linker */

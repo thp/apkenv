@@ -1,5 +1,6 @@
 
 {"malloc", malloc},
+{"valloc", valloc},
 {"realloc", realloc},
 {"calloc", calloc},
 {"free", free},
@@ -34,7 +35,7 @@
 {"fgetpos", fgetpos},
 {"fsetpos", fsetpos},
 {"fscanf", fscanf},
-{"sscanf", sscanf},
+//{"sscanf", sscanf},
 {"fseek", fseek},
 {"fileno", fileno},
 {"fsync", fsync},
@@ -144,7 +145,7 @@
 
 {"strchr", strchr},
 {"strcpy", strcpy},
-{"strcasecmp", strcasecmp},
+{"strcasecmp", my_strcasecmp},
 {"strcat", strcat},
 {"strtoul", strtoul},
 {"strrchr", strrchr},
@@ -164,6 +165,7 @@
 {"memcmp", memcmp},
 {"time", time},
 {"tzset", tzset},
+{"tzname", tzname},
 
 {"setjmp", setjmp},
 {"longjmp", longjmp},

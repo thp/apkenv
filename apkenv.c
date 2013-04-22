@@ -371,6 +371,8 @@ int main(int argc, char **argv)
     global.recursive_mkdir = recursive_mkdir;
     global.module_hacks = &global_module_hacks;
 
+    global.module_hacks->system_update = system_update;
+
     jnienv_init(&global);
     javavm_init(&global);
     global.apk_filename = strdup(argv[argc-1]);
@@ -469,6 +471,8 @@ int main(int argc, char **argv)
 
     module->init(module, platform_getscreenwidth(), platform_getscreenheight(), data_directory);
 
+    if(global.module_hacks->handle_update) goto finish;
+
     int emulate_multitouch = 0;
     const int emulate_finger_id = 2;
 
@@ -536,7 +540,7 @@ int main(int argc, char **argv)
             }
         }
         module->update(module);
-        system_update();
+        if(!global.module_hacks->handle_update) system_update();
     }
 
 finish:
