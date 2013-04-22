@@ -37,7 +37,7 @@ struct _hook {
   void *func;
 };
 
-void *get_hooked_symbol(char *sym);
+void *get_hooked_symbol(const char *sym);
 void hooks_init(void);
 
 

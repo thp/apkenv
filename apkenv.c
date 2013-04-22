@@ -377,10 +377,10 @@ system_init()
     return 1;
 }
 
-static void
-system_update()
+static int
+system_update(void)
 {
-    platform_update();
+    return platform_update();
 }
 
 static void
