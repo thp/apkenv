@@ -36,13 +36,6 @@
 #include <string.h>
 
 
-#ifdef APKENV_DEBUG
-#  define MODULE_DEBUG_PRINTF(...) printf(__VA_ARGS__)
-#else
-#  define MODULE_DEBUG_PRINTF(...)
-#endif
-
-
 struct GlobalState* global;
 
 /**

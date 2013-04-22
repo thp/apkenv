@@ -148,7 +148,7 @@ int platform_init()
     SDL_VERSION(&sysWmInfo.version);
     SDL_GetWMInfo(&sysWmInfo);
 
-    data->eglDisplay = eglGetDisplay((EGLNativeDisplayType)sysWmInfo.info.x11.display);
+    data->eglDisplay = eglGetDisplay(0); // (EGLNativeDisplayType)sysWmInfo.info.x11.display);
     CHK_FREE_RET(data->eglDisplay==EGL_NO_DISPLAY,data,0);
     CHK_FREE_RET(GLES_TestError("eglGetDisplay"),data,0);
 
@@ -161,7 +161,7 @@ int platform_init()
     CHK_FREE_RET(!r||iConfigs!=1,data,0);
     CHK_FREE_RET(GLES_TestError("eglChooseConfig"),data,0);
 
-    data->eglSurface = eglCreateWindowSurface(data->eglDisplay, data->eglConfig, (NativeWindowType)sysWmInfo.info.x11.window, NULL);
+    data->eglSurface = eglCreateWindowSurface(data->eglDisplay, data->eglConfig, NULL, NULL); //(NativeWindowType)sysWmInfo.info.x11.window, NULL);
     CHK_FREE_RET(data->eglSurface==EGL_NO_SURFACE,data,0);
     CHK_FREE_RET(GLES_TestError("eglCreateWindowSurface"),data,0);
 

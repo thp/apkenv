@@ -32,7 +32,6 @@
  * Cut the Rope Lite - 0.1 crow_riot based on the works of thp
  **/
 
-#include "common.h"
 #include "../imagelib/imagelib.h"
 #include "../imagelib/loadjpeg.c"
 #include "../imagelib/loadpng.c"
@@ -40,15 +39,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#ifdef APKENV_DEBUG
-#  define MODULE_DEBUG_PRINTF(...) printf(__VA_ARGS__)
-#else
-#  define MODULE_DEBUG_PRINTF(...)
-#endif
-
 #include <SDL/SDL.h>
 #include <SDL/SDL_mixer.h>
 
+#include "common.h"
 
 typedef void (*cuttherope_init_t)(JNIEnv *env, jobject obj, jobject resourceLoader, jobject soundManager, jobject preferences,
             jobject saveManager, jobject flurry, jobject videoPlayer, jobject scorer,
@@ -371,8 +365,9 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     else
     if (strcmp(p2->name,"playVideo")==0) {
 
-        //struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
+        struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
         jint paramInt =  va_arg(p3, jint);
+        MODULE_DEBUG_PRINTF("playVideo: filename=%s, param=%d\n", filename->data, paramInt);
 
         if (cuttherope_priv.nativePlaybackFinished)
             cuttherope_priv.nativePlaybackFinished(ENV(cuttherope_priv.global),
@@ -616,9 +611,7 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
     self->priv->home = strdup(home);
 
     // init sound stuff
-#ifdef PANDORA
     Mix_Init(MIX_INIT_OGG);
-#endif
 
     int audio_rate = 22050;
     uint16_t audio_format = AUDIO_S16SYS;
