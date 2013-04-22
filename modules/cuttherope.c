@@ -365,8 +365,9 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     else
     if (strcmp(p2->name,"playVideo")==0) {
 
-        //struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
+        struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
         jint paramInt =  va_arg(p3, jint);
+        MODULE_DEBUG_PRINTF("playVideo: filename=%s, param=%d\n", filename->data, paramInt);
 
         if (cuttherope_priv.nativePlaybackFinished)
             cuttherope_priv.nativePlaybackFinished(ENV(cuttherope_priv.global),
