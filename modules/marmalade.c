@@ -833,6 +833,12 @@ marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
    }
 }
 
+static void
+marmalade_key_input(struct SupportModule *self, int event, int keycode, int unicode)
+{
+}
+
+
 
 /* this function is never called */
 static void
