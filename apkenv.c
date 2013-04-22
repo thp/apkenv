@@ -530,6 +530,8 @@ int main(int argc, char **argv)
 
     module->init(module, platform_getscreenwidth(), platform_getscreenheight(), data_directory);
 
+    notify_gdb_of_libraries();
+
     if(global.module_hacks->handle_update) goto finish;
 
     int emulate_multitouch = 0;
