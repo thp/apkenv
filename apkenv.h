@@ -153,6 +153,6 @@ void *android_dlsym(void *handle, const char *symbol);
 typedef int (*apkenv_module_init_t)(int version, struct SupportModule *module);
 #define APKENV_MODULE_INIT "apkenv_module_init"
 #define APKENV_MODULE_SUFFIX ".apkenv.so"
-#define APKENV_MODULE_VERSION 0x010001
+#define APKENV_MODULE_VERSION 0x010002
 
 #endif /* APKENV_H */
