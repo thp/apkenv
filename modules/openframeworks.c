@@ -271,7 +271,9 @@ openframeworks_init(struct SupportModule *self, int width, int height, const cha
     }
 
     /* init sound */
+#ifdef PANDORA
     Mix_Init(MIX_INIT_OGG);
+#endif
 
     if (Mix_OpenAudio(44100, AUDIO_S16SYS, 2, 1024) < 0)
     {
