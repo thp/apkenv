@@ -32,7 +32,6 @@
  * Cut the Rope Lite - 0.1 crow_riot based on the works of thp
  **/
 
-#include "common.h"
 #include "../imagelib/imagelib.h"
 #include "../imagelib/loadjpeg.c"
 #include "../imagelib/loadpng.c"
@@ -43,6 +42,7 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_mixer.h>
 
+#include "common.h"
 
 typedef void (*cuttherope_init_t)(JNIEnv *env, jobject obj, jobject resourceLoader, jobject soundManager, jobject preferences,
             jobject saveManager, jobject flurry, jobject videoPlayer, jobject scorer,
@@ -610,9 +610,7 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
     self->priv->home = strdup(home);
 
     // init sound stuff
-#ifdef PANDORA
     Mix_Init(MIX_INIT_OGG);
-#endif
 
     int audio_rate = 22050;
     uint16_t audio_format = AUDIO_S16SYS;

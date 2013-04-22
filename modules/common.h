@@ -91,4 +91,12 @@ enum {
 typedef void (*jni_onload_t)(JavaVM *vm, void *reserved) SOFTFP;
 typedef void (*jni_onunload_t)(JavaVM *vm, void *reserved) SOFTFP;
 
+/* older SDL_mixer compatibility */
+#ifdef MIX_MAJOR_VERSION
+#if ((MIX_MAJOR_VERSION << 16) | (MIX_MINOR_VERSION << 8) | MIX_PATCHLEVEL) < 0x1020a
+#define Mix_Init(x)
+#define Mix_Quit()
+#endif
+#endif
+
 #endif /* APKENV_MODULES_COMMON_H */
