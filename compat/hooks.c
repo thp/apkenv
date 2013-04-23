@@ -57,7 +57,7 @@ static struct _hook hooks[] = {
   {NULL, NULL},
 };
 
-void *get_hooked_symbol(char *sym)
+void *get_hooked_symbol(const char *sym)
 {
     struct _hook *ptr = &hooks[0];
 

@@ -1,6 +1,7 @@
 #include "libc_wrappers.h"
 #include "hooks.h"
 
+#include <sys/syscall.h>
 #include <assert.h>
 
 #ifdef APKENV_DEBUG
@@ -735,7 +736,7 @@ my_fflush(FILE *stream)
 
 int my_sprintf(char *str, const char *format, ...)
 {
-    printf("sprintf\n");
+    WRAPPERS_DEBUG_PRINTF("sprintf\n");
     va_list ap;
     va_start(ap, format);
     int result = vsprintf(str, format, ap);
@@ -745,7 +746,7 @@ int my_sprintf(char *str, const char *format, ...)
 
 int my_snprintf(char *str, size_t size, const char *format, ...)
 {
-    printf("snprintf\n");
+    WRAPPERS_DEBUG_PRINTF("snprintf\n");
     va_list ap;
     va_start(ap, format);
     int result = vsnprintf(str, size, format, ap);
@@ -755,8 +756,29 @@ int my_snprintf(char *str, size_t size, const char *format, ...)
 
 int my_vsnprintf(char *str, size_t size, const char *format, va_list ap)
 {
-    printf("vsnprintf '%s'\n", format);
+    WRAPPERS_DEBUG_PRINTF("vsnprintf '%s'\n", format);
     return vsnprintf(str, size, format, ap);
+}
+
+/* android uses kernel's stat64 as 'struct stat', so do direct syscalls */
+int my_stat(const char *path, void *buf)
+{
+    return syscall(__NR_stat64, path, buf);
+}
+
+int my_fstat(int fd, void *buf)
+{
+    return syscall(__NR_fstat64, fd, buf);
+}
+
+int my_lstat(const char *path, void *buf)
+{
+    return syscall(__NR_lstat64, path, buf);
+}
+
+int my_fstatat(int dirfd, const char *pathname, void *buf, int flags)
+{
+    return syscall(__NR_fstatat64, dirfd, pathname, buf, flags);
 }
 
 void libc_wrappers_init(void)

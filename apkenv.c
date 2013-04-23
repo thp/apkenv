@@ -377,10 +377,10 @@ system_init()
     return 1;
 }
 
-static void
-system_update()
+static int
+system_update(void)
 {
-    platform_update();
+    return platform_update();
 }
 
 static void
@@ -529,6 +529,8 @@ int main(int argc, char **argv)
     apk_read_resources(global.apklib_handle, &global.resource_strings);
 
     module->init(module, platform_getscreenwidth(), platform_getscreenheight(), data_directory);
+
+    notify_gdb_of_libraries();
 
     if(global.module_hacks->handle_update) goto finish;
 

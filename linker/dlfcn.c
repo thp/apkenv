@@ -105,7 +105,7 @@ void *android_dlsym(void *handle, const char *symbol)
         goto err;
     }
 
-    unsigned sym_addr;
+    void *sym_addr;
     if(0 != (sym_addr = get_hooked_symbol(symbol)))
     {
         LINKER_DEBUG_PRINTF("symbol %s hooked to %x\n",symbol,sym_addr);

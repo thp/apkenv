@@ -35,12 +35,6 @@
 
 #include "common.h"
 
-#ifdef APKENV_DEBUG
-#  define MODULE_DEBUG_PRINTF(...) printf(__VA_ARGS__)
-#else
-#  define MODULE_DEBUG_PRINTF(...)
-#endif
-
 /* from OF 0.7.4 source */
 typedef void (*openframeworks_setAppDataDir_t)(JNIEnv *env, jobject thiz,
                         jstring data_dir, jstring app_name) SOFTFP;
@@ -271,9 +265,7 @@ openframeworks_init(struct SupportModule *self, int width, int height, const cha
     }
 
     /* init sound */
-#ifdef PANDORA
     Mix_Init(MIX_INIT_OGG);
-#endif
 
     if (Mix_OpenAudio(44100, AUDIO_S16SYS, 2, 1024) < 0)
     {

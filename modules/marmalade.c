@@ -28,20 +28,12 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **/
 
-#ifdef APKENV_DEBUG
-#  define MODULE_DEBUG_PRINTF(...) printf(__VA_ARGS__)
-#else
-#  define MODULE_DEBUG_PRINTF(...)
-#endif
-
 #include <string.h>
 #include "common.h"
 #include <pthread.h>
 #include <signal.h>
 #include "SDL/SDL.h"
 #include "SDL/SDL_mixer.h"
-
-#include <SDL/SDL_opengles.h>
 
 #include "../platform.h"
 
