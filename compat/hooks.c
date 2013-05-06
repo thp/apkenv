@@ -53,19 +53,29 @@ static struct _hook hooks[] = {
 #include "pthread_mapping.h"
 
   {"__sF", my___sF},
-
-  {NULL, NULL},
 };
+
+static int
+hook_cmp(const void *p1, const void *p2)
+{
+    const struct _hook *h1 = (const struct _hook *)p1;
+    const struct _hook *h2 = (const struct _hook *)p2;
+    return strcmp(h1->name, h2->name);
+}
+
+#define HOOK_SIZE (sizeof(struct _hook))
+#define HOOKS_COUNT (sizeof(hooks) / (HOOK_SIZE))
 
 void *get_hooked_symbol(const char *sym)
 {
-    struct _hook *ptr = &hooks[0];
+    struct _hook target;
+    target.name = sym;
 
-    while (ptr->name != NULL) {
-        if (strcmp(sym, ptr->name) == 0) {
-            return ptr->func;
-        }
-        ptr++;
+    struct _hook *result = bsearch(&target, &(hooks[0]),
+            HOOKS_COUNT, HOOK_SIZE, hook_cmp);
+
+    if (result != NULL) {
+        return result->func;
     }
 
     if (strstr(sym, "pthread") != NULL) {
@@ -78,5 +88,8 @@ void *get_hooked_symbol(const char *sym)
 
 void hooks_init(void)
 {
+    /* Sort hooks so we can use binary search in get_hooked_symbol() */
+    qsort(&(hooks[0]), HOOKS_COUNT, HOOK_SIZE, hook_cmp);
+
     libc_wrappers_init();
 }
