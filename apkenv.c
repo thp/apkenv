@@ -570,7 +570,7 @@ int main(int argc, char **argv)
                 }
                 else if (e.key.keysym.sym==SDLK_RSHIFT) {
                     //emulate_multitouch = 1;
-                    module->input(module,ACTION_DOWN, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
+                    module->input(module,ACTION_DOWN, platform_getscreenwidth() / 2 - 1, platform_getscreenheight() / 2, emulate_finger_id);
                 }
                 else
 #endif
@@ -580,7 +580,7 @@ int main(int argc, char **argv)
 #ifdef PANDORA
                 if (e.key.keysym.sym==SDLK_RSHIFT) {
                     //emulate_multitouch = 0;
-                    module->input(module,ACTION_UP, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
+                    module->input(module,ACTION_UP, platform_getscreenwidth() / 2 - 1, platform_getscreenheight() / 2, emulate_finger_id);
                 }
                 else
 #endif
