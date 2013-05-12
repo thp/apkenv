@@ -38,6 +38,7 @@ struct _hook {
 };
 
 void *get_hooked_symbol(const char *sym);
+int is_lib_builtin(const char *name);
 int is_lib_optional(const char *name);
 void hooks_init(void);
 

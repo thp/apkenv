@@ -55,6 +55,14 @@ static struct _hook hooks[] = {
   {"__sF", my___sF},
 };
 
+/* fully wrapped or harmful libs that should not be loaded
+ * even if provided by user (like 3D driver libs) */
+static const char *builtin_libs[] = {
+    "libEGL.so",
+    "libGLESv1_CM.so",
+    "libGLESv2.so",
+};
+
 /* this is just to not log errors if those libs are missing */
 static const char *optional_libs[] = {
     // "libc.so", // not yet
@@ -93,6 +101,20 @@ void *get_hooked_symbol(const char *sym)
     }
 
     return NULL;
+}
+
+int is_lib_builtin(const char *name)
+{
+    size_t i;
+
+    if (name == NULL)
+        return 0;
+
+    for (i = 0; i < sizeof(builtin_libs) / sizeof(builtin_libs[0]); i++)
+        if (strcmp(name, builtin_libs[i]) == 0)
+            return i + 1;
+
+    return 0;
 }
 
 int is_lib_optional(const char *name)

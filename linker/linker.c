@@ -1945,7 +1945,9 @@ static int link_image(soinfo *si, unsigned wr_offset)
     for(d = si->dynamic; *d; d += 2) {
         if(d[0] == DT_NEEDED){
             DEBUG("%5d %s needs %s\n", pid, si->name, si->strtab + d[1]);
-            soinfo *lsi = find_library(si->strtab + d[1]);
+            soinfo *lsi = NULL;
+            if (!is_lib_builtin(si->strtab + d[1]))
+                lsi = find_library(si->strtab + d[1]);
             if(lsi == 0) {
                 /**
                  * XXX Dirty Hack Alarm --thp XXX
