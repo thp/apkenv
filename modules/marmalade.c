@@ -460,28 +460,7 @@ marmalade_GetObjectClass(JNIEnv *p0, jobject p1)
 jobject
 marmalade_GetObjectField(JNIEnv* p0, jobject p1, jfieldID p2)
 {
-    if(NULL != p1)
-    {
-        //if(0 == strcmp(((jmethodID)p2)->name,"m_GL"))
-        //{
-        //TODO
-        //}
-        /*
-        MODULE_DEBUG_PRINTF("marmalade_GetObjectField(%s)\n",((jmethodID)p2)->name);
-        struct dummy_jclass *cls = malloc(sizeof(struct dummy_jclass));
-        cls->name = ((struct dummy_jclass*)((jmethodID)p2)->clazz)->name;
-
-        dummy_jobject* obj = malloc(sizeof(dummy_jobject));
-        obj->clazz = cls;
-        obj->field = p2;
-
-        return obj;*/
-    }
-    else
-    {
-        MODULE_DEBUG_PRINTF("marmalade_GetObjectField(%s) -> NULL\n",((jmethodID)p2)->name);
-    }
-
+    MODULE_DEBUG_PRINTF("marmalade_GetObjectField(%s) -> NULL\n",((jmethodID)p2)->name);
     return NULL;
 }
 
@@ -783,12 +762,6 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
     MODULE_DEBUG_PRINTF("setPixelsNative\n");
     self->priv->loaderview.setPixelsNative(ENV_M,self->priv->theview,width,height,self->priv->pixels, 1 /* == newly created */ );
     MODULE_DEBUG_PRINTF("setPixelsNative done.\n");
-
-    /* needed ?
-    MODULE_DEBUG_PRINTF("resumeAppThreads\n");
-    self->priv->loaderthread.resumeAppThreads(ENV_M,self->priv->theloaderthread);
-    MODULE_DEBUG_PRINTF("resumeAppThreads done.\n");
-    */
     
     MODULE_DEBUG_PRINTF("runNative\n");
     self->priv->loaderthread.runNative(ENV_M,self->priv->theloaderthread,
@@ -829,8 +802,6 @@ static void
 marmalade_key_input(struct SupportModule *self, int event, int keycode, int unicode)
 {
 }
-
-
 
 /* this function is never called */
 static void
