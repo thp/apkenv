@@ -1132,7 +1132,10 @@ load_library(const char *name)
     Elf32_Ehdr *hdr;
 
     if(fd == -1) {
-        DL_ERR("Library '%s' not found", name);
+#if !LINKER_DEBUG
+        if (!is_lib_optional(name))
+#endif
+            DL_ERR("Library '%s' not found", name);
         return NULL;
     }
 

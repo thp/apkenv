@@ -55,6 +55,15 @@ static struct _hook hooks[] = {
   {"__sF", my___sF},
 };
 
+/* this is just to not log errors if those libs are missing */
+static const char *optional_libs[] = {
+    // "libc.so", // not yet
+    // "libm.so", // not yet
+    // "libstdc++.so", // not yet
+    "liblog.so",
+    "libz.so",
+};
+
 static int
 hook_cmp(const void *p1, const void *p2)
 {
@@ -84,6 +93,17 @@ void *get_hooked_symbol(const char *sym)
     }
 
     return NULL;
+}
+
+int is_lib_optional(const char *name)
+{
+    size_t i;
+
+    for (i = 0; i < sizeof(optional_libs) / sizeof(optional_libs[0]); i++)
+        if (strcmp(name, optional_libs[i]) == 0)
+            return i + 1;
+
+    return 0;
 }
 
 void hooks_init(void)
