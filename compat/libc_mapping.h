@@ -7,6 +7,7 @@
 {"strdup", strdup},
 
 {"open", open},
+{"openat", openat},
 {"read", read},
 {"write", write},
 {"writev", writev},
@@ -21,6 +22,15 @@
 {"fstat", my_fstat},
 {"lstat", my_lstat},
 {"fstatat", my_fstatat},
+
+// struct dirent is also incompatible
+{"opendir", opendir},
+{"fdopendir", fdopendir},
+{"readdir", my_readdir},
+{"readdir_r", my_readdir_r},
+{"closedir", closedir},
+{"rewinddir", rewinddir},
+{"dirfd", dirfd},
 
 {"printf", printf},
 {"sprintf", sprintf},

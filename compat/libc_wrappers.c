@@ -781,6 +781,49 @@ int my_fstatat(int dirfd, const char *pathname, void *buf, int flags)
     return syscall(__NR_fstatat64, dirfd, pathname, buf, flags);
 }
 
+struct a_dirent {
+    uint64_t         d_ino;
+    int64_t          d_off;
+    unsigned short   d_reclen;
+    unsigned char    d_type;
+    char             d_name[256];
+};
+
+static void convert_dirent(struct a_dirent *ade, const struct dirent *de)
+{
+    ade->d_ino = de->d_ino;
+    ade->d_off = de->d_off;
+    ade->d_reclen = de->d_reclen;
+    ade->d_type = de->d_type;
+    strncpy(ade->d_name, de->d_name, sizeof(ade->d_name));
+}
+
+struct a_dirent *my_readdir(DIR *dirp)
+{
+    static struct a_dirent ade;
+    struct dirent *de;
+    if ((de = readdir(dirp)) == NULL)
+        return NULL;
+    convert_dirent(&ade, de);
+    return &ade;
+}
+
+int my_readdir_r(DIR *dirp, struct a_dirent *entry, struct a_dirent **result)
+{
+    struct dirent de, *de_ret = NULL;
+    int ret;
+    ret = readdir_r(dirp, &de, &de_ret);
+    if (ret != 0)
+        return ret;
+    if (de_ret == NULL) {
+        *result = NULL;
+        return 0;
+    }
+    convert_dirent(entry, de_ret);
+    *result = entry;
+    return 0;
+}
+
 void libc_wrappers_init(void)
 {
     stdio_files[0] = stdin;
