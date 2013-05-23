@@ -456,12 +456,44 @@ marmalade_GetObjectClass(JNIEnv *p0, jobject p1)
     return NULL;
 }
 
+#define field_is(fie) (0 == strcmp(((jmethodID)field)->name, #fie))
+
 /* is this correct? */
 jobject
-marmalade_GetObjectField(JNIEnv* p0, jobject p1, jfieldID p2)
+marmalade_GetObjectField(JNIEnv* p0, jobject p1, jfieldID field)
 {
-    MODULE_DEBUG_PRINTF("marmalade_GetObjectField(%s) -> NULL\n",((jmethodID)p2)->name);
-    return NULL;
+    if(NULL != p1)
+    {
+        MODULE_DEBUG_PRINTF("marmalade_GetObjectField(%s)\n",((jmethodID)field)->name);
+        
+        if(field_is(m_LoaderKeyboard))
+        {
+            // TODO
+        }
+        else if(field_is(m_GL))
+        {
+            // TODO
+        }
+        else if(field_is(m_MediaPlayerManager))
+        {
+            // TODO
+        }
+
+        struct dummy_jclass *cls = malloc(sizeof(struct dummy_jclass));
+        cls->name = ((struct dummy_jclass*)((jmethodID)field)->clazz)->name;
+        
+        dummy_jobject* obj = NULL;
+        
+        obj = malloc(sizeof(dummy_jobject));
+        obj->clazz = cls;
+        obj->field = field;
+
+        return obj;
+    }
+    else
+    {
+        MODULE_DEBUG_PRINTF("marmalade_GetObjectField(%s) -> NULL\n",((jmethodID)field)->name);
+    }
 }
 
 jobject
