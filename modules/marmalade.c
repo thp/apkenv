@@ -776,26 +776,33 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
 static void
 marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
 {
-   if(self->priv->loaderthread.onMotionEvent)
-   {
-       int action = 0;
-       if(ACTION_DOWN == event)
-       {
-           action = ACTION_POINTER_1_DOWN;
-       }
-       else if(ACTION_UP == event)
-       {
-           action = ACTION_POINTER_1_UP;
-       }
-       else if(ACTION_MOVE == event)
-       {
-           return; // TODO
-       }
+    if(self->priv->loaderthread.onMotionEvent)
+    {
+        int action = 0;
 
-       MODULE_DEBUG_PRINTF("onMotionEvent: %s\n", action == ACTION_POINTER_1_UP ? "up" : "down");
-       self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,action-1 /* duh? */, x,y);
-       MODULE_DEBUG_PRINTF("onMotionEvent done.\n");
-   }
+        if(ACTION_DOWN == event)
+        {
+            action = ACTION_POINTER_1_DOWN;
+        }
+        else if(ACTION_UP == event)
+        {
+            action = ACTION_POINTER_1_UP;
+        }
+
+        if(ACTION_MOVE == event)
+        {
+            MODULE_DEBUG_PRINTF("onMotionEvent: move\n");
+            self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,2, x,y);
+            self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,1, x,y);
+            MODULE_DEBUG_PRINTF("onMotionEvent done.\n");
+        }
+        else
+        {
+            MODULE_DEBUG_PRINTF("onMotionEvent: %s\n", action == ACTION_POINTER_1_UP ? "up" : "down");
+            self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,action-1, x,y);
+            MODULE_DEBUG_PRINTF("onMotionEvent done.\n");
+        }
+    }
 }
 
 static void
