@@ -55,6 +55,7 @@
 
 /* for get_hooked_symbol */
 #include "../compat/hooks.h"
+#include "../compat/wrappers.h"
 
 #include "linker.h"
 #include "linker_debug.h"
@@ -1071,6 +1072,7 @@ load_segments(int fd, void *header, soinfo *si)
     TRACE("[ %5d - Finish loading segments for '%s' @ 0x%08x. "
           "Total memory footprint: 0x%08x bytes ]\n", pid, si->name,
           (unsigned)si->base, si->size);
+    
     return 0;
 
 fail:
@@ -1319,6 +1321,177 @@ unsigned unload_library(soinfo *si)
     return si->refcount;
 }
 
+#ifdef DEBUG_TRACE_METHODS
+void print_info(void *function, const char *name, int is_thumb)
+{
+    printf("calling function %s@%x (INJECTED-WRAPPER), TARGET INSTRUCTION SET: %s\n",name,function,is_thumb ? "THUMB" : "ARM");
+}
+#endif
+
+// the following definition is taken from linux-2.6/arch/arm/mm/alignment.c
+/* Thumb-2 32 bit format per ARMv7 DDI0406A A6.3, either f800h,e800h,f800h */
+#define IS_T32(hi16) \
+            (((hi16) & 0xe000) == 0xe000 && ((hi16) & 0x1800))
+
+void wrap_function(void *sym_addr, const char *sym_name, int is_thumb, soinfo *si)
+{
+    void *hook = NULL;
+    if((hook = get_hooked_symbol(sym_name,0)) != NULL)
+    {
+        // if we have a hook redirect the call to that by overwriting
+        // the first 2 instruction of the function
+        // this should work in any case unless the hook is wrong
+        // or the function shorter than 64-bit (2 32-Bit instructions)
+        if(!is_thumb)
+        {
+            DEBUG("HOOKING INTERNAL (ARM) FUNCTION %s@%x (in %s) TO: %x\n",sym_name,sym_addr,si->name,hook);
+            ((int32_t*)sym_addr)[0] = 0xe51ff004; // ldr pc, [pc, -#4] (load the hooks address into pc)
+#ifdef DEBUG_TRACE_LATEHOOKS
+            ((int32_t*)sym_addr)[1] = (uint32_t)assemble_wrapper(sym_name,hook,WRAPPER_LATEHOOK);
+#else
+            ((int32_t*)sym_addr)[1] = (uint32_t)hook;
+#endif
+        }
+        else
+        {
+            DEBUG("HOOKING INTERNAL (THUMB) FUNCTION %s@%x (in %s) TO: %x\n",sym_name,sym_addr,si->name,hook);
+            sym_addr = (void*)((char*)sym_addr - 1); // get actual sym_addr
+            ((int16_t*)sym_addr)[0] = 0xf8df;
+            ((int16_t*)sym_addr)[1] = 0xf000; // ldr pc, [pc] (load the hooks address into pc)
+#ifdef DEBUG_TRACE_LATEHOOKS
+            void *wrp = assemble_wrapper(sym_name,hook,WRAPPER_LATEHOOK);
+            ((int16_t*)sym_addr)[2] = (uint32_t)wrp & 0x0000FFFF;
+            ((int16_t*)sym_addr)[3] = (uint32_t)wrp >> 16;
+#else
+            ((int16_t*)sym_addr)[2] = (uint32_t)hook & 0x0000FFFF;
+            ((int16_t*)sym_addr)[3] = (uint32_t)hook >> 16;
+#endif
+        }
+    }
+#ifdef DEBUG_TRACE_INJ_ARM
+    else if(is_blacklisted(sym_name)) return;
+    // TODO: this will fail if the first 2 instructions do something pc related
+    else if(sym_addr && !is_thumb)
+    {
+        DEBUG("CREATING ARM WRAPPER FOR: %s@%x (in %s)\n",sym_name,sym_addr,si->name);
+        
+        void *wrapper_addr = 0;
+        wrapper_addr = mmap(NULL,
+                            96, // instructions, be sure you're allocating enough memory!
+                            PROT_READ | PROT_WRITE | PROT_EXEC,
+                            MAP_ANONYMOUS | MAP_PRIVATE,
+                            0,
+                            0);
+        int helper = 0;
+#       include "wrapper_ARM.instructions"
+
+        // insert first 2 instructions here, because we will overwrite them.
+        // adjust these indexes if you change the wrapper code
+        ((int32_t*)wrapper_addr)[helper-3] = *((int32_t*)sym_addr);
+        ((int32_t*)wrapper_addr)[helper-2] = *((int32_t*)sym_addr + 1);
+        
+        ((int32_t*)sym_addr)[0] = 0xe51ff004; // ldr pc, [pc, -#4] (load wrapper_addr into pc)
+        // store wrapper address so the modified code
+        // will jump into it via the instruction above
+        ((int32_t*)sym_addr)[1] = (uint32_t)wrapper_addr;
+
+        // store name of the wrapped function
+        // store the pointer to the 3rd instruction of the wrapped function
+        // store the pointer to print_info, so that the wrapper can call it
+        ((int32_t*)wrapper_addr)[helper++] = (uint32_t)sym_name;
+        ((int32_t*)wrapper_addr)[helper++] = (uint32_t)((int32_t*)sym_addr + 2);
+        ((int32_t*)wrapper_addr)[helper++] = (uint32_t)print_info;
+        register_wrapper(wrapper_addr,96,sym_name,WRAPPER_ARM_INJECTION);
+    }
+#endif /* DEBUG_TRACE_INJ_ARM */
+#ifdef DEBUG_TRACE_INJ_THUMB
+    // TODO: this will fail if the first 2-5 instructions do something pc related
+    else if(sym_addr && is_thumb)
+    {
+        DEBUG("CREATING THUMB WRAPPER FOR: %s@%x (in %s)\n",sym_name,sym_addr,si->name);
+        
+        void *wrapper_addr = 0;
+        wrapper_addr = mmap(NULL,
+                            96, // instructions, be sure you're allocating enough memory!
+                            PROT_READ | PROT_WRITE | PROT_EXEC,
+                            MAP_ANONYMOUS | MAP_PRIVATE,
+                            0,
+                            0);
+        sym_addr = (void*)((char*)sym_addr - 1); // get actual sym_addr
+        wrapper_addr = (void*)((char*)wrapper_addr + 1); // fix wrapper_addr for THUMB
+        int fifth_nop = IS_T32(*((int16_t*)sym_addr + 4)) && (
+                        (!IS_T32(*((int16_t*)sym_addr)) && !IS_T32(*((int16_t*)sym_addr + 1)) && !IS_T32(*((int16_t*)sym_addr + 3))) ||
+                        (!IS_T32(*((int16_t*)sym_addr)) &&  IS_T32(*((int16_t*)sym_addr + 1))                                      ) ||
+                        ( IS_T32(*((int16_t*)sym_addr))                                       && !IS_T32(*((int16_t*)sym_addr + 3)))
+                                                             );
+        int helper = 0;
+#       include "wrapper_THUMB.instructions"
+        // insert first 2-5 instructions here, because we will overwrite them.
+        // adjust these indexes if you change the wrapper code
+        if(!fifth_nop)
+        {
+            ((int16_t*)wrapper_addr)[helper-6] = ((uint16_t*)sym_addr)[0];
+            ((int16_t*)wrapper_addr)[helper-5] = ((uint16_t*)sym_addr)[1];
+            ((int16_t*)wrapper_addr)[helper-4] = ((uint16_t*)sym_addr)[2];
+            ((int16_t*)wrapper_addr)[helper-3] = ((uint16_t*)sym_addr)[3];
+        }
+        else
+        {
+            ((int16_t*)wrapper_addr)[helper-6] = ((uint16_t*)sym_addr)[0];
+            ((int16_t*)wrapper_addr)[helper-5] = ((uint16_t*)sym_addr)[1];
+            ((int16_t*)wrapper_addr)[helper-4] = ((uint16_t*)sym_addr)[2];
+            ((int16_t*)wrapper_addr)[helper-3] = ((uint16_t*)sym_addr)[3];
+            ((int16_t*)wrapper_addr)[helper-2] = ((uint16_t*)sym_addr)[4];
+        }
+        ((int16_t*)sym_addr)[0] = 0xf8df; // ldr pc, [pc] (load wrapper_addr into pc)
+        ((int16_t*)sym_addr)[1] = 0xf000;
+        // store wrapper address so the modified code
+        // will jump into it via the instruction above
+        ((int16_t*)sym_addr)[2] = (uint32_t)wrapper_addr & 0x0000FFFF;
+        ((int16_t*)sym_addr)[3] = (uint32_t)wrapper_addr >> 16;
+        // store name of the wrapped function
+        // store the pointer to the 3rd instruction of the wrapped function
+        // store the pointer to print_info, so that the wrapper can call it
+        ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)sym_name) & 0x0000FFFF;
+        ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)sym_name) >> 16;
+        ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)((int32_t*)sym_addr + 2)) & 0x0000FFFF;
+        ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)((int32_t*)sym_addr + 2)) >> 16;
+        ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)print_info) & 0x0000FFFF;
+        ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)print_info) >> 16;
+        register_wrapper(wrapper_addr,96,WRAPPER_THUMB_INJECTION);
+    }
+#endif /* DEBUG_TRACE_INJ_THUMB */
+}
+
+void wrap_functions(soinfo *si)
+{
+    Elf32_Sym *s;
+    
+    DEBUG("WRAPPING FUNCTIONS OF: %s\n",si->name);
+    
+    unsigned int n = 0;
+    for(n=0;n<si->nchain;n++)
+    {
+        s = si->symtab + n;
+        switch(ELF32_ST_BIND(s->st_info))
+        {
+            case STB_GLOBAL:
+            case STB_WEAK:
+                if(s->st_shndx == 0) continue;
+                
+                if(ELF32_ST_TYPE(s->st_info) == STT_FUNC) // only wrap functions
+                {
+                    char *sym_name = (char*)(si->strtab + s->st_name);
+                    int32_t *sym_addr = (int32_t*)(si->base + s->st_value);
+
+                    int THUMB = ((int32_t)sym_addr) & 0x00000001;
+                    
+                    wrap_function(sym_addr,sym_name,THUMB,si);
+               }
+        }
+    }
+}
+
 /* TODO: don't use unsigned for addrs below. It works, but is not
  * ideal. They should probably be either uint32_t, Elf32_Addr, or unsigned
  * long.
@@ -1327,8 +1500,8 @@ static int reloc_library(soinfo *si, Elf32_Rel *rel, unsigned count)
 {
     Elf32_Sym *symtab = si->symtab;
     const char *strtab = si->strtab;
-    Elf32_Sym *s;
-    unsigned base;
+    Elf32_Sym *s = NULL;
+    unsigned base = 0;
     Elf32_Rel *start = rel;
     unsigned idx;
 
@@ -1344,13 +1517,16 @@ static int reloc_library(soinfo *si, Elf32_Rel *rel, unsigned count)
         if(sym != 0) {
             sym_name = (char *)(strtab + symtab[sym].st_name);
             sym_addr = 0;
-            if ((sym_addr = (unsigned)get_hooked_symbol(sym_name)) != 0) {
+            DEBUG("SYMBOL NAME: %s\n",sym_name);
+            
+            if ((sym_addr = (unsigned)get_hooked_symbol(sym_name,1)) != 0) {
                LINKER_DEBUG_PRINTF("%s hooked symbol %s to %x\n", si->name, sym_name, sym_addr);
             }
             else
             {
                s = _do_lookup(si, sym_name, &base);
             }
+            
             if(sym_addr != 0)
             {
             } else
@@ -1422,6 +1598,9 @@ static int reloc_library(soinfo *si, Elf32_Rel *rel, unsigned count)
 #endif
                 sym_addr = (unsigned)(s->st_value + base);
                 LINKER_DEBUG_PRINTF("%s symbol (from %s) %s to %x\n", si->name, last_library_used, sym_name, sym_addr);
+#ifdef DEBUG_TRACE_UNHOOKED
+                sym_addr = (unsigned)assemble_wrapper(sym_name, (void*)sym_addr, WRAPPER_UNHOOKED);
+#endif
 	    }
             COUNT_RELOC(RELOC_SYMBOL);
         } else {
@@ -1980,6 +2159,8 @@ static int link_image(soinfo *si, unsigned wr_offset)
         if(reloc_library(si, si->rel, si->rel_count))
             goto fail;
     }
+
+    wrap_functions(si);
 
     si->flags |= FLAG_LINKED;
     DEBUG("[ %5d finished linking %s ]\n", pid, si->name);

@@ -17,6 +17,12 @@ static FILE *stdio_files[3];
 #define TO_STDIO_FILE(_f) \
     stdio_files[(size_t)((void *)(_f) - (void *)&my___sF) / SIZEOF_SF]
 
+int*
+my___errno()
+{
+    WRAPPERS_DEBUG_PRINTF("__errno()\n");
+    return &errno;
+}
 void
 my_abort()
 {

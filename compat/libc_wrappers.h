@@ -34,6 +34,8 @@
 
 #include "../apkenv.h"
 
+int*
+my___errno() SOFTFP;
 void
 my_abort() SOFTFP;
 double

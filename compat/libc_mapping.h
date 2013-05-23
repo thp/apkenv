@@ -112,7 +112,15 @@
 {"inet_ntop", inet_ntop},
 {"inet_pton", inet_pton},
 {"inet_pton", inet_pton},
-
+{"inet_aton", inet_aton},
+{"gethostname", gethostname},
+{"recvmsg", recvmsg},
+{"sendmsg", sendmsg},
+{"recvfrom", recvfrom},
+{"sendto", sendto},
+{"inet_ntoa", inet_ntoa},
+{"socketpair", socketpair},
+    
 {"memrchr", memrchr},
 {"qsort", qsort},
 {"bsearch", bsearch},
@@ -226,4 +234,17 @@
 {"gzopen", gzopen},
 {"gzclose", gzclose},
 {"gzgets", gzgets},
+
+
+{"gethostbyname", gethostbyname},
+{"__errno", my___errno},
+
+{"mprotect", mprotect},
+{"access", access},
+
+{"bsd_signal", bsd_signal},
+{"clock_getres", clock_getres},
+
+{"dlopen", android_dlopen},
+{"dlsym", android_dlsym},
 

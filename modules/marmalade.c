@@ -456,32 +456,44 @@ marmalade_GetObjectClass(JNIEnv *p0, jobject p1)
     return NULL;
 }
 
+#define field_is(fie) (0 == strcmp(((jmethodID)field)->name, #fie))
+
 /* is this correct? */
 jobject
-marmalade_GetObjectField(JNIEnv* p0, jobject p1, jfieldID p2)
+marmalade_GetObjectField(JNIEnv* p0, jobject p1, jfieldID field)
 {
     if(NULL != p1)
     {
-        //if(0 == strcmp(((jmethodID)p2)->name,"m_GL"))
-        //{
-        //TODO
-        //}
-        /*
-        MODULE_DEBUG_PRINTF("marmalade_GetObjectField(%s)\n",((jmethodID)p2)->name);
+        MODULE_DEBUG_PRINTF("marmalade_GetObjectField(%s)\n",((jmethodID)field)->name);
+        
+        if(field_is(m_LoaderKeyboard))
+        {
+            // TODO
+        }
+        else if(field_is(m_GL))
+        {
+            // TODO
+        }
+        else if(field_is(m_MediaPlayerManager))
+        {
+            // TODO
+        }
+
         struct dummy_jclass *cls = malloc(sizeof(struct dummy_jclass));
-        cls->name = ((struct dummy_jclass*)((jmethodID)p2)->clazz)->name;
-
-        dummy_jobject* obj = malloc(sizeof(dummy_jobject));
+        cls->name = ((struct dummy_jclass*)((jmethodID)field)->clazz)->name;
+        
+        dummy_jobject* obj = NULL;
+        
+        obj = malloc(sizeof(dummy_jobject));
         obj->clazz = cls;
-        obj->field = p2;
+        obj->field = field;
 
-        return obj;*/
+        return obj;
     }
     else
     {
-        MODULE_DEBUG_PRINTF("marmalade_GetObjectField(%s) -> NULL\n",((jmethodID)p2)->name);
+        MODULE_DEBUG_PRINTF("marmalade_GetObjectField(%s) -> NULL\n",((jmethodID)field)->name);
     }
-
     return NULL;
 }
 
@@ -526,6 +538,13 @@ marmalade_GetIntArrayElements(JNIEnv* p0, jintArray p1, jboolean* p2)
 static void
 marmalade_input_handler(struct SupportModule *self);
 
+void*
+runOnOSSignal_runner(void *n)
+{
+    marmalade_priv.loaderthread.runOnOSTickNative(ENV(marmalade_priv.global),marmalade_priv.theloaderthread);
+    return NULL;
+}
+
 void
 marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
 {
@@ -538,6 +557,16 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     else if(method_is(glInit))
     {
         MODULE_DEBUG_PRINTF("TODO: implement glInit\n");
+    }
+    else if(method_is(runOnOSSignal))
+    {
+        // i don't know if this is needed/correct but it looks like it
+        // and does not break anything
+        // TODO: figure out whats correct
+        MODULE_DEBUG_PRINTF("%s::runOnOSSignal\n",((struct dummy_jclass*)p2->clazz)->name);
+        
+        pthread_t th;
+        pthread_create(&th,NULL,runOnOSSignal_runner,NULL);
     }
     else if(method_is(glSwapBuffers))
     {
@@ -783,12 +812,6 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
     MODULE_DEBUG_PRINTF("setPixelsNative\n");
     self->priv->loaderview.setPixelsNative(ENV_M,self->priv->theview,width,height,self->priv->pixels, 1 /* == newly created */ );
     MODULE_DEBUG_PRINTF("setPixelsNative done.\n");
-
-    /* needed ?
-    MODULE_DEBUG_PRINTF("resumeAppThreads\n");
-    self->priv->loaderthread.resumeAppThreads(ENV_M,self->priv->theloaderthread);
-    MODULE_DEBUG_PRINTF("resumeAppThreads done.\n");
-    */
     
     MODULE_DEBUG_PRINTF("runNative\n");
     self->priv->loaderthread.runNative(ENV_M,self->priv->theloaderthread,
@@ -803,34 +826,39 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
 static void
 marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
 {
-   if(self->priv->loaderthread.onMotionEvent)
-   {
-       int action = 0;
-       if(ACTION_DOWN == event)
-       {
-           action = ACTION_POINTER_1_DOWN;
-       }
-       else if(ACTION_UP == event)
-       {
-           action = ACTION_POINTER_1_UP;
-       }
-       else if(ACTION_MOVE == event)
-       {
-           return; // TODO
-       }
+    if(self->priv->loaderthread.onMotionEvent)
+    {
+        int action = 0;
 
-       MODULE_DEBUG_PRINTF("onMotionEvent: %s\n", action == ACTION_POINTER_1_UP ? "up" : "down");
-       self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,action-1 /* duh? */, x,y);
-       MODULE_DEBUG_PRINTF("onMotionEvent done.\n");
-   }
+        if(ACTION_DOWN == event)
+        {
+            action = ACTION_POINTER_1_DOWN;
+        }
+        else if(ACTION_UP == event)
+        {
+            action = ACTION_POINTER_1_UP;
+        }
+
+        if(ACTION_MOVE == event)
+        {
+            MODULE_DEBUG_PRINTF("onMotionEvent: move\n");
+            self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,2, x,y);
+            self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,1, x,y);
+            MODULE_DEBUG_PRINTF("onMotionEvent done.\n");
+        }
+        else
+        {
+            MODULE_DEBUG_PRINTF("onMotionEvent: %s\n", action == ACTION_POINTER_1_UP ? "up" : "down");
+            self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,action-1, x,y);
+            MODULE_DEBUG_PRINTF("onMotionEvent done.\n");
+        }
+    }
 }
 
 static void
 marmalade_key_input(struct SupportModule *self, int event, int keycode, int unicode)
 {
 }
-
-
 
 /* this function is never called */
 static void

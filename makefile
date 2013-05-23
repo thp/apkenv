@@ -26,6 +26,8 @@ IMAGELIB_SOURCES=$(wildcard imagelib/*.c)
 # segfault catch
 DEBUG_SOURCES=$(wildcard debug/*.c)
 
+OBJDUMP = objdump
+
 TARGET = apkenv
 
 DESTDIR ?= /
@@ -73,16 +75,97 @@ ifeq ($(FREMANTLE),1)
     LDFLAGS += -lSDL_gles
 endif
 
-DEBUG ?= 0
+INJECTION_WRAPPER_SOURCE_ARM=linker/wrapper_ARM.c
+INJECTION_WRAPPER_SOURCE_THUMB=linker/wrapper_THUMB.c
+INJECTION_WRAPPER_SOURCE_HOOK=compat/wrapper.c
+INJECTION_WRAPPER_SOURCES=$(INJECTION_WRAPPER_SOURCE_HOOK) $(INJECTION_WRAPPER_SOURCE_ARM) $(INJECTION_WRAPPER_SOURCE_THUMB)
+
+# specify if methods should be traced
+DEBUG_TRACE_METHODS ?= 0
+# specify which methods should be traced
+DEBUG_TRACE_DYNHOOKS ?= 1
+DEBUG_TRACE_LATEHOOKS ?= 1
+DEBUG_TRACE_UNHOOKED ?= 1
+# the following are experimental and use code injection
+# in order to be able to trace internal function calls
+# this one works, but not in every case so
+# adjust is_blacklisted in compat/hooks.c if you have
+# problems with some methods
+DEBUG_TRACE_INJ_ARM ?= 0
+# unfortunately this does not work yet
+DEBUG_TRACE_INJ_THUMB ?= 0
+
+INJECTION_WRAPPER_OBJ_ARM = $(patsubst %.c,%.o,$(INJECTION_WRAPPER_SOURCE_ARM))
+INJECTION_WRAPPER_OBJ_THUMB = $(patsubst %.c,%.o,$(INJECTION_WRAPPER_SOURCE_THUMB))
+INJECTION_WRAPPER_OBJ_HOOK = $(patsubst %.c,%.o,$(INJECTION_WRAPPER_SOURCE_HOOK))
+
+INJECTION_WRAPPER_TARGET_ARM = $(patsubst %.c,%.instructions,$(INJECTION_WRAPPER_SOURCE_ARM))
+INJECTION_WRAPPER_TARGET_THUMB = $(patsubst %.c,%.instructions,$(INJECTION_WRAPPER_SOURCE_THUMB))
+INJECTION_WRAPPER_TARGET_HOOK = $(patsubst %.c,%.instructions,$(INJECTION_WRAPPER_SOURCE_HOOK))
+
+ifeq ($(DEBUG_TRACE_METHODS),1)
+    h=0
+    ifeq ($(DEBUG_TRACE_DYNHOOKS),1)
+        CFLAGS += -DDEBUG_TRACE_DYNHOOKS
+        I_CFLAGS += -DDEBUG_TRACE_METHODS
+        h=1
+    endif
+    ifeq ($(DEBUG_TRACE_LATEHOOKS),1)
+        CFLAGS += -DDEBUG_TRACE_LATEHOOKS
+        I_CFLAGS += -DDEBUG_TRACE_METHODS
+        h=1
+    endif
+    ifeq ($(DEBUG_TRACE_UNHOOKED),1)
+        CFLAGS += -DDEBUG_TRACE_UNHOOKED
+        I_CFLAGS += -DDEBUG_TRACE_METHODS
+        h=1
+    endif
+    ifeq ($h,0)
+        INJECTION_WRAPPER_TARGET_HOOK=
+	else
+		CFLAGS += -DDEBUG_TRACE_METHODS
+    endif
+    ifeq ($(DEBUG_TRACE_INJ_ARM),1)
+        CFLAGS += -DDEBUG_TRACE_INJ_ARM -DDEBUG_TRACE_METHODS
+        I_CFLAGS += -DDEBUG_TRACE_INJ_ARM
+    else
+        INJECTION_WRAPPER_TARGET_ARM=
+    endif
+    ifeq ($(DEBUG_TRACE_INJ_THUMB),1)
+        CFLAGS += -DDEBUG_TRACE_INJ_THUMB -DDEBUG_TRACE_METHODS
+        I_CFLAGS += -DDEBUG_TRACE_INJ_THUMB
+    else
+        INJECTION_WRAPPER_TARGET_THUMB=
+    endif
+endif
+
+INJECTION_WRAPPER_TARGETS = $(INJECTION_WRAPPER_TARGET_ARM) $(INJECTION_WRAPPER_TARGET_THUMB) $(INJECTION_WRAPPER_TARGET_HOOK)
+
+DEBUG ?= 1
 ifeq ($(DEBUG),1)
     CFLAGS += -g -Wall -DLINKER_DEBUG=1 -DAPKENV_DEBUG -Wformat=0
 else
     CFLAGS += -O2 -DLINKER_DEBUG=0
 endif
 
-all: $(TARGET) $(MODULES)
+all: $(INJECTION_WRAPPER_TARGETS) $(TARGET) $(MODULES)
 
-%.o: %.c
+compat/wrapper.instructions: compat/wrapper.c
+	@echo -e "\tCC_I_W\t"$@
+	@$(CC) -marm -Wno-unused-function $(I_CFLAGS) -O0 -c -o $(patsubst %.c,%.o,$<) $<
+	@objdump -d $(patsubst %.c,%.o,$<) | ./tools/extract_wrapper_code.sh | ./tools/to_code_32.sh > $(patsubst %.c,%.instructions,$<)
+
+linker/wrapper_THUMB.instructions: linker/wrapper_THUMB.c
+	@echo -e "\tCC_I_W\t"$@
+	@$(CC) -mthumb -Wno-unused-function $(I_CFLAGS) -O0 -c -o $(patsubst %.c,%.o,$<) $<
+	@objdump -d $(patsubst %.c,%.o,$<) | ./tools/extract_wrapper_code.sh | ./tools/to_code_16.sh > $(patsubst %.c,%.instructions,$<)
+
+linker/wrapper_ARM.instructions: linker/wrapper_ARM.c
+	@echo -e "\tCC_I_W\t"$@
+	@$(CC) -marm -Wno-unused-function $(I_CFLAGS) -O0 -c -o $(patsubst %.c,%.o,$<) $<
+	@objdump -d $(patsubst %.c,%.o,$<) | ./tools/extract_wrapper_code.sh | ./tools/to_code_32.sh > $(patsubst %.c,%.instructions,$<)
+
+%.o: %.c $(INJECTION_WRAPPER_TARGETS)
 	@echo -e "\tCC\t$@"
 	@$(CC) $(CFLAGS) -c -o $@ $<
 
@@ -122,7 +205,7 @@ endif
 
 clean:
 	@echo -e "\tCLEAN"
-	@rm -rf $(TARGET) $(OBJS) $(MODULES)
+	@rm -rf $(TARGET) $(OBJS) $(MODULES) $(INJECTION_WRAPPER_TARGETS)
 
 
 .DEFAULT: all
