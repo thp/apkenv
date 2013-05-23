@@ -538,6 +538,13 @@ marmalade_GetIntArrayElements(JNIEnv* p0, jintArray p1, jboolean* p2)
 static void
 marmalade_input_handler(struct SupportModule *self);
 
+void*
+runOnOSSignal_runner(void *n)
+{
+    marmalade_priv.loaderthread.runOnOSTickNative(ENV(marmalade_priv.global),marmalade_priv.theloaderthread);
+    return NULL;
+}
+
 void
 marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
 {
@@ -550,6 +557,16 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     else if(method_is(glInit))
     {
         MODULE_DEBUG_PRINTF("TODO: implement glInit\n");
+    }
+    else if(method_is(runOnOSSignal))
+    {
+        // i don't know if this is needed/correct but it looks like it
+        // and does not break anything
+        // TODO: figure out whats correct
+        MODULE_DEBUG_PRINTF("%s::runOnOSSignal\n",((struct dummy_jclass*)p2->clazz)->name);
+        
+        pthread_t th;
+        pthread_create(&th,NULL,runOnOSSignal_runner,NULL);
     }
     else if(method_is(glSwapBuffers))
     {
