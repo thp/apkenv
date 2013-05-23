@@ -494,6 +494,7 @@ marmalade_GetObjectField(JNIEnv* p0, jobject p1, jfieldID field)
     {
         MODULE_DEBUG_PRINTF("marmalade_GetObjectField(%s) -> NULL\n",((jmethodID)field)->name);
     }
+    return NULL;
 }
 
 jobject
