@@ -34,6 +34,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "wrappers.h"
 #include "hooks.h"
 
 #include "libc_wrappers.h"
@@ -66,7 +67,82 @@ hook_cmp(const void *p1, const void *p2)
 #define HOOK_SIZE (sizeof(struct _hook))
 #define HOOKS_COUNT (sizeof(hooks) / (HOOK_SIZE))
 
-void *get_hooked_symbol(const char *sym)
+#ifdef DEBUG_TRACE_METHODS
+
+static int
+blacklist_cmp(const void *p1, const void *p2)
+{
+    const char *str1 = *(const char**)p1;
+    const char *str2 = *(const char**)p2;
+    return strcmp(str1,str2);
+}
+
+char *blacklisted_methods[] = {"__div0", "__divdf3", "__divdi3", "__divsi3", "__udivdi3", "__udivsi3", "__muldi3", "__muldf3", "__mulsf3", "__gnu_ldivmod_helper", "__gnu_uldivmod_helper"};
+
+int is_blacklisted(const char *sym_name)
+{
+    if(strncmp("__aeabi", sym_name, 7) == 0) return 1;
+    char *result = bsearch(&sym_name, &(blacklisted_methods[0]), sizeof(blacklisted_methods)/sizeof(char*), sizeof(char*), blacklist_cmp);
+    return (result != NULL);
+}
+
+void print_fun_name(void *function, char *name, char *msg)
+{
+    // here we can simply use the stack and everything
+    // because the compiler cares about pushing to the
+    // stack and poping everything back afterwards
+    printf("%s: %s@%x\n",msg,name,function);
+    // we cannot simply call the function here
+    // because the function expects the stack and registers
+    // to be in a state as if this function and the generated
+    // wrapper code never existed
+    // but we can print debug information
+}
+
+const char *latehook = "calling late hooked method";
+const char *stdhook = "calling unhooked method";
+const char *dynhook = "calling dynamically loaded method";
+
+void *assemble_wrapper(const char *symbol, void *addr, uint8_t type)
+{
+    if(is_blacklisted(symbol)) return addr;
+
+    printf("assembling wrapper for: %s@0x%x\n", symbol, addr);
+
+    void *wrapper_addr = 0;
+    wrapper_addr = mmap(NULL,
+                        64, // instructions, be sure your allocating enough memory!
+                        PROT_READ | PROT_WRITE | PROT_EXEC,
+                        MAP_ANONYMOUS | MAP_PRIVATE,
+                        0,
+                        0);
+    int helper = 0;
+    #include "wrapper.instructions"
+    // symbols
+    ((int32_t*)wrapper_addr)[helper++] = (uint32_t)symbol;
+    ((int32_t*)wrapper_addr)[helper++] = (uint32_t)addr;
+    ((int32_t*)wrapper_addr)[helper++] = (uint32_t)print_fun_name;
+
+    if(WRAPPER_LATEHOOK == type)
+    {
+        ((int32_t*)wrapper_addr)[helper++] = (uint32_t)latehook;
+    }
+    else if(WRAPPER_DYNHOOK == type)
+    {
+        ((int32_t*)wrapper_addr)[helper++] = (uint32_t)dynhook;
+    }
+    else
+    {
+        ((int32_t*)wrapper_addr)[helper++] = (uint32_t)stdhook;
+    }
+    
+    register_wrapper(wrapper_addr,64,symbol,WRAPPER_LATEHOOK);
+    
+    return wrapper_addr;
+}
+#endif
+
+void *get_hooked_symbol(const char *sym, int dieifpthread)
 {
     struct _hook target;
     target.name = sym;
@@ -80,7 +156,7 @@ void *get_hooked_symbol(const char *sym)
 
     if (strstr(sym, "pthread") != NULL) {
         printf("Unimplemented: %s\n", sym);
-        exit(0);
+        if(dieifpthread) exit(0);
     }
 
     return NULL;
@@ -90,6 +166,17 @@ void hooks_init(void)
 {
     /* Sort hooks so we can use binary search in get_hooked_symbol() */
     qsort(&(hooks[0]), HOOKS_COUNT, HOOK_SIZE, hook_cmp);
-
+#ifdef DEBUG_TRACE_METHODS
+    // sort blacklists
+    qsort(&(blacklisted_methods[0]), sizeof(blacklisted_methods)/sizeof(char*), sizeof(char*), blacklist_cmp);
+#endif
+    
     libc_wrappers_init();
+}
+
+void hooks_deinit(void)
+{
+#ifdef DEBUG_TRACE_METHODS
+    deinit_wrappers();
+#endif
 }

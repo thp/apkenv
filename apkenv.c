@@ -624,6 +624,8 @@ finish:
     }
 
     apk_close(global.apklib_handle);
+
+    hooks_deinit();
     system_exit();
 
     return 0;
