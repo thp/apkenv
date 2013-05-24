@@ -34,6 +34,10 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 
 #include <SDL/SDL.h>
 
@@ -504,6 +508,25 @@ int main(int argc, char **argv)
         printf("No support modules found.\n");
     }
 
+    /* mmap apk for direct asset access (avoids tempfile extraction) */
+    struct stat st;
+    global.apk_fd = open(global.apk_filename, O_RDONLY);
+    if (global.apk_fd == -1) {
+        perror("open");
+        exit(1);
+    }
+    if (fstat(global.apk_fd, &st)) {
+        perror("fstat");
+        exit(1);
+    }
+    global.apk_size = st.st_size;
+    global.apk_in_mem = mmap(NULL, global.apk_size, PROT_READ,
+        MAP_SHARED, global.apk_fd, 0);
+    if (global.apk_in_mem == MAP_FAILED) {
+        perror("warning: mmap'ing apk failed");
+        global.apk_in_mem = NULL;
+    }
+
     /* Search for a suitable module to handle the library */
     struct SupportModule *module = global.support_modules;
     while (module != NULL) {
@@ -639,6 +662,9 @@ finish:
         lib = next;
     }
 
+    if (global.apk_in_mem)
+        munmap((void *)global.apk_in_mem, global.apk_size);
+    close(global.apk_fd);
     apk_close(global.apklib_handle);
     system_exit();
 
