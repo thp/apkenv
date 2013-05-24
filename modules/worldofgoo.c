@@ -233,7 +233,7 @@ play_sound(const char *filename, int loop, double volume)
 
     if (sound->chunk != NULL) {
         Mix_VolumeChunk(sound->chunk, sdl_volume);
-        sound->chunk_channel = Mix_PlayChannel(-1, sound->chunk, loop);
+        sound->chunk_channel = Mix_PlayChannel(-1, sound->chunk, loop ? -1 : 0);
     } else if (sound->music != NULL) {
         Mix_HaltMusic();
         active_music = sound->music;
