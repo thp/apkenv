@@ -101,6 +101,9 @@ struct GlobalState {
 
     const char *apk_filename;
     AndroidApk *apklib_handle;
+    const void *apk_in_mem; /* can be NULL if APK is too large */
+    size_t apk_size;
+    int apk_fd;
 
     struct JniLibrary *libraries;
 

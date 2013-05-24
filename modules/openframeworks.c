@@ -73,10 +73,13 @@ struct SupportModulePriv {
     openframeworks_onKeyDown_t onKeyDown;
     openframeworks_onKeyUp_t onKeyUp;
     openframeworks_update_t update; // SuperHexagon specific
+    const char *app_name;
     char *home;
     int w, h;
 };
 static struct SupportModulePriv openframeworks_priv;
+
+static void publish_superhexagon_score(int level, int score);
 
 struct player_sound {
     Mix_Music *music;
@@ -105,12 +108,23 @@ void
 JNIEnv_CallVoidMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 {
     MODULE_DEBUG_PRINTF("module_JNIEnv_CallVoidMethodV(%x, %s, %s)\n", p1, p2->name, p2->sig);
+
+    if (strcmp(p2->name, "reportScore") == 0
+       && strcmp(openframeworks_priv.app_name, "Super Hexagon") == 0)
+    {
+        int level = va_arg(p3, int);
+        int score = va_arg(p3, int); // in 1/60 sec (frame?) units
+        printf("level %d hiscore: %d:%02d\n", level, score / 60, score % 60);
+        publish_superhexagon_score(level, score);
+        return;
+    }
+
+    /* handle OFAndroidSoundPlayer class */
     if (p1 == NULL || p1 == GLOBAL_J(env))
         return;
 
     struct _jobject *obj = p1;
 
-    /* handle OFAndroidSoundPlayer class */
     if (strcmp(obj->class->name, "cc/openframeworks/OFAndroidSoundPlayer") != 0)
         return;
 
@@ -204,6 +218,53 @@ hexagon_extract(const char *filename, char *buffer, size_t size)
     fclose(f);
 }
 
+#ifdef PANDORA
+#include <sys/wait.h>
+
+static void
+publish_superhexagon_score(int level, int score)
+{
+    static int sent_scores[6], prev_level, prev_score;
+    static pid_t pid = -1;
+    int status;
+
+    if ((unsigned int)level >= 6)
+        return;
+
+    if (pid != -1) {
+        waitpid(pid, &status, 0);
+        pid = -1;
+        if (WIFEXITED(status) && WEXITSTATUS(status) == 0)
+            sent_scores[prev_level] = prev_score;
+        else
+            printf("last WEXITSTATUS %d\n", WEXITSTATUS(status));
+    }
+
+    /* We always get highest score, not current, so only send once */
+    if (sent_scores[level] == score)
+        return;
+
+    prev_level = level;
+    prev_score = score;
+
+    pid = fork();
+    if (pid == 0) {
+        char name[16] = "superhexagon\0";
+        char sscore[16];
+        if (level > 0)
+            name[12] = '0' + level + 1;
+        snprintf(sscore, sizeof(sscore), "%u", score);
+        printf("sending score..\n");
+        execl("./sc", "./sc", "so", "push", name, "pandora",
+              sscore, (char *)NULL);
+        perror("execl");
+        _exit(1);
+    }
+}
+#else
+static void publish_superhexagon_score(int level, int score) {}
+#endif
+
 #define LOOKUP_OF_SYM(var) \
     self->priv->var = (openframeworks_##var##_t)LOOKUP_M( \
         "Java_cc_openframeworks_OFAndroid_" #var); \
@@ -247,17 +308,15 @@ openframeworks_resume(struct SupportModule *self);
 static void
 openframeworks_init(struct SupportModule *self, int width, int height, const char *home)
 {
-    const char *app_name;
     char buf[1024];
     struct stat st;
 
-    app_name = GLOBAL_M->lookup_resource("app_name");
-
+    openframeworks_priv.app_name = GLOBAL_M->lookup_resource("app_name");
     openframeworks_priv.home = strdup(home);
     openframeworks_priv.w = width;
     openframeworks_priv.h = height;
 
-    if (strcmp(app_name, "Super Hexagon") == 0) {
+    if (strcmp(openframeworks_priv.app_name, "Super Hexagon") == 0) {
         /* do SuperHexagonSplash's work */
         snprintf(buf, sizeof(buf), "%s/data", home);
         if (stat(buf, &st) != 0)
@@ -277,7 +336,7 @@ openframeworks_init(struct SupportModule *self, int width, int height, const cha
     self->priv->JNI_OnLoad(VM_M, NULL);
     self->priv->setAppDataDir(ENV_M, GLOBAL_M,
         GLOBAL_M->env->NewStringUTF(ENV_M, home),
-        GLOBAL_M->env->NewStringUTF(ENV_M, app_name));
+        GLOBAL_M->env->NewStringUTF(ENV_M, openframeworks_priv.app_name));
     self->priv->init(ENV_M, GLOBAL_M);
     self->priv->setup(ENV_M, GLOBAL_M, width, height);
     self->priv->onPause(ENV_M, GLOBAL_M); // must pause for resume to work

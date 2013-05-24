@@ -88,7 +88,7 @@ extern int format_log(int, const char *, const char *, ...);
 #define WARN(fmt,args...)    \
         _PRINTVF(-1, TRUE, "%s:%d| WARNING: " fmt, __FILE__, __LINE__, ## args)
 #define ERROR(fmt,args...)    \
-        _PRINTVF(-1, TRUE, "%s:%d| ERROR: " fmt, __FILE__, __LINE__, ## args)
+        printf("%s:%d| ERROR: " fmt, __FILE__, __LINE__, ## args)
 
 
 #if TRACE_DEBUG
