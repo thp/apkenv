@@ -77,7 +77,7 @@ blacklist_cmp(const void *p1, const void *p2)
     return strcmp(str1,str2);
 }
 
-char *blacklisted_methods[] = {"__div0", "__divdf3", "__divdi3", "__divsi3", "__udivdi3", "__udivsi3", "__muldi3", "__muldf3", "__mulsf3", "__gnu_ldivmod_helper", "__gnu_uldivmod_helper"};
+char *blacklisted_methods[] = {"dlsym", "dlopen", "dlclose", "dlerror", "dladdr", "android_dl_unwind_find_exidx", "dl_iterate_phdr", "__div0", "__divdf3", "__divdi3", "__divsi3", "__udivdi3", "__udivsi3", "__muldi3", "__muldf3", "__mulsf3", "__gnu_ldivmod_helper", "__gnu_uldivmod_helper"};
 
 int is_blacklisted(const char *sym_name)
 {

@@ -235,7 +235,6 @@
 {"gzclose", gzclose},
 {"gzgets", gzgets},
 
-
 {"gethostbyname", gethostbyname},
 {"__errno", my___errno},
 
@@ -244,7 +243,4 @@
 
 {"bsd_signal", bsd_signal},
 {"clock_getres", clock_getres},
-
-{"dlopen", android_dlopen},
-{"dlsym", android_dlsym},
 
