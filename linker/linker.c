@@ -1351,6 +1351,7 @@ void wrap_function(void *sym_addr, const char *sym_name, int is_thumb, soinfo *s
 #else
             ((int32_t*)sym_addr)[1] = (uint32_t)hook;
 #endif
+            __clear_cache((int32_t*)sym_addr, (int32_t*)sym_addr + 2);
         }
         else
         {
@@ -1366,6 +1367,7 @@ void wrap_function(void *sym_addr, const char *sym_name, int is_thumb, soinfo *s
             ((int16_t*)sym_addr)[2] = (uint32_t)hook & 0x0000FFFF;
             ((int16_t*)sym_addr)[3] = (uint32_t)hook >> 16;
 #endif
+            __clear_cache((int16_t*)sym_addr, (int16_t*)sym_addr + 4);
         }
     }
 #ifdef DEBUG_TRACE_INJ_ARM
@@ -1382,6 +1384,11 @@ void wrap_function(void *sym_addr, const char *sym_name, int is_thumb, soinfo *s
                             MAP_ANONYMOUS | MAP_PRIVATE,
                             0,
                             0);
+        if(MAP_FAILED == wrapper_addr)
+        {
+            DEBUG("mmap failed, cannot create wrapper for %s",sym_name);
+            return;
+        }
         int helper = 0;
 #       include "wrapper_ARM.instructions"
 
@@ -1394,6 +1401,7 @@ void wrap_function(void *sym_addr, const char *sym_name, int is_thumb, soinfo *s
         // store wrapper address so the modified code
         // will jump into it via the instruction above
         ((int32_t*)sym_addr)[1] = (uint32_t)wrapper_addr;
+	__clear_cache((int32_t*)sym_addr, (int32_t*)sym_addr + 2);
 
         // store name of the wrapped function
         // store the pointer to the 3rd instruction of the wrapped function
@@ -1401,6 +1409,7 @@ void wrap_function(void *sym_addr, const char *sym_name, int is_thumb, soinfo *s
         ((int32_t*)wrapper_addr)[helper++] = (uint32_t)sym_name;
         ((int32_t*)wrapper_addr)[helper++] = (uint32_t)((int32_t*)sym_addr + 2);
         ((int32_t*)wrapper_addr)[helper++] = (uint32_t)print_info;
+
         register_wrapper(wrapper_addr,96,sym_name,WRAPPER_ARM_INJECTION);
     }
 #endif /* DEBUG_TRACE_INJ_ARM */
@@ -1417,6 +1426,11 @@ void wrap_function(void *sym_addr, const char *sym_name, int is_thumb, soinfo *s
                             MAP_ANONYMOUS | MAP_PRIVATE,
                             0,
                             0);
+        if(MAP_FAILED == wrapper_addr)
+        {
+            DEBUG("mmap failed, cannot create wrapper for %s",sym_name);
+            return;
+        }
         sym_addr = (void*)((char*)sym_addr - 1); // get actual sym_addr
         wrapper_addr = (void*)((char*)wrapper_addr + 1); // fix wrapper_addr for THUMB
         int fifth_nop = IS_T32(*((int16_t*)sym_addr + 4)) && (
@@ -1449,6 +1463,8 @@ void wrap_function(void *sym_addr, const char *sym_name, int is_thumb, soinfo *s
         // will jump into it via the instruction above
         ((int16_t*)sym_addr)[2] = (uint32_t)wrapper_addr & 0x0000FFFF;
         ((int16_t*)sym_addr)[3] = (uint32_t)wrapper_addr >> 16;
+	__clear_cache((int16_t*)sym_addr, (int16_t*)sym_addr + 4);
+
         // store name of the wrapped function
         // store the pointer to the 3rd instruction of the wrapped function
         // store the pointer to print_info, so that the wrapper can call it
@@ -1458,6 +1474,7 @@ void wrap_function(void *sym_addr, const char *sym_name, int is_thumb, soinfo *s
         ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)((int32_t*)sym_addr + 2)) >> 16;
         ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)print_info) & 0x0000FFFF;
         ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)print_info) >> 16;
+
         register_wrapper(wrapper_addr,96,WRAPPER_THUMB_INJECTION);
     }
 #endif /* DEBUG_TRACE_INJ_THUMB */

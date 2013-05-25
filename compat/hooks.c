@@ -116,6 +116,11 @@ void *assemble_wrapper(const char *symbol, void *addr, uint8_t type)
                         MAP_ANONYMOUS | MAP_PRIVATE,
                         0,
                         0);
+    if(MAP_FAILED == wrapper_addr)
+    {
+       printf("mmap failed, cannot create wrapper for %s",symbol);
+       return addr;
+    }
     int helper = 0;
     #include "wrapper.instructions"
     // symbols
