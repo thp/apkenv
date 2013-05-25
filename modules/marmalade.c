@@ -41,6 +41,8 @@
 #define ORIENTATION_PORTRAIT 1
 
 #define AUDIO_RATE 22050
+#define AUDIO_CHUKSIZE 1024
+#define AUDIO_CHANNELS 2
 
 // TODO: to jni/jnienv.h?
 typedef struct
@@ -80,7 +82,7 @@ typedef jboolean (*marmalade_onKeyEventNative_t)(JNIEnv *env, jobject p0, jint i
 typedef void (*marmalade_setCharInputEnabledNative_t)(JNIEnv *env, jobject p0, jboolean b1) SOFTFP;
 
 // SoundPlayer
-typedef void (*marmalade_generateAudio_t)(JNIEnv *env, jobject p0, jarray a1 /* of jstring */, jint i3) SOFTFP;
+typedef void (*marmalade_generateAudio_t)(JNIEnv *env, jobject p0, jshortArray a1, jint length) SOFTFP;
 
 // SoundRecord
 typedef void (*marmalade_recordAudio_t)(JNIEnv *env, jobject p0, jarray a1 /* of jstring */, jint i3, jint i4) SOFTFP;
@@ -327,21 +329,43 @@ marmalade_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint
     return 0;
 }
 
-int my_soundInit()
+/* mix audio buffer */
+static void my_audio_mixer(void *udata, Uint8 *stream, int len)
+{
+    static short soundbuf[AUDIO_CHUKSIZE * AUDIO_CHANNELS];
+    struct dummy_short_array arr;
+    short *mixbuf = (short *)stream;
+    int i;
+
+    if (len > sizeof(soundbuf)) {
+        fprintf(stderr, "audio setup broken\n");
+        exit(1);
+    }
+    len /= 2;
+    arr.data = soundbuf;
+    arr.size = len;
+    marmalade_priv.soundplayer.generateAudio(ENV(marmalade_priv.global),
+        VM(marmalade_priv.global), &arr, len);
+    for (i = 0; i < len; i++)
+        mixbuf[i] += soundbuf[i];
+}
+
+static int my_soundInit(void)
 {
     MODULE_DEBUG_PRINTF("marmalade initializing audio\n");
     
     // marmalade gives useless values
     int audio_rate = AUDIO_RATE;
-    int stereo = 1;
     
     Uint16 audio_format = AUDIO_S16SYS;
-    int audio_channels = stereo ? 2 : 1;
-    int audio_buffers = 1024;
+    int audio_channels = AUDIO_CHANNELS;
+    int audio_buffers = AUDIO_CHUKSIZE;
 
     int act_audio_rate;
     int act_audio_channels;
     Uint16 act_audio_format;
+
+    Mix_Init(MIX_INIT_OGG | MIX_INIT_MP3);
 
     if(Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) != 0) {
         MODULE_DEBUG_PRINTF("marmalade: Unable to initialize audio: %s\n", Mix_GetError());
@@ -357,15 +381,16 @@ int my_soundInit()
             MODULE_DEBUG_PRINTF("marmalade actual audio settings differ from set: set/act [rate,format,channels]: [%d/%d,%d/%d,%d/%d]\n",audio_rate,act_audio_rate,audio_format,act_audio_format,audio_channels,act_audio_channels);
         }
 
-        //Mix_VolumeMusic(volume);
-
-        MODULE_DEBUG_PRINTF("marmalade initializing audio done.\n");
-        return act_audio_rate;
+        audio_rate = act_audio_rate;
+    }
+    else
+    {
+        MODULE_DEBUG_PRINTF("Mix_QuerySpec failed.\n");
     }
 
-    //Mix_VolumeMusic(volume);
+    Mix_SetPostMix(my_audio_mixer, NULL);
 
-    MODULE_DEBUG_PRINTF("marmalade initializing done, Mix_QuerySpec failed.\n");
+    MODULE_DEBUG_PRINTF("marmalade initializing audio done.\n");
     return audio_rate;
 }
 
@@ -386,29 +411,49 @@ marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
     }
     else if(method_is(audioPlay))
     {
+        // (Ljava/lang/String;IJJI)I
+        struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring *);
+        int repeats = va_arg(p3, int);
+        long file_offset = va_arg(p3, long);
+        long arg3 = va_arg(p3, long); // unused?
+        int file_size = va_arg(p3, int);
+        static SDL_RWops *rw;
+        static Mix_Music *music;
+        const void *mem;
+
+        MODULE_DEBUG_PRINTF("audioPlay '%s', %d, %ld, %ld, %d\n",
+            filename->data, repeats, file_offset, arg3, file_size);
+        if (music != NULL) {
+            Mix_FreeMusic(music);
+            music = NULL;
+        }
+        if (rw != NULL) {
+            SDL_RWclose(rw);
+            rw = NULL;
+        }
+        mem = (const char *)marmalade_priv.global->apk_in_mem + file_offset;
+        rw = SDL_RWFromMem((void *)mem, file_size);
+        music = Mix_LoadMUS_RW(rw);
+        Mix_PlayMusic(music, repeats > 0 ? repeats : -1);
         return 0;
     }
     else if(method_is(soundInit))
     {
         //(IZI)I
         
-        // TODO
-        
         // marmalade gives usesless variables:
         //jint audio_rate = va_arg(p3,int);
         //jboolean stereo = va_arg(p3,int); // bool
         //jint volume = va_arg(p3,int);
-        
-        // calling my_soundInit (tbe: Mix_OpenAudio) directly crashes in __strcasecmp
 
-        //my_soundInit();
+        my_soundInit();
         
         return AUDIO_RATE;
     }
     else if(method_is(audioGetNumChannels))
     {
         // TODO: actually get number of channels
-        return 2;
+        return AUDIO_CHANNELS;
     }
     else if(method_is(getBatteryLevel))
     {
@@ -524,6 +569,15 @@ marmalade_GetIntArrayElements(JNIEnv* p0, jintArray p1, jboolean* p2)
 }
 
 static void
+marmalade_SetShortArrayRegion(JNIEnv* p0, jshortArray p1, jsize start, jsize len, const jshort* p4)
+{
+    struct dummy_short_array *arr = p1;
+    MODULE_DEBUG_PRINTF("marmalade_SetShortArrayRegion(%p) -> %p\n", arr, arr ? arr->data : NULL);
+    if (arr != NULL && arr->data != NULL)
+        memcpy(arr->data + start, p4, len * sizeof(arr->data[0]));
+}
+
+static void
 marmalade_input_handler(struct SupportModule *self);
 
 void
@@ -574,8 +628,15 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     }
     else if(method_is(soundSetVolume))
     {
-        //jint volume = va_arg(p3,int);
-        //Mix_VolumeMusic(volume);
+        jint volume = va_arg(p3, int);
+        MODULE_DEBUG_PRINTF("soundSetVolume(%d) obj=%p\n", volume, p1);
+    }
+    else if(method_is(audioSetVolume))
+    {
+        jint volume = va_arg(p3, int);
+        jint which = va_arg(p3, int);
+        MODULE_DEBUG_PRINTF("audioSetVolume(%d, %d) obj=%p\n", volume, which, p1);
+        Mix_VolumeMusic(volume * MIX_MAX_VOLUME / 100);
     }
     else if(method_is(doDraw))
     {
@@ -736,6 +797,7 @@ marmalade_try_init(struct SupportModule *self)
     self->override_env.GetStaticFieldID = marmalade_GetStaticFieldID;
     self->override_env.ExceptionOccurred = marmalade_ExceptionOccurred;
     self->override_env.GetIntArrayElements = marmalade_GetIntArrayElements;
+    self->override_env.SetShortArrayRegion = marmalade_SetShortArrayRegion;
     self->override_env.NewGlobalRef = marmalade_NewGlobalRef;
     self->override_env.GetFieldID = marmalade_GetFieldID;
     self->override_env.GetObjectField = marmalade_GetObjectField;

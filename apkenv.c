@@ -34,6 +34,10 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
 
 #include <SDL/SDL.h>
 
@@ -62,10 +66,8 @@ static unsigned char keymap[] = {
     [SDLK_LEFT]     = AKEYCODE_DPAD_LEFT,
     [SDLK_COMMA]    = AKEYCODE_COMMA,
     [SDLK_PERIOD]   = AKEYCODE_PERIOD,
-    [SDLK_LALT]     = AKEYCODE_ALT_LEFT,
     [SDLK_RALT]     = AKEYCODE_ALT_RIGHT,
     [SDLK_LSHIFT]   = AKEYCODE_SHIFT_LEFT,
-    [SDLK_RSHIFT]   = AKEYCODE_SHIFT_RIGHT,
     [SDLK_TAB]      = AKEYCODE_TAB,
     [SDLK_SPACE]    = AKEYCODE_SPACE,
     [SDLK_RETURN]   = AKEYCODE_ENTER,
@@ -79,8 +81,26 @@ static unsigned char keymap[] = {
     [SDLK_SLASH]    = AKEYCODE_SLASH,
     [SDLK_AT]       = AKEYCODE_AT,
     [SDLK_PLUS]     = AKEYCODE_PLUS,
+    [SDLK_BACKSPACE]= AKEYCODE_BACK,
+    [SDLK_F1]       = AKEYCODE_MENU,
+    [SDLK_F2]       = AKEYCODE_HOME,
+    [SDLK_F3]       = AKEYCODE_SOFT_LEFT,
+    [SDLK_F4]       = AKEYCODE_SOFT_RIGHT,
+#ifndef PANDORA
+    [SDLK_LALT]     = AKEYCODE_ALT_LEFT,
+    [SDLK_RSHIFT]   = AKEYCODE_SHIFT_RIGHT,
     [SDLK_PAGEUP]   = AKEYCODE_PAGE_UP,
     [SDLK_PAGEDOWN] = AKEYCODE_PAGE_DOWN,
+#else
+    [SDLK_LALT]     = AKEYCODE_BUTTON_START,
+    [SDLK_LCTRL]    = AKEYCODE_BUTTON_SELECT,
+    [SDLK_PAGEUP]   = AKEYCODE_BUTTON_Y,
+    [SDLK_PAGEDOWN] = AKEYCODE_BUTTON_X,
+    [SDLK_HOME]     = AKEYCODE_BUTTON_A,
+    [SDLK_END]      = AKEYCODE_BUTTON_B,
+    [SDLK_RSHIFT]   = AKEYCODE_BUTTON_L1,
+    [SDLK_RCTRL]    = AKEYCODE_BUTTON_R1,
+#endif
     [SDLK_LAST]     = AKEYCODE_UNKNOWN,
 };
 
@@ -488,6 +508,25 @@ int main(int argc, char **argv)
         printf("No support modules found.\n");
     }
 
+    /* mmap apk for direct asset access (avoids tempfile extraction) */
+    struct stat st;
+    global.apk_fd = open(global.apk_filename, O_RDONLY);
+    if (global.apk_fd == -1) {
+        perror("open");
+        exit(1);
+    }
+    if (fstat(global.apk_fd, &st)) {
+        perror("fstat");
+        exit(1);
+    }
+    global.apk_size = st.st_size;
+    global.apk_in_mem = mmap(NULL, global.apk_size, PROT_READ,
+        MAP_SHARED, global.apk_fd, 0);
+    if (global.apk_in_mem == MAP_FAILED) {
+        perror("warning: mmap'ing apk failed");
+        global.apk_in_mem = NULL;
+    }
+
     /* Search for a suitable module to handle the library */
     struct SupportModule *module = global.support_modules;
     while (module != NULL) {
@@ -554,7 +593,7 @@ int main(int argc, char **argv)
                 }
                 else if (e.key.keysym.sym==SDLK_RSHIFT) {
                     //emulate_multitouch = 1;
-                    module->input(module,ACTION_DOWN, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
+                    module->input(module,ACTION_DOWN, platform_getscreenwidth() / 2 - 1, platform_getscreenheight() / 2, emulate_finger_id);
                 }
                 else
 #endif
@@ -564,7 +603,7 @@ int main(int argc, char **argv)
 #ifdef PANDORA
                 if (e.key.keysym.sym==SDLK_RSHIFT) {
                     //emulate_multitouch = 0;
-                    module->input(module,ACTION_UP, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
+                    module->input(module,ACTION_UP, platform_getscreenwidth() / 2 - 1, platform_getscreenheight() / 2, emulate_finger_id);
                 }
                 else
 #endif
@@ -623,6 +662,9 @@ finish:
         lib = next;
     }
 
+    if (global.apk_in_mem)
+        munmap((void *)global.apk_in_mem, global.apk_size);
+    close(global.apk_fd);
     apk_close(global.apklib_handle);
     system_exit();
 

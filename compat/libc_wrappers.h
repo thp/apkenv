@@ -29,6 +29,7 @@
 #include <setjmp.h>
 #include <wctype.h>
 #include <wchar.h>
+#include <dirent.h>
 
 #include <zlib.h>
 
@@ -257,6 +258,11 @@ int my_stat(const char *path, void *buf);
 int my_fstat(int fd, void *buf);
 int my_lstat(const char *path, void *buf);
 int my_fstatat(int dirfd, const char *pathname, void *buf, int flags);
+
+struct a_dirent;
+
+struct a_dirent *my_readdir(DIR *dirp);
+int my_readdir_r(DIR *dirp, struct a_dirent *entry, struct a_dirent **result);
 
 // workaround for unity?
 int my_munmap(void *__addr, size_t __len);

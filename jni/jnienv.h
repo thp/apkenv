@@ -45,6 +45,11 @@ struct dummy_byte_array {
     long size;
 };
 
+struct dummy_short_array {
+    short *data;
+    long size;
+};
+
 struct dummy_int_array {
     int *data;
     long size;

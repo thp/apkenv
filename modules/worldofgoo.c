@@ -31,10 +31,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/mman.h>
 #include <unistd.h>
 #include <zlib.h>
 
@@ -61,8 +57,6 @@ struct SupportModulePriv {
 
     const char *home_directory;
     const void *apk_in_mem;
-    size_t apk_size;
-    int apk_fd;
 };
 static struct SupportModulePriv worldofgoo_priv;
 
@@ -239,7 +233,7 @@ play_sound(const char *filename, int loop, double volume)
 
     if (sound->chunk != NULL) {
         Mix_VolumeChunk(sound->chunk, sdl_volume);
-        sound->chunk_channel = Mix_PlayChannel(-1, sound->chunk, loop);
+        sound->chunk_channel = Mix_PlayChannel(-1, sound->chunk, loop ? -1 : 0);
     } else if (sound->music != NULL) {
         Mix_HaltMusic();
         active_music = sound->music;
@@ -419,30 +413,9 @@ worldofgoo_try_init(struct SupportModule *self)
 static void
 worldofgoo_init(struct SupportModule *self, int width, int height, const char *home)
 {
-    struct stat st;
-    int ret;
-
     self->priv->home_directory = home;
+    self->priv->apk_in_mem = GLOBAL_M->apk_in_mem;
     build_apk_index(GLOBAL_M->apk_filename);
-
-    /* mmap apk for direct audio access */
-    self->priv->apk_fd = open(GLOBAL_M->apk_filename, O_RDONLY);
-    if (self->priv->apk_fd == -1) {
-        perror("open");
-        exit(1);
-    }
-    ret = fstat(self->priv->apk_fd, &st);
-    if (ret) {
-        perror("fstat");
-        exit(1);
-    }
-    self->priv->apk_size = st.st_size;
-    self->priv->apk_in_mem = mmap(NULL, self->priv->apk_size, PROT_READ,
-        MAP_SHARED, self->priv->apk_fd, 0);
-    if (self->priv->apk_in_mem == MAP_FAILED) {
-        perror("mmap");
-        exit(1);
-    }
 
     Mix_Init(MIX_INIT_OGG);
 
@@ -480,8 +453,6 @@ static void
 worldofgoo_deinit(struct SupportModule *self)
 {
     self->priv->nativeOnDestroy(ENV_M, GLOBAL_M, JNI_FALSE);
-    munmap((void *)self->priv->apk_in_mem, self->priv->apk_size);
-    close(self->priv->apk_fd);
 }
 
 static void
