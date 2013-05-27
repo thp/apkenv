@@ -40,6 +40,7 @@
 #define APKENV_COPYRIGHT "Copyright (c) 2012 Thomas Perl <m@thp.io>"
 
 struct GlobalState;
+struct SupportModule;
 struct SupportModulePriv;
 
 struct ModuleHacks {
@@ -49,6 +50,7 @@ struct ModuleHacks {
 
     int handle_update;
     int (*system_update)(void);
+    int (*input_update)(struct SupportModule *module);
 };
 
 struct SupportModule {
