@@ -838,7 +838,7 @@ marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
         {
             action = ACTION_POINTER_1_UP;
         }
-
+#if 0
         if(ACTION_MOVE == event)
         {
             MODULE_DEBUG_PRINTF("onMotionEvent: move\n");
@@ -847,6 +847,7 @@ marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
             MODULE_DEBUG_PRINTF("onMotionEvent done.\n");
         }
         else
+#endif
         {
             MODULE_DEBUG_PRINTF("onMotionEvent: %s\n", action == ACTION_POINTER_1_UP ? "up" : "down");
             self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,action-1, x,y);
