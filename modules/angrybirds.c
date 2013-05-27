@@ -44,6 +44,7 @@
 typedef jboolean (*angrybirds_init_t)(JNIEnv *env, jobject obj, jint paramInt1, jint paramInt2, jstring paramString) SOFTFP;
 typedef jboolean (*angrybirds_resize_t)(JNIEnv *env, jobject obj, jint width, jint height) SOFTFP;
 typedef void (*angrybirds_input_t)(JNIEnv *env, jobject obj, jint action, jfloat x, jfloat y, jint finger) SOFTFP;
+typedef void (*angrybirds_keyinput_t)(JNIEnv *env, jobject obj, jint keycode, jint is_down) SOFTFP;
 typedef jboolean (*angrybirds_update_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*angrybirds_pause_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*angrybirds_resume_t)(JNIEnv *env, jobject obj) SOFTFP;
@@ -57,11 +58,13 @@ struct SupportModulePriv {
     angrybirds_resize_t native_resize;
     angrybirds_update_t native_update;
     angrybirds_input_t native_input;
+    angrybirds_keyinput_t native_keyinput;
     angrybirds_pause_t native_pause;
     angrybirds_resume_t native_resume;
     angrybirds_mixdata_t native_mixdata;
     angrybirds_deinit_t native_deinit;
     const char *myHome;
+    int want_exit;
 };
 static struct SupportModulePriv angrybirds_priv;
 
@@ -195,6 +198,7 @@ angrybirds_try_init(struct SupportModule *self)
     self->priv->native_init = (angrybirds_init_t)LOOKUP_M("ka3d_MyRenderer_nativeInit");
     self->priv->native_resize = (angrybirds_resize_t)LOOKUP_M("ka3d_MyRenderer_nativeResize");
     self->priv->native_input = (angrybirds_input_t)LOOKUP_M("ka3d_MyRenderer_nativeInput");
+    self->priv->native_keyinput = (angrybirds_keyinput_t)LOOKUP_M("ka3d_MyRenderer_nativeKeyInput");
     self->priv->native_update = (angrybirds_update_t)LOOKUP_M("ka3d_MyRenderer_nativeUpdate");
     self->priv->native_pause = (angrybirds_pause_t)LOOKUP_M("ka3d_MyRenderer_nativePause");
     self->priv->native_resume = (angrybirds_resume_t)LOOKUP_M("ka3d_MyRenderer_nativeResume");
@@ -211,6 +215,7 @@ angrybirds_try_init(struct SupportModule *self)
     return (self->priv->native_init != NULL &&
             self->priv->native_resize != NULL &&
             self->priv->native_input != NULL &&
+            self->priv->native_keyinput != NULL &&
             self->priv->native_update != NULL &&
             self->priv->native_pause != NULL &&
             self->priv->native_resume != NULL &&
@@ -237,12 +242,14 @@ angrybirds_input(struct SupportModule *self, int event, int x, int y, int finger
 static void
 angrybirds_key_input(struct SupportModule *self, int event, int keycode, int unicode)
 {
+    self->priv->native_keyinput(ENV_M, GLOBAL_M, keycode, event == ACTION_DOWN);
 }
 
 static void
 angrybirds_update(struct SupportModule *self)
 {
-    self->priv->native_update(ENV_M, GLOBAL_M);
+    if (self->priv->native_update(ENV_M, GLOBAL_M) == 0)
+        self->priv->want_exit = 1;
 }
 
 static void
@@ -267,7 +274,7 @@ angrybirds_resume(struct SupportModule *self)
 static int
 angrybirds_requests_exit(struct SupportModule *self)
 {
-    return 0;
+    return self->priv->want_exit;
 }
 
 APKENV_MODULE(angrybirds, MODULE_PRIORITY_GAME)

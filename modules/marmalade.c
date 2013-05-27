@@ -78,7 +78,7 @@ typedef void (*marmalade_videoStoppedNotify_t)(JNIEnv *env, jobject p0) SOFTFP;
 typedef void (*marmalade_setInputText_t)(JNIEnv *env, jobject p0, jstring s1) SOFTFP;
 
 // LoaderKeyboard
-typedef jboolean (*marmalade_onKeyEventNative_t)(JNIEnv *env, jobject p0, jint i1, jint i2, jint i3) SOFTFP;
+typedef jboolean (*marmalade_onKeyEventNative_t)(JNIEnv *env, jobject p0, jint keycode, jint unicode, jint is_down) SOFTFP;
 typedef void (*marmalade_setCharInputEnabledNative_t)(JNIEnv *env, jobject p0, jboolean b1) SOFTFP;
 
 // SoundPlayer
@@ -890,6 +890,7 @@ marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
 static void
 marmalade_key_input(struct SupportModule *self, int event, int keycode, int unicode)
 {
+    self->priv->loaderkeyboard.onKeyEventNative(ENV_M, self->priv->theloaderthread, keycode, unicode, event == ACTION_DOWN);
 }
 
 
