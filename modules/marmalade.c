@@ -577,9 +577,6 @@ marmalade_SetShortArrayRegion(JNIEnv* p0, jshortArray p1, jsize start, jsize len
         memcpy(arr->data + start, p4, len * sizeof(arr->data[0]));
 }
 
-static void
-marmalade_input_handler(struct SupportModule *self);
-
 void
 marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
 {
@@ -595,7 +592,10 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     }
     else if(method_is(glSwapBuffers))
     {
-        marmalade_input_handler(marmalade_priv.module);
+        if (marmalade_priv.global->module_hacks->input_update(marmalade_priv.module)) {
+            // FIXME: do something to make runNative return (shutdownNative crashes)
+            exit(1);
+        }
         marmalade_priv.global->module_hacks->system_update();
     }
     else if(method_is(videoStop))
@@ -923,71 +923,6 @@ static int
 marmalade_requests_exit(struct SupportModule *self)
 {
     return 0;
-}
-
-void
-marmalade_input_handler(struct SupportModule *self)
-{
-    int emulate_multitouch = 0;
-    const int emulate_finger_id = 2;
-    SDL_Event e;
-    while (SDL_PollEvent(&e)) {
-#ifdef PANDORA
-        if (e.type == SDL_KEYDOWN) {
-            if (e.key.keysym.sym==SDLK_ESCAPE) {
-                marmalade_deinit(self);
-                goto finish;
-            }
-            else if (e.key.keysym.sym==SDLK_RSHIFT) {
-                emulate_multitouch = 1;
-                marmalade_input(self,ACTION_DOWN, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
-            }
-        }
-        else if (e.type == SDL_KEYUP) {
-            if (e.key.keysym.sym==SDLK_RSHIFT) {
-                emulate_multitouch = 0;
-                marmalade_input(self,ACTION_UP, platform_getscreenwidth()>>1, platform_getscreenheight()>>1,emulate_finger_id);
-            }
-        } else
-#endif
-        if (e.type == SDL_MOUSEBUTTONDOWN) {
-            marmalade_input(self, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
-            if (emulate_multitouch) {
-                marmalade_input(self,ACTION_DOWN, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
-            }
-        } else if (e.type == SDL_MOUSEBUTTONUP) {
-            marmalade_input(self, ACTION_UP, e.button.x, e.button.y, e.button.which);
-            if (emulate_multitouch) {
-                marmalade_input(self,ACTION_UP, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
-            }
-        } else if (e.type == SDL_MOUSEMOTION) {
-            marmalade_input(self, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
-            if (emulate_multitouch) {
-                marmalade_input(self,ACTION_MOVE, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
-            }
-        } else if (e.type == SDL_QUIT) {
-            marmalade_deinit(self);
-            goto finish;
-        } else if (e.type == SDL_ACTIVEEVENT) {
-            if (e.active.state == SDL_APPACTIVE && e.active.gain == 0) {
-                marmalade_pause(self);
-                while (1) {
-                    SDL_WaitEvent(&e);
-                    if (e.type == SDL_ACTIVEEVENT) {
-                        if (e.active.state == SDL_APPACTIVE &&
-                                e.active.gain == 1) {
-                            break;
-                        }
-                    } else if (e.type == SDL_QUIT) {
-                        goto finish;
-                    }
-                }
-                marmalade_resume(self);
-            }
-        }
-    }
-    finish:
-    return;
 }
 
 APKENV_MODULE(marmalade, MODULE_PRIORITY_GENERIC)
