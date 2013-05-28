@@ -1614,10 +1614,13 @@ static int reloc_library(soinfo *si, Elf32_Rel *rel, unsigned count)
             }
 #endif
                 sym_addr = (unsigned)(s->st_value + base);
-                LINKER_DEBUG_PRINTF("%s symbol (from %s) %s to %x\n", si->name, last_library_used, sym_name, sym_addr);
+                LINKER_DEBUG_PRINTF("%s symbol (from %s) %s to %x %s\n", si->name, last_library_used, sym_name, sym_addr, (ELF32_ST_TYPE(s->st_info) != STT_FUNC) ? "(not a function)" : "");
+                if(ELF32_ST_TYPE(s->st_info) == STT_FUNC)
+                {
 #ifdef DEBUG_TRACE_UNHOOKED
-                sym_addr = (unsigned)assemble_wrapper(sym_name, (void*)sym_addr, WRAPPER_UNHOOKED);
+                    sym_addr = (unsigned)assemble_wrapper(sym_name, (void*)sym_addr, WRAPPER_UNHOOKED);
 #endif
+                }
 	    }
             COUNT_RELOC(RELOC_SYMBOL);
         } else {
