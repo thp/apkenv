@@ -512,6 +512,10 @@ int main(int argc, char **argv)
         "lib/armeabi",
         0
     };
+    static const char* libblacklist[] = {
+        "libs3eflurry_ext.so",
+        0
+    };
     int ilib = 0;
     struct SharedLibrary *shlibs = 0;
     while (libdir[ilib]!=0) {
@@ -531,6 +535,16 @@ int main(int argc, char **argv)
 
     struct SharedLibrary *shlib = shlibs;
     while (shlib!=0) {
+        const char *basename = strrchr(shlib->filename, '/');
+        if (basename++ == NULL)
+            basename = shlib->filename;
+        for (ilib = 0; libblacklist[ilib] != NULL; ilib++)
+            if (strcmp(basename, libblacklist[ilib]) == 0)
+                break;
+        if (libblacklist[ilib] != NULL) {
+            shlib = shlib->next;
+            continue;
+        }
         add_sopath(shlib->dirname);
         lib->lib = android_dlopen(shlib->filename,RTLD_LAZY);
         if (!(lib->lib)) {
