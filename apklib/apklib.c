@@ -33,6 +33,8 @@
 #include <limits.h>
 #include <assert.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 
 #include "unzip.h"
@@ -43,6 +45,28 @@
 
 
 #define DBG(msg) fprintf(stderr,"%s(%d): %s\n",__FILE__,__LINE__,#msg)
+
+void
+recursive_mkdir(const char *directory)
+{
+    char *tmp = strdup(directory);
+    struct stat st;
+    int len = strlen(directory);
+    int i;
+
+    /* Dirty? Works for me... */
+    for (i=1; i<len; i++) {
+        if (tmp[i] == '/') {
+            tmp[i] = '\0';
+            if (stat(tmp, &st) != 0) {
+                mkdir(tmp, 0700);
+            }
+            tmp[i] = '/';
+        }
+    }
+
+    free(tmp);
+}
 
 AndroidApk *
 apk_open(const char *filename)

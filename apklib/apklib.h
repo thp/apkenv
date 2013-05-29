@@ -68,4 +68,6 @@ void apk_for_each_file(AndroidApk *apk, const char *prefix, apk_for_each_file_ca
 enum ApkResult apk_read_resources(AndroidApk *apk, struct ResourceStrings *rstrings);
 void apk_close(AndroidApk *apk);
 
+void recursive_mkdir(const char *directory);
+
 #endif /* APKLIB_H */

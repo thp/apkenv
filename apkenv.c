@@ -273,28 +273,6 @@ apk_basename(const char *filename)
     return filename;
 }
 
-void
-recursive_mkdir(const char *directory)
-{
-    char *tmp = strdup(directory);
-    struct stat st;
-    int len = strlen(directory);
-    int i;
-
-    /* Dirty? Works for me... */
-    for (i=1; i<len; i++) {
-        if (tmp[i] == '/') {
-            tmp[i] = '\0';
-            if (stat(tmp, &st) != 0) {
-                mkdir(tmp, 0700);
-            }
-            tmp[i] = '/';
-        }
-    }
-
-    free(tmp);
-}
-
 static void
 operation(const char *operation, const char *filename)
 {
