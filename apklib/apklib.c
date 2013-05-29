@@ -53,17 +53,19 @@ apk_open(const char *filename)
 }
 
 struct SharedLibrary*
-apk_get_shared_libraries(AndroidApk *apk, const char* libdir)
+apk_get_shared_libraries(AndroidApk *apk, const char *libdir, const char *datadir)
 {
     assert(apk != NULL);
 
     char filename[PATH_MAX];
+    char pathname[PATH_MAX];
     FILE *result = NULL;
     char buf[64*1024];
     int read;
     struct SharedLibrary *libs = 0;
     struct SharedLibrary *head = 0;
     int libdirlen = strlen(libdir);
+    char *p;
 
     if (unzGoToFirstFile(apk->zip) != UNZ_OK) {
         return NULL;
@@ -74,15 +76,14 @@ apk_get_shared_libraries(AndroidApk *apk, const char* libdir)
             if (memcmp(filename, libdir, libdirlen) == 0) {
                 if (unzOpenCurrentFile(apk->zip) == UNZ_OK) {
 
-#if !defined(PANDORA)
-                    strcpy(filename, "/home/user/.apkenv-XXXXXX");
-                    int fd = mkstemp(filename);
-                    result = fdopen(fd, "w+b");
-#else
-                    sprintf(filename,"./%s",strdup(filename));
-                    recursive_mkdir(filename);
-                    result = fopen(filename, "w+b");
-#endif
+                    snprintf(pathname, sizeof(pathname), "%s%s", datadir, filename);
+                    recursive_mkdir(pathname);
+                    result = fopen(pathname, "w+b");
+                    if (result == NULL) {
+                        fprintf(stderr, "can't open %s for writing\n", pathname);
+                        unzCloseCurrentFile(apk->zip);
+                        break;
+                    }
                     while (!unzeof(apk->zip)) {
                         read = unzReadCurrentFile(apk->zip, buf, sizeof(buf));
                         if (read) {
@@ -91,9 +92,7 @@ apk_get_shared_libraries(AndroidApk *apk, const char* libdir)
                     }
                     fclose(result);
                     unzCloseCurrentFile(apk->zip);
-#if defined(PANDORA)
-                    sync();
-#endif
+
                     if (libs==0) {
                         libs = malloc(sizeof(struct SharedLibrary));
                         head = libs;
@@ -103,7 +102,10 @@ apk_get_shared_libraries(AndroidApk *apk, const char* libdir)
                         libs->next->next = 0;
                         libs = libs->next;
                     }
-                    libs->filename = strdup(filename);
+                    libs->filename = strdup(pathname);
+                    p = strrchr(pathname, '/');
+                    *p = 0;
+                    libs->dirname = strdup(pathname);
                 }
             }
         }
