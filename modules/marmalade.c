@@ -329,13 +329,20 @@ marmalade_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint
     return 0;
 }
 
+static int sound_started;
+static int sound_volume; // 0-100
+
 /* mix audio buffer */
 static void my_audio_mixer(void *udata, Uint8 *stream, int len)
 {
     static short soundbuf[AUDIO_CHUKSIZE * AUDIO_CHANNELS];
     struct dummy_short_array arr;
     short *mixbuf = (short *)stream;
+    int vol;
     int i;
+
+    if (!sound_started || sound_volume == 0)
+        return;
 
     if (len > sizeof(soundbuf)) {
         fprintf(stderr, "audio setup broken\n");
@@ -346,8 +353,15 @@ static void my_audio_mixer(void *udata, Uint8 *stream, int len)
     arr.size = len;
     marmalade_priv.soundplayer.generateAudio(ENV(marmalade_priv.global),
         VM(marmalade_priv.global), &arr, len);
-    for (i = 0; i < len; i++)
-        mixbuf[i] += soundbuf[i];
+
+    // TODO: some NEON would be nice here
+    vol = sound_volume * 128 / 100;
+    for (i = 0; i < len; i++) {
+        int v = (int)mixbuf[i] + ((int)soundbuf[i] * vol >> 7);
+        if (v > 32767) v = 32767;
+        else if (v < -32768) v = -32768;
+        mixbuf[i] = v;
+    }
 }
 
 static int my_soundInit(void)
@@ -447,6 +461,7 @@ marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
         //jint volume = va_arg(p3,int);
 
         my_soundInit();
+        sound_started = 1;
         
         return AUDIO_RATE;
     }
@@ -626,10 +641,20 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
                MODULE_DEBUG_PRINTF("TODO: fixOrientation, unknown orientation: %d\n", orientation);
         }
     }
+    else if(method_is(soundStart))
+    {
+        MODULE_DEBUG_PRINTF("soundStart\n");
+        sound_started = 1;
+    }
+    else if(method_is(soundStop))
+    {
+        MODULE_DEBUG_PRINTF("soundStop\n");
+        sound_started = 0;
+    }
     else if(method_is(soundSetVolume))
     {
-        jint volume = va_arg(p3, int);
-        MODULE_DEBUG_PRINTF("soundSetVolume(%d) obj=%p\n", volume, p1);
+        sound_volume = va_arg(p3, int);
+        MODULE_DEBUG_PRINTF("soundSetVolume(%d) obj=%p\n", sound_volume, p1);
     }
     else if(method_is(audioSetVolume))
     {
