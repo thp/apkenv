@@ -35,6 +35,7 @@
 #include "../imagelib/imagelib.h"
 #include "../imagelib/loadjpeg.c"
 #include "../imagelib/loadpng.c"
+#include "../apklib/keycodes.h"
 #include <linux/limits.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -53,6 +54,8 @@ typedef void (*cuttherope_render_t)(JNIEnv *env, jobject object) SOFTFP;
 typedef void (*cuttherope_videobannerfinished_t)(JNIEnv *env, jobject object) SOFTFP;
 typedef void (*cuttherope_resume_t)(JNIEnv*,jobject) SOFTFP;
 typedef void (*cuttherope_pause_t)(JNIEnv*,jobject) SOFTFP;
+typedef jboolean (*cuttherope_backpressed_t)(JNIEnv*, jobject) SOFTFP;
+typedef jboolean (*cuttherope_menupressed_t)(JNIEnv*, jobject) SOFTFP;
 typedef void (*cuttherope_imageloaded_t)(JNIEnv*,jobject,jint p1, jbyteArray p2, jint p3, jint p4) SOFTFP;
 typedef void (*cuttherope_nativetouchadd_t)(JNIEnv *env, jobject p0, jint p1, jint p2, jfloat p3, jfloat p4) SOFTFP;
 typedef void (*cuttherope_nativetouchprocess_t)(JNIEnv *env, jobject p0) SOFTFP;
@@ -89,6 +92,8 @@ struct SupportModulePriv {
     cuttherope_videobannerfinished_t videoBannerFinished;
     cuttherope_resume_t nativeResume;
     cuttherope_pause_t nativePause;
+    cuttherope_backpressed_t nativeBackPressed;
+    cuttherope_menupressed_t nativeMenuPressed;
     cuttherope_imageloaded_t imageLoaded;
     cuttherope_nativetouchadd_t nativeTouchAdd;
     cuttherope_nativetouchprocess_t nativeTouchProcess;
@@ -100,6 +105,7 @@ struct SupportModulePriv {
     Mix_Music* music;
     char musicpath[PATH_MAX];
     KeyValue keyvalues[MAX_KEYVALUES];
+    int want_exit;
 };
 static struct SupportModulePriv cuttherope_priv;
 
@@ -419,6 +425,10 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
         }
         MODULE_DEBUG_PRINTF("set*forKey=%s value=%d\n",key->data, value);
     }
+    else
+    if (strcmp(p2->name,"exitApp")==0) {
+        cuttherope_priv.want_exit = 1;
+    }
 }
 
 static jobject
@@ -578,6 +588,8 @@ cuttherope_try_init(struct SupportModule *self)
     self->priv->nativeRender = (cuttherope_render_t)LOOKUP_M("CtrRenderer_nativeRender");
     self->priv->nativeResume = (cuttherope_resume_t)LOOKUP_M("CtrRenderer_nativeResume");
     self->priv->nativePause = (cuttherope_pause_t)LOOKUP_M("CtrRenderer_nativePause");
+    self->priv->nativeBackPressed = (cuttherope_backpressed_t)LOOKUP_M("CtrRenderer_nativeBackPressed");
+    self->priv->nativeMenuPressed = (cuttherope_menupressed_t)LOOKUP_M("CtrRenderer_nativeMenuPressed");
     self->priv->imageLoaded = (cuttherope_imageloaded_t)LOOKUP_M("CtrResourceLoader_imageLoaded");
     self->priv->nativeTouchAdd = (cuttherope_nativetouchadd_t)LOOKUP_M("CtrRenderer_nativeTouchAdd");
     self->priv->nativeTouchProcess = (cuttherope_nativetouchprocess_t)LOOKUP_M("CtrRenderer_nativeTouchProcess");
@@ -597,6 +609,8 @@ cuttherope_try_init(struct SupportModule *self)
             self->priv->nativeResize != NULL &&
             self->priv->nativeTick != NULL &&
             self->priv->nativeRender != NULL &&
+            self->priv->nativeBackPressed != NULL &&
+            self->priv->nativeMenuPressed != NULL &&
             self->priv->imageLoaded != NULL &&
             self->priv->nativeTouchAdd != NULL &&
             self->priv->nativeTouchProcess != NULL &&
@@ -692,6 +706,17 @@ cuttherope_input(struct SupportModule *self, int event, int x, int y, int finger
 static void
 cuttherope_key_input(struct SupportModule *self, int event, int keycode, int unicode)
 {
+    if (event == ACTION_DOWN) {
+        switch (keycode) {
+        case AKEYCODE_BACK:
+            self->priv->nativeBackPressed(ENV_M, GLOBAL_M);
+            break;
+
+        case AKEYCODE_MENU:
+            self->priv->nativeMenuPressed(ENV_M, GLOBAL_M);
+            break;
+        }
+    }
 }
 
 static void
@@ -722,7 +747,7 @@ cuttherope_resume(struct SupportModule *self)
 static int
 cuttherope_requests_exit(struct SupportModule *self)
 {
-    return 0;
+    return cuttherope_priv.want_exit;
 }
 
 APKENV_MODULE(cuttherope, MODULE_PRIORITY_GAME)

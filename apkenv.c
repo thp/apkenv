@@ -409,6 +409,75 @@ system_exit()
     platform_exit();
 }
 
+/* returns 1 on quit key/event, 0 otherwise */
+static int
+input_update(struct SupportModule *module)
+{
+    static int emulate_multitouch = 0;
+    const int emulate_finger_id = 2;
+
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+        if (e.type == SDL_KEYDOWN) {
+#ifdef PANDORA
+            if (e.key.keysym.sym==SDLK_ESCAPE) {
+                return 1;
+            }
+            else if (e.key.keysym.sym==SDLK_RSHIFT) {
+                //emulate_multitouch = 1;
+                module->input(module,ACTION_DOWN, platform_getscreenwidth() / 2 - 1, platform_getscreenheight() / 2, emulate_finger_id);
+            }
+            else
+#endif
+            module->key_input(module, ACTION_DOWN, keymap[e.key.keysym.sym], e.key.keysym.unicode);
+        }
+        else if (e.type == SDL_KEYUP) {
+#ifdef PANDORA
+            if (e.key.keysym.sym==SDLK_RSHIFT) {
+                //emulate_multitouch = 0;
+                module->input(module,ACTION_UP, platform_getscreenwidth() / 2 - 1, platform_getscreenheight() / 2, emulate_finger_id);
+            }
+            else
+#endif
+            module->key_input(module, ACTION_UP, keymap[e.key.keysym.sym], e.key.keysym.unicode);
+        } else if (e.type == SDL_MOUSEBUTTONDOWN) {
+            module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
+            if (emulate_multitouch) {
+                module->input(module,ACTION_DOWN, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+            }
+        } else if (e.type == SDL_MOUSEBUTTONUP) {
+            module->input(module, ACTION_UP, e.button.x, e.button.y, e.button.which);
+            if (emulate_multitouch) {
+                module->input(module,ACTION_UP, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+            }
+        } else if (e.type == SDL_MOUSEMOTION) {
+            module->input(module, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
+            if (emulate_multitouch) {
+                module->input(module,ACTION_MOVE, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
+            }
+        } else if (e.type == SDL_QUIT) {
+            return 1;
+        } else if (e.type == SDL_ACTIVEEVENT) {
+            if (e.active.state == SDL_APPACTIVE && e.active.gain == 0) {
+                module->pause(module);
+                while (1) {
+                    SDL_WaitEvent(&e);
+                    if (e.type == SDL_ACTIVEEVENT) {
+                        if (e.active.state == SDL_APPACTIVE &&
+                                e.active.gain == 1) {
+                            break;
+                        }
+                    } else if (e.type == SDL_QUIT) {
+                        return 1;
+                    }
+                }
+                module->resume(module);
+            }
+        }
+    }
+
+    return 0;
+}
 
 int main(int argc, char **argv)
 {
@@ -448,6 +517,7 @@ int main(int argc, char **argv)
     global.module_hacks = &global_module_hacks;
 
     global.module_hacks->system_update = system_update;
+    global.module_hacks->input_update = input_update;
 
     hooks_init();
     jnienv_init(&global);
@@ -573,82 +643,22 @@ int main(int argc, char **argv)
 
     if(global.module_hacks->handle_update) goto finish;
 
-    int emulate_multitouch = 0;
-    const int emulate_finger_id = 2;
-
     while (1) {
 
         if (module->requests_exit(module)) {
-            module->deinit(module);
             break;
         }
 
-        SDL_Event e;
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_KEYDOWN) {
-#ifdef PANDORA
-                if (e.key.keysym.sym==SDLK_ESCAPE) {
-                    module->deinit(module);
-                    goto finish;
-                }
-                else if (e.key.keysym.sym==SDLK_RSHIFT) {
-                    //emulate_multitouch = 1;
-                    module->input(module,ACTION_DOWN, platform_getscreenwidth() / 2 - 1, platform_getscreenheight() / 2, emulate_finger_id);
-                }
-                else
-#endif
-                module->key_input(module, ACTION_DOWN, keymap[e.key.keysym.sym], e.key.keysym.unicode);
-            }
-            else if (e.type == SDL_KEYUP) {
-#ifdef PANDORA
-                if (e.key.keysym.sym==SDLK_RSHIFT) {
-                    //emulate_multitouch = 0;
-                    module->input(module,ACTION_UP, platform_getscreenwidth() / 2 - 1, platform_getscreenheight() / 2, emulate_finger_id);
-                }
-                else
-#endif
-                module->key_input(module, ACTION_UP, keymap[e.key.keysym.sym], e.key.keysym.unicode);
-            } else if (e.type == SDL_MOUSEBUTTONDOWN) {
-                module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
-                if (emulate_multitouch) {
-                    module->input(module,ACTION_DOWN, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
-                }
-            } else if (e.type == SDL_MOUSEBUTTONUP) {
-                module->input(module, ACTION_UP, e.button.x, e.button.y, e.button.which);
-                if (emulate_multitouch) {
-                    module->input(module,ACTION_UP, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
-                }
-            } else if (e.type == SDL_MOUSEMOTION) {
-                module->input(module, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
-                if (emulate_multitouch) {
-                    module->input(module,ACTION_MOVE, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
-                }
-            } else if (e.type == SDL_QUIT) {
-                module->deinit(module);
-                goto finish;
-            } else if (e.type == SDL_ACTIVEEVENT) {
-                if (e.active.state == SDL_APPACTIVE && e.active.gain == 0) {
-                    module->pause(module);
-                    while (1) {
-                        SDL_WaitEvent(&e);
-                        if (e.type == SDL_ACTIVEEVENT) {
-                            if (e.active.state == SDL_APPACTIVE &&
-                                    e.active.gain == 1) {
-                                break;
-                            }
-                        } else if (e.type == SDL_QUIT) {
-                            goto finish;
-                        }
-                    }
-                    module->resume(module);
-                }
-            }
+        if (input_update(module)) {
+            break;
         }
+
         module->update(module);
-        if(!global.module_hacks->handle_update) system_update();
+        system_update();
     }
 
 finish:
+    module->deinit(module);
 
     lib = global.libraries;
     while (lib!=0) {

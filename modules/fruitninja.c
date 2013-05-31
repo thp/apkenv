@@ -46,6 +46,7 @@
 
 typedef void (*fruitninja_init_t)(JNIEnv *env, jobject obj, jint paramInt1, jint paramInt2, jstring paramString) SOFTFP;
 typedef void (*fruitninja_touchevent_t)(JNIEnv *env, jobject obj, jint action, jlong eventTime, jint pointerId, jfloat x, jfloat y, jfloat Pressure, jfloat size) SOFTFP;
+typedef void (*fruitninja_keyevent_t)(JNIEnv *env, jobject obj, jint keycode, jboolean isDown, jboolean cancelled) SOFTFP;
 typedef jboolean (*fruitninja_step_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*fruitninja_pause_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*fruitninja_resume_t)(JNIEnv *env, jobject obj) SOFTFP;
@@ -59,6 +60,7 @@ struct SupportModulePriv {
     jni_onload_t JNI_OnLoad;
     fruitninja_init_t native_init;
     fruitninja_touchevent_t native_touchevent;
+    fruitninja_keyevent_t native_keyevent;
     fruitninja_step_t native_step;
     fruitninja_pause_t native_pause;
     fruitninja_resume_t native_resume;
@@ -313,6 +315,7 @@ fruitninja_try_init(struct SupportModule *self)
     //self->priv->JNI_OnLoad = (jni_onload_t)LOOKUP_M("JNI_OnLoad"); //No JNI_Onload function in fruitninja
     self->priv->native_init = (fruitninja_init_t)LOOKUP_M("_NativeGameLib_native_1init");
     self->priv->native_touchevent = (fruitninja_touchevent_t)LOOKUP_M("_NativeGameLib_native_1touchEvent");
+    self->priv->native_keyevent = (fruitninja_keyevent_t)LOOKUP_M("_NativeGameLib_native_1keyEvent");
     self->priv->native_step = (fruitninja_step_t)LOOKUP_M("_NativeGameLib_native_1step");
     self->priv->native_pause = (fruitninja_pause_t)LOOKUP_M("_NativeGameLib_native_1onPause");
     self->priv->native_resume = (fruitninja_resume_t)LOOKUP_M("_NativeGameLib_native_1onResume");
@@ -340,6 +343,7 @@ fruitninja_try_init(struct SupportModule *self)
     return (//self->priv->JNI_OnLoad != NULL &&
             self->priv->native_init != NULL &&
             self->priv->native_touchevent != NULL &&
+            self->priv->native_keyevent != NULL &&
             self->priv->native_step != NULL &&
             self->priv->native_pause != NULL &&
             self->priv->native_resume != NULL &&
@@ -397,6 +401,7 @@ fruitninja_input(struct SupportModule *self, int event, int x, int y, int finger
 static void
 fruitninja_key_input(struct SupportModule *self, int event, int keycode, int unicode)
 {
+    self->priv->native_keyevent(ENV_M, GLOBAL_M, keycode, event == ACTION_DOWN, 0);
 }
 
 static void
