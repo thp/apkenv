@@ -14,6 +14,7 @@
 extern struct ModuleHacks global_module_hacks;
 
 struct gles_extensions {
+    /* GL_OES_framebuffer_object */
     PFNGLISRENDERBUFFEROESPROC                      glIsRenderbufferOES;
     PFNGLBINDRENDERBUFFEROESPROC                    glBindRenderbufferOES;
     PFNGLDELETERENDERBUFFERSOESPROC                 glDeleteRenderbuffersOES;
@@ -29,6 +30,17 @@ struct gles_extensions {
     PFNGLFRAMEBUFFERTEXTURE2DOESPROC                glFramebufferTexture2DOES;
     PFNGLGETFRAMEBUFFERATTACHMENTPARAMETERIVOESPROC glGetFramebufferAttachmentParameterivOES;
     PFNGLGENERATEMIPMAPOESPROC                      glGenerateMipmapOES;
+    /* GL_OES_matrix_palette */
+    PFNGLCURRENTPALETTEMATRIXOESPROC                glCurrentPaletteMatrixOES;
+    PFNGLLOADPALETTEFROMMODELVIEWMATRIXOESPROC      glLoadPaletteFromModelViewMatrixOES;
+    PFNGLMATRIXINDEXPOINTEROESPROC                  glMatrixIndexPointerOES;
+    PFNGLWEIGHTPOINTEROESPROC                       glWeightPointerOES;
+    /* GL_OES_query_matrix */
+    PFNGLQUERYMATRIXXOESPROC                        glQueryMatrixxOES;
+    /* GL_OES_mapbuffer */
+    PFNGLMAPBUFFEROESPROC                           glMapBufferOES;
+    PFNGLUNMAPBUFFEROESPROC                         glUnmapBufferOES;
+    PFNGLGETBUFFERPOINTERVOESPROC                   glGetBufferPointervOES;
 };
 static struct gles_extensions extensions;
 
@@ -53,6 +65,14 @@ void gles_extensions_init()
     init_extension(glFramebufferTexture2DOES);
     init_extension(glGetFramebufferAttachmentParameterivOES);
     init_extension(glGenerateMipmapOES);
+    init_extension(glCurrentPaletteMatrixOES);
+    init_extension(glLoadPaletteFromModelViewMatrixOES);
+    init_extension(glMatrixIndexPointerOES);
+    init_extension(glWeightPointerOES);
+    init_extension(glQueryMatrixxOES);
+    init_extension(glMapBufferOES);
+    init_extension(glUnmapBufferOES);
+    init_extension(glGetBufferPointervOES);
 }
 
 void
@@ -469,7 +489,7 @@ my_glDrawArrays(GLenum mode, GLint first, GLsizei count)
 void
 my_glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices)
 {
-    WRAPPERS_DEBUG_PRINTF("glDrawElements()\n", mode, count, type, indices);
+    WRAPPERS_DEBUG_PRINTF("glDrawElements(%d, %d, %d, %p)\n", mode, count, type, indices);
     glDrawElements(mode, count, type, indices);
 }
 void
@@ -1381,32 +1401,32 @@ my_glGenerateMipmapOES(GLenum target)
 void
 my_glCurrentPaletteMatrixOES(GLuint matrixpaletteindex)
 {
-    WRAPPERS_DEBUG_PRINTF("glCurrentPaletteMatrixOES()\n", matrixpaletteindex);
-    /* No CALL */ printf("UNIMPLEMENTED: glCurrentPaletteMatrixOES\n");
+    WRAPPERS_DEBUG_PRINTF("glCurrentPaletteMatrixOES(%u)\n", matrixpaletteindex);
+    extensions.glCurrentPaletteMatrixOES(matrixpaletteindex);
 }
 void
 my_glLoadPaletteFromModelViewMatrixOES()
 {
     WRAPPERS_DEBUG_PRINTF("glLoadPaletteFromModelViewMatrixOES()\n");
-    /* No CALL */ printf("UNIMPLEMENTED: glLoadPaletteFromModelViewMatrixOES\n");
+    extensions.glLoadPaletteFromModelViewMatrixOES();
 }
 void
 my_glMatrixIndexPointerOES(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
-    WRAPPERS_DEBUG_PRINTF("glMatrixIndexPointerOES()\n", size, type, stride, pointer);
-    /* No CALL */ printf("UNIMPLEMENTED: glMatrixIndexPointerOES\n");
+    WRAPPERS_DEBUG_PRINTF("glMatrixIndexPointerOES(%d, %d, %d, %p)\n", size, type, stride, pointer);
+    extensions.glMatrixIndexPointerOES(size, type, stride, pointer);
 }
 void
 my_glWeightPointerOES(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
-    WRAPPERS_DEBUG_PRINTF("glWeightPointerOES()\n", size, type, stride, pointer);
-    /* No CALL */ printf("UNIMPLEMENTED: glWeightPointerOES\n");
+    WRAPPERS_DEBUG_PRINTF("glWeightPointerOES(%d, %d, %d, %p)\n", size, type, stride, pointer);
+    extensions.glWeightPointerOES(size, type, stride, pointer);
 }
 GLbitfield
 my_glQueryMatrixxOES(GLfixed mantissa[16], GLint exponent[16])
 {
-    WRAPPERS_DEBUG_PRINTF("glQueryMatrixxOES()\n", mantissa, exponent);
-    /* No CALL */ printf("UNIMPLEMENTED: glQueryMatrixxOES\n");
+    WRAPPERS_DEBUG_PRINTF("glQueryMatrixxOES(%p, %p)\n", mantissa, exponent);
+    return extensions.glQueryMatrixxOES(mantissa, exponent);
 }
 void
 my_glDepthRangefOES(GLclampf zNear, GLclampf zFar)
@@ -1513,20 +1533,20 @@ my_glEGLImageTargetRenderbufferStorageOES(GLenum target, GLeglImageOES image)
 void *
 my_glMapBufferOES(GLenum target, GLenum access)
 {
-    WRAPPERS_DEBUG_PRINTF("glMapBufferOES()\n", target, access);
-    /* No CALL */ printf("UNIMPLEMENTED: glMapBufferOES\n");
+    WRAPPERS_DEBUG_PRINTF("glMapBufferOES(%d, %d)\n", target, access);
+    return extensions.glMapBufferOES(target, access);
 }
 GLboolean
 my_glUnmapBufferOES(GLenum target)
 {
-    WRAPPERS_DEBUG_PRINTF("glUnmapBufferOES()\n", target);
-    /* No CALL */ printf("UNIMPLEMENTED: glUnmapBufferOES\n");
+    WRAPPERS_DEBUG_PRINTF("glUnmapBufferOES(%d)\n", target);
+    return extensions.glUnmapBufferOES(target);
 }
 void
 my_glGetBufferPointervOES(GLenum target, GLenum pname, void **params)
 {
-    WRAPPERS_DEBUG_PRINTF("glGetBufferPointervOES()\n", target, pname, params);
-    /* No CALL */ printf("UNIMPLEMENTED: glGetBufferPointervOES\n");
+    WRAPPERS_DEBUG_PRINTF("glGetBufferPointervOES(%d, %d, %p)\n", target, pname, params);
+    extensions.glGetBufferPointervOES(target, pname, params);
 }
 void
 my_glTexBindStreamIMG(GLint device, GLint deviceoffset)
@@ -1545,6 +1565,7 @@ my_glGetTexStreamDeviceNameIMG(GLint device)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexStreamDeviceNameIMG()\n", device);
     /* No CALL */ printf("UNIMPLEMENTED: glGetTexStreamDeviceNameIMG\n");
+    return NULL;
 }
 void
 my_glVertexAttrib4fARB(GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w)

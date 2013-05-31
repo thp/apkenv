@@ -329,13 +329,20 @@ marmalade_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint
     return 0;
 }
 
+static int sound_started;
+static int sound_volume; // 0-100
+
 /* mix audio buffer */
 static void my_audio_mixer(void *udata, Uint8 *stream, int len)
 {
     static short soundbuf[AUDIO_CHUKSIZE * AUDIO_CHANNELS];
     struct dummy_short_array arr;
     short *mixbuf = (short *)stream;
+    int vol;
     int i;
+
+    if (!sound_started || sound_volume == 0)
+        return;
 
     if (len > sizeof(soundbuf)) {
         fprintf(stderr, "audio setup broken\n");
@@ -346,8 +353,104 @@ static void my_audio_mixer(void *udata, Uint8 *stream, int len)
     arr.size = len;
     marmalade_priv.soundplayer.generateAudio(ENV(marmalade_priv.global),
         VM(marmalade_priv.global), &arr, len);
-    for (i = 0; i < len; i++)
-        mixbuf[i] += soundbuf[i];
+
+    // TODO: some NEON would be nice here
+    vol = sound_volume * 128 / 100;
+    for (i = 0; i < len; i++) {
+        int v = (int)mixbuf[i] + ((int)soundbuf[i] * vol >> 7);
+        if (v > 32767) v = 32767;
+        else if (v < -32768) v = -32768;
+        mixbuf[i] = v;
+    }
+}
+
+/* MediaPlayerManager */
+#define CHANNELS 16
+
+struct audio_player_state {
+    SDL_RWops *rw;
+    Mix_Music *music;
+    int playing;
+    int really_playing; // SDL_Mixer can only play 1, marmalade can play many..
+} player_state[CHANNELS];
+
+static void audioStop(unsigned int channel)
+{
+    if (channel >= CHANNELS)
+        return;
+
+    if (player_state[channel].really_playing) {
+        player_state[channel].really_playing = 0;
+        Mix_HaltMusic();
+    }
+    if (player_state[channel].playing) {
+        player_state[channel].playing = 0;
+
+        MODULE_DEBUG_PRINTF("audioStoppedNotify ch%d\n", channel);
+        marmalade_priv.loaderthread.audioStoppedNotify(ENV(marmalade_priv.global),
+            marmalade_priv.theloaderthread, channel);
+    }
+    // TODO: might want to schedule another playing music here..
+}
+
+static int audioPlay(const char *filename, int repeats, long long file_offset,
+    long long file_size, unsigned int channel)
+{
+    struct audio_player_state *player;
+    const void *mem;
+    const char *ext;
+    int i;
+
+    if (channel >= CHANNELS || filename == NULL)
+        return -1;
+
+    audioStop(channel);
+
+    player = &player_state[channel];
+    if (player->music != NULL) {
+        Mix_FreeMusic(player->music);
+        player->music = NULL;
+    }
+    if (player->rw != NULL) {
+        SDL_RWclose(player->rw);
+        player->rw = NULL;
+    }
+
+    ext = strrchr(filename, '.');
+    if (ext != NULL && strcasecmp(ext, ".apk") == 0
+        && marmalade_priv.global->apk_in_mem != NULL)
+    {
+        mem = (const char *)marmalade_priv.global->apk_in_mem + file_offset;
+        player->rw = SDL_RWFromConstMem(mem, file_size);
+        player->music = Mix_LoadMUS_RW(player->rw);
+    }
+    else {
+        if (file_offset)
+            fprintf(stderr, "TODO: offset %lld for %s\n", file_offset, filename);
+        player->music = Mix_LoadMUS(filename);
+    }
+    if (player->music == NULL) {
+        fprintf(stderr, "failed to play %s: %s\n", filename, Mix_GetError());
+        return -1;
+    }
+
+    Mix_PlayMusic(player->music, repeats > 0 ? repeats : -1);
+    for (i = 0; i < CHANNELS; i++)
+        player_state[i].really_playing = 0;
+    player_state[channel].playing = player_state[channel].really_playing = 1;
+    return 0;
+}
+
+static void music_finished(void)
+{
+    int i;
+
+    for (i = 0; i < CHANNELS; i++) {
+        if (player_state[i].really_playing) {
+            audioStop(i);
+            break;
+        }
+    }
 }
 
 static int my_soundInit(void)
@@ -389,6 +492,7 @@ static int my_soundInit(void)
     }
 
     Mix_SetPostMix(my_audio_mixer, NULL);
+    Mix_HookMusicFinished(music_finished);
 
     MODULE_DEBUG_PRINTF("marmalade initializing audio done.\n");
     return audio_rate;
@@ -414,27 +518,13 @@ marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
         // (Ljava/lang/String;IJJI)I
         struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring *);
         int repeats = va_arg(p3, int);
-        long file_offset = va_arg(p3, long);
-        long arg3 = va_arg(p3, long); // unused?
-        int file_size = va_arg(p3, int);
-        static SDL_RWops *rw;
-        static Mix_Music *music;
-        const void *mem;
+        long long file_offset = va_arg(p3, long long);
+        long long file_size = va_arg(p3, long long);
+        int channel = va_arg(p3, int);
 
-        MODULE_DEBUG_PRINTF("audioPlay '%s', %d, %ld, %ld, %d\n",
-            filename->data, repeats, file_offset, arg3, file_size);
-        if (music != NULL) {
-            Mix_FreeMusic(music);
-            music = NULL;
-        }
-        if (rw != NULL) {
-            SDL_RWclose(rw);
-            rw = NULL;
-        }
-        mem = (const char *)marmalade_priv.global->apk_in_mem + file_offset;
-        rw = SDL_RWFromMem((void *)mem, file_size);
-        music = Mix_LoadMUS_RW(rw);
-        Mix_PlayMusic(music, repeats > 0 ? repeats : -1);
+        MODULE_DEBUG_PRINTF("audioPlay '%s', %d, %lld, %lld, %d\n",
+            filename->data, repeats, file_offset, file_size, channel);
+        audioPlay(filename->data, repeats, file_offset, file_size, channel);
         return 0;
     }
     else if(method_is(soundInit))
@@ -447,6 +537,7 @@ marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
         //jint volume = va_arg(p3,int);
 
         my_soundInit();
+        sound_started = 1;
         
         return AUDIO_RATE;
     }
@@ -626,10 +717,20 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
                MODULE_DEBUG_PRINTF("TODO: fixOrientation, unknown orientation: %d\n", orientation);
         }
     }
+    else if(method_is(soundStart))
+    {
+        MODULE_DEBUG_PRINTF("soundStart\n");
+        sound_started = 1;
+    }
+    else if(method_is(soundStop))
+    {
+        MODULE_DEBUG_PRINTF("soundStop\n");
+        sound_started = 0;
+    }
     else if(method_is(soundSetVolume))
     {
-        jint volume = va_arg(p3, int);
-        MODULE_DEBUG_PRINTF("soundSetVolume(%d) obj=%p\n", volume, p1);
+        sound_volume = va_arg(p3, int);
+        MODULE_DEBUG_PRINTF("soundSetVolume(%d) obj=%p\n", sound_volume, p1);
     }
     else if(method_is(audioSetVolume))
     {
@@ -637,6 +738,12 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
         jint which = va_arg(p3, int);
         MODULE_DEBUG_PRINTF("audioSetVolume(%d, %d) obj=%p\n", volume, which, p1);
         Mix_VolumeMusic(volume * MIX_MAX_VOLUME / 100);
+    }
+    else if(method_is(audioStop))
+    {
+        int channel = va_arg(p3, int);
+        MODULE_DEBUG_PRINTF("audioStop(%d)\n", channel);
+        audioStop(channel);
     }
     else if(method_is(doDraw))
     {

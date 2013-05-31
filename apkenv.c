@@ -273,28 +273,6 @@ apk_basename(const char *filename)
     return filename;
 }
 
-void
-recursive_mkdir(const char *directory)
-{
-    char *tmp = strdup(directory);
-    struct stat st;
-    int len = strlen(directory);
-    int i;
-
-    /* Dirty? Works for me... */
-    for (i=1; i<len; i++) {
-        if (tmp[i] == '/') {
-            tmp[i] = '\0';
-            if (stat(tmp, &st) != 0) {
-                mkdir(tmp, 0700);
-            }
-            tmp[i] = '/';
-        }
-    }
-
-    free(tmp);
-}
-
 static void
 operation(const char *operation, const char *filename)
 {
@@ -485,7 +463,8 @@ int main(int argc, char **argv)
 
     char **tmp;
 
-    recursive_mkdir(platform_getdatadirectory());
+    const char *main_data_dir = platform_getdatadirectory();
+    recursive_mkdir(main_data_dir);
 
     global.apkenv_executable = argv[0];
     global.apkenv_headline = APKENV_HEADLINE;
@@ -526,17 +505,21 @@ int main(int argc, char **argv)
     global.apklib_handle = apk_open(global.apk_filename);
     global.support_modules = NULL;
 
-    const char* libdir[] = {
+    static const char* libdir[] = {
         "assets/libs/armeabi-v7a",
         "assets/libs/armeabi",
         "lib/armeabi-v7a",
         "lib/armeabi",
         0
     };
+    static const char* libblacklist[] = {
+        "libs3eflurry_ext.so",
+        0
+    };
     int ilib = 0;
     struct SharedLibrary *shlibs = 0;
     while (libdir[ilib]!=0) {
-        shlibs = apk_get_shared_libraries(global.apklib_handle,libdir[ilib]);
+        shlibs = apk_get_shared_libraries(global.apklib_handle,libdir[ilib],main_data_dir);
         if (shlibs!=0)
             break;
         ilib ++;
@@ -552,6 +535,17 @@ int main(int argc, char **argv)
 
     struct SharedLibrary *shlib = shlibs;
     while (shlib!=0) {
+        const char *basename = strrchr(shlib->filename, '/');
+        if (basename++ == NULL)
+            basename = shlib->filename;
+        for (ilib = 0; libblacklist[ilib] != NULL; ilib++)
+            if (strcmp(basename, libblacklist[ilib]) == 0)
+                break;
+        if (libblacklist[ilib] != NULL) {
+            shlib = shlib->next;
+            continue;
+        }
+        add_sopath(shlib->dirname);
         lib->lib = android_dlopen(shlib->filename,RTLD_LAZY);
         if (!(lib->lib)) {
             printf("Missing library dependencies.\n");
@@ -630,7 +624,7 @@ int main(int argc, char **argv)
     install_overrides(module);
 
     char data_directory[PATH_MAX];
-    strcpy(data_directory, platform_getdatadirectory());
+    strcpy(data_directory, main_data_dir);
     strcat(data_directory, apk_basename(global.apk_filename));
     strcat(data_directory, "/");
     recursive_mkdir(data_directory);

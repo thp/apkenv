@@ -45,6 +45,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/fb.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #ifndef FBIO_WAITFORVSYNC
@@ -195,18 +196,31 @@ int platform_getscreenheight()
     return G_Data->screen->h;
 }
 
+static unsigned int get_time_ms(void)
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
+
 int platform_update()
 {
+    static unsigned int last_time;
+    unsigned int now;
     GLES_Data* data = G_Data;
 
     if (data->eglDisplay!=EGL_NO_DISPLAY && data->eglSurface!=EGL_NO_SURFACE)
     {
-        if ( data->fbdev>=0 )
+        eglSwapBuffers(data->eglDisplay, data->eglSurface);
+        now = get_time_ms();
+
+        if (data->fbdev >= 0 && now - last_time < 16)
         {
             int arg = 0;
             ioctl( data->fbdev, FBIO_WAITFORVSYNC, &arg );
         }
-        eglSwapBuffers(data->eglDisplay,data->eglSurface);
+
+        last_time = get_time_ms();
 
        // GLES_TestError("eglSwapBuffers");
 #ifdef APKENV_DEBUG
