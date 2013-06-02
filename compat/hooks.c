@@ -43,17 +43,26 @@
 #include "pthread_wrappers.h"
 
 
+int loader_seen_glesv1;
+int loader_seen_glesv2;
+
 char my___sF[SIZEOF_SF * 3];
 
 static struct _hook hooks[] = {
 #include "libc_mapping.h"
 #include "liblog_mapping.h"
 #include "gles_mapping.h"
-#include "gles2_mapping.h"
 #include "pthread_mapping.h"
 
   {"__sF", my___sF},
 };
+
+#ifdef APKENV_GLES2
+static struct _hook hooks_gles2[] = {
+#include "gles2_mapping.h"
+};
+#define HOOKS_GLES2_COUNT (sizeof(hooks_gles2) / (HOOK_SIZE))
+#endif
 
 /* fully wrapped or harmful libs that should not be loaded
  * even if provided by user (like 3D driver libs) */
@@ -88,7 +97,15 @@ void *get_hooked_symbol(const char *sym)
     struct _hook target;
     target.name = sym;
 
-    struct _hook *result = bsearch(&target, &(hooks[0]),
+    struct _hook *result = NULL;
+#ifdef APKENV_GLES2
+    if (sym[0] == 'g' && sym[1] == 'l' && loader_seen_glesv2) {
+        result = bsearch(&target, &(hooks_gles2[0]),
+            HOOKS_GLES2_COUNT, HOOK_SIZE, hook_cmp);
+    }
+    if (result == NULL)
+#endif
+    result = bsearch(&target, &(hooks[0]),
             HOOKS_COUNT, HOOK_SIZE, hook_cmp);
 
     if (result != NULL) {
@@ -109,6 +126,11 @@ int is_lib_builtin(const char *name)
 
     if (name == NULL)
         return 0;
+
+    if (strcmp(name, "libGLESv1_CM.so") == 0)
+        loader_seen_glesv1 = 1;
+    else if (strcmp(name, "libGLESv2.so") == 0)
+        loader_seen_glesv2 = 1;
 
     for (i = 0; i < sizeof(builtin_libs) / sizeof(builtin_libs[0]); i++)
         if (strcmp(name, builtin_libs[i]) == 0)
@@ -132,6 +154,9 @@ void hooks_init(void)
 {
     /* Sort hooks so we can use binary search in get_hooked_symbol() */
     qsort(&(hooks[0]), HOOKS_COUNT, HOOK_SIZE, hook_cmp);
+#ifdef APKENV_GLES2
+    qsort(&(hooks_gles2[0]), HOOKS_GLES2_COUNT, HOOK_SIZE, hook_cmp);
+#endif
 
     libc_wrappers_init();
 }

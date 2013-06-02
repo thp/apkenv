@@ -1,7 +1,12 @@
 #ifdef APKENV_GLES
+#include <GLES/gl.h>
+#define GL_GLEXT_PROTOTYPES
+#include <GLES/glext.h>
+#define IN_GLES_WRAPPERS
 #include "gles_wrappers.h"
 #include <assert.h>
 #include <EGL/egl.h>
+
 #ifdef APKENV_DEBUG
 #  define WRAPPERS_DEBUG_PRINTF(...) printf(__VA_ARGS__)
 #  define GL_TEST_ERROR if (glGetError()!=GL_NO_ERROR) { printf("GL ERROR near %s\n", __FUNCTION__); }
