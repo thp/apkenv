@@ -38,6 +38,7 @@
 
 #include "libc_wrappers.h"
 #include "liblog_wrappers.h"
+#include "egl_wrappers.h"
 #include "gles_wrappers.h"
 #include "gles2_wrappers.h"
 #include "pthread_wrappers.h"
@@ -48,6 +49,7 @@ char my___sF[SIZEOF_SF * 3];
 static struct _hook hooks[] = {
 #include "libc_mapping.h"
 #include "liblog_mapping.h"
+#include "egl_mapping.h"
 #include "gles_mapping.h"
 #include "gles2_mapping.h"
 #include "pthread_mapping.h"
