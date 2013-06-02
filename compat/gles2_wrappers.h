@@ -1,9 +1,9 @@
 #ifdef APKENV_GLES2
-#include <GLES2/gl2.h>
-#define GL_GLEXT_PROTOTYPES
-#include <GLES2/gl2ext.h>
-
 #include "../apkenv.h"
+#ifndef IN_GLES2_WRAPPERS
+#include "gl_types.h"
+#endif
+
 void
 my_gles2_glActiveTexture(GLenum texture) SOFTFP;
 void

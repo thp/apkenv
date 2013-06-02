@@ -1,9 +1,9 @@
 #ifdef APKENV_GLES
-#include <GLES/gl.h>
-#define GL_GLEXT_PROTOTYPES
-#include <GLES/glext.h>
-
 #include "../apkenv.h"
+#ifndef IN_GLES_WRAPPERS
+#include "gl_types.h"
+#endif
+
 void
 my_glAlphaFunc(GLenum func, GLclampf ref) SOFTFP;
 void
@@ -524,5 +524,8 @@ my_glMultiDrawElementsEXT(GLenum mode, const GLsizei *count, GLenum type, const 
 void
 gles_extensions_init();
 
+#else
+
+#define gles_extensions_init()
 
 #endif /* APKENV_GLES */
