@@ -214,7 +214,6 @@ jclass marmalade_FindClass(JNIEnv* p0, const char* p1) SOFTFP;
 jthrowable marmalade_ExceptionOccurred(JNIEnv* p0) SOFTFP;
 jint marmalade_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint p3) SOFTFP;
 jint marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3) SOFTFP;
-jfieldID marmalade_GetFieldID(JNIEnv* p0, jclass clazz, const char* name, const char* sig) SOFTFP;
 jobject marmalade_GetObjectField(JNIEnv* p0, jobject p1, jfieldID p2) SOFTFP;
 jobject marmalade_NewGlobalRef(JNIEnv* p0, jobject p1) SOFTFP;
 jint* marmalade_GetIntArrayElements(JNIEnv* p0, jintArray p1, jboolean* p2) SOFTFP;
@@ -477,15 +476,6 @@ jfieldID
 jnienv_make_field(jclass clazz, const char *name, const char *sig)
 {
     return (jfieldID)jnienv_make_method(clazz,name,sig);
-}
-
-/* TODO: to jni/jnienv.c? */
-jfieldID
-marmalade_GetFieldID(JNIEnv* p0, jclass clazz, const char* name, const char* sig)
-{
-    struct dummy_jclass *class = (struct dummy_jclass*)clazz;
-    MODULE_DEBUG_PRINTF("marmalade_GetFieldID(%s, '%s', '%s')\n", class->name, name, sig);
-    return jnienv_make_field(clazz, name, sig);
 }
 
 /* TODO: to jni/jnienv.c? */
@@ -799,7 +789,6 @@ marmalade_try_init(struct SupportModule *self)
     self->override_env.GetIntArrayElements = marmalade_GetIntArrayElements;
     self->override_env.SetShortArrayRegion = marmalade_SetShortArrayRegion;
     self->override_env.NewGlobalRef = marmalade_NewGlobalRef;
-    self->override_env.GetFieldID = marmalade_GetFieldID;
     self->override_env.GetObjectField = marmalade_GetObjectField;
     self->override_env.GetObjectClass = marmalade_GetObjectClass;
     
