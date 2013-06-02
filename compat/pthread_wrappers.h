@@ -77,6 +77,9 @@ int
 my_pthread_cond_timedwait(pthread_cond_t *cond,
         pthread_mutex_t *mutex, const struct timespec *abstime);
 int
+my_pthread_cond_timeout_np(pthread_cond_t *cond,
+        pthread_mutex_t * mutex, unsigned msecs);
+int
 my_pthread_attr_init(pthread_attr_t *__attr);
 int
 my_pthread_attr_destroy(pthread_attr_t *__attr);
@@ -89,6 +92,8 @@ my_pthread_attr_getdetachstate(pthread_attr_t *__attr,
 int
 my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stacksize);
 int
+my_pthread_attr_getstacksize(pthread_attr_t *__attr, size_t *stacksize);
+int
 my_pthread_attr_getstack(pthread_attr_t *__attr, void** stackaddr, size_t* stacksize);
 int
 my_pthread_attr_setstack(pthread_attr_t *__attr, void* stackaddr, size_t stacksize);
@@ -97,7 +102,12 @@ my_pthread_attr_setschedpolicy(pthread_attr_t *__attr, int __policy);
 int
 my_pthread_attr_setschedparam (pthread_attr_t * __attr,struct sched_param * __param);
 int
+my_pthread_attr_getschedparam(pthread_attr_t * __attr,struct sched_param * __param);
+int
 my_pthread_getattr_np(pthread_t __th, pthread_attr_t *__attr);
+
+int
+my_pthread_setname_np(pthread_t thid, const char *thname);
 
 void
 my_pthread_cleanup_pop(int execute);
