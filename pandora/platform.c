@@ -30,14 +30,8 @@
 
 #include "../platform.h"
 
-
-#ifdef APKENV_GLES2
-#include <GLES2/gl2.h>
-#include <EGL/egl.h>
-#else
 #include <GLES/gl.h>
 #include <EGL/egl.h>
-#endif
 
 #include <SDL/SDL_syswm.h>
 #include <SDL/SDL_video.h>
@@ -116,13 +110,8 @@ const char* platform_getinstalldirectory()
 }
 
 
-int platform_init()
+int platform_init(int gles_version)
 {
-    int version = 1;
-#if APKENV_GLES2
-    version = 2;
-#endif
-
     EGLint egl_config[] =
     {
         EGL_BUFFER_SIZE, 16,
@@ -134,7 +123,7 @@ int platform_init()
         EGL_STENCIL_SIZE, EGL_DONT_CARE,
         EGL_CONFIG_CAVEAT, EGL_NONE,
         EGL_SURFACE_TYPE, EGL_WINDOW_BIT,
-        EGL_RENDERABLE_TYPE, version==1 ? EGL_OPENGL_ES_BIT : EGL_OPENGL_ES2_BIT,
+        EGL_RENDERABLE_TYPE, gles_version == 2 ? EGL_OPENGL_ES2_BIT : EGL_OPENGL_ES_BIT,
         EGL_NONE
     };
 
@@ -168,7 +157,7 @@ int platform_init()
 
 	EGLint contextAttribs[] =
 	{
-        EGL_CONTEXT_CLIENT_VERSION, version,
+        EGL_CONTEXT_CLIENT_VERSION, gles_version,
         EGL_NONE
 	};
 

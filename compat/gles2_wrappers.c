@@ -1,6 +1,11 @@
 #ifdef APKENV_GLES2
+#include <GLES2/gl2.h>
+#define GL_GLEXT_PROTOTYPES
+#include <GLES2/gl2ext.h>
+#define IN_GLES2_WRAPPERS
 #include "gles2_wrappers.h"
 #include <assert.h>
+
 #ifdef APKENV_DEBUG
 #  define WRAPPERS_DEBUG_PRINTF(...) printf("%d %s", pthread_self(), __VA_ARGS__)
 #else
@@ -1012,12 +1017,14 @@ my_gles2_glMapBufferOES(GLenum target, GLenum access)
 {
     WRAPPERS_DEBUG_PRINTF("glMapBufferOES()\n", target, access);
     /* No CALL */ printf("UNIMPLEMENTED: glMapBufferOES\n");
+    return NULL;
 }
 GLboolean
 my_gles2_glUnmapBufferOES(GLenum target)
 {
     WRAPPERS_DEBUG_PRINTF("glUnmapBufferOES()\n", target);
     /* No CALL */ printf("UNIMPLEMENTED: glUnmapBufferOES\n");
+    return GL_FALSE;
 }
 void
 my_gles2_glGetBufferPointervOES(GLenum target, GLenum pname, void **params)
@@ -1090,6 +1097,7 @@ my_gles2_glGetTexStreamDeviceNameIMG(GLint device)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexStreamDeviceNameIMG()\n", device);
     /* No CALL */ printf("UNIMPLEMENTED: glGetTexStreamDeviceNameIMG\n");
+    return NULL;
 }
 void
 my_gles2_glGetProgramBinaryOES(GLuint program, GLsizei bufSize, GLsizei *length, GLenum *binaryFormat, void *binary)
