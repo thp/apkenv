@@ -41,24 +41,10 @@ struct dummy_jstring {
     char *data;
 };
 
-struct dummy_byte_array {
-    char *data;
-    long size;
-};
-
-struct dummy_short_array {
-    short *data;
-    long size;
-};
-
-struct dummy_int_array {
-    int *data;
-    long size;
-};
-
-struct dummy_float_array {
-    float *data;
-    long size;
+struct dummy_array {
+    void *data;
+    long element_size;
+    long length; // in elements
 };
 
 struct dummy_jclass {

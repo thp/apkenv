@@ -216,7 +216,6 @@ jint marmalade_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2,
 jint marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3) SOFTFP;
 jobject marmalade_GetObjectField(JNIEnv* p0, jobject p1, jfieldID p2) SOFTFP;
 jobject marmalade_NewGlobalRef(JNIEnv* p0, jobject p1) SOFTFP;
-jint* marmalade_GetIntArrayElements(JNIEnv* p0, jintArray p1, jboolean* p2) SOFTFP;
 void marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3) SOFTFP;
 jfieldID marmalade_GetStaticFieldID(JNIEnv *p0, jclass p1, const char *p2, const char *p3) SOFTFP;
 jobject marmalade_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3) SOFTFP;
@@ -332,7 +331,7 @@ marmalade_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint
 static void my_audio_mixer(void *udata, Uint8 *stream, int len)
 {
     static short soundbuf[AUDIO_CHUKSIZE * AUDIO_CHANNELS];
-    struct dummy_short_array arr;
+    struct dummy_array arr;
     short *mixbuf = (short *)stream;
     int i;
 
@@ -342,7 +341,8 @@ static void my_audio_mixer(void *udata, Uint8 *stream, int len)
     }
     len /= 2;
     arr.data = soundbuf;
-    arr.size = len;
+    arr.length = len;
+    arr.element_size = 2;
     marmalade_priv.soundplayer.generateAudio(ENV(marmalade_priv.global),
         VM(marmalade_priv.global), &arr, len);
     for (i = 0; i < len; i++)
@@ -541,30 +541,6 @@ marmalade_NewGlobalRef(JNIEnv* p0, jobject p1)
         MODULE_DEBUG_PRINTF("marmalade_NewGlobalRef(%x)\n", ((jmethodID)obj->field));
         return p1; // is this correct?
     }
-}
-
-/* TODO: shouldn't that be in jni/jnienv.c? */
-jint*
-marmalade_GetIntArrayElements(JNIEnv* p0, jintArray p1, jboolean* p2)
-{
-    struct dummy_int_array *intarr = p1;
-    if(NULL != p1)
-    {
-        MODULE_DEBUG_PRINTF("marmalade_GetIntArrayElements(%x) -> %x\n",p1,intarr->data);
-        return (jint*)intarr->data;
-    }
-    
-    MODULE_DEBUG_PRINTF("marmalade_GetIntArrayElements(NULL) -> NULL\n");
-    return NULL;
-}
-
-static void
-marmalade_SetShortArrayRegion(JNIEnv* p0, jshortArray p1, jsize start, jsize len, const jshort* p4)
-{
-    struct dummy_short_array *arr = p1;
-    MODULE_DEBUG_PRINTF("marmalade_SetShortArrayRegion(%p) -> %p\n", arr, arr ? arr->data : NULL);
-    if (arr != NULL && arr->data != NULL)
-        memcpy(arr->data + start, p4, len * sizeof(arr->data[0]));
 }
 
 void
@@ -786,8 +762,6 @@ marmalade_try_init(struct SupportModule *self)
     self->override_env.GetStaticIntField = marmalade_GetStaticIntField;
     self->override_env.GetStaticFieldID = marmalade_GetStaticFieldID;
     self->override_env.ExceptionOccurred = marmalade_ExceptionOccurred;
-    self->override_env.GetIntArrayElements = marmalade_GetIntArrayElements;
-    self->override_env.SetShortArrayRegion = marmalade_SetShortArrayRegion;
     self->override_env.NewGlobalRef = marmalade_NewGlobalRef;
     self->override_env.GetObjectField = marmalade_GetObjectField;
     self->override_env.GetObjectClass = marmalade_GetObjectClass;
@@ -823,9 +797,7 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
     ((struct dummy_jclass*)(self->priv->theview->clazz))->name = MARMALADE_LOADERVIEW;
     self->priv->theview->field = jnienv_make_field(self->priv->theview->clazz, "theview", "L" MARMALADE_LOADERVIEW ";"); 
  
-    self->priv->pixels = malloc(sizeof(struct dummy_int_array));
-    ((struct dummy_int_array*)self->priv->pixels)->data = (int*)malloc(width*height*sizeof(int));
-    ((struct dummy_int_array*)self->priv->pixels)->size = width*height;
+    self->priv->pixels = (*ENV_M)->NewIntArray(ENV_M, width * height);
     
     MODULE_DEBUG_PRINTF("setViewNative\n");
     self->priv->loaderthread.setViewNative(ENV_M,self->priv->theloaderthread,self->priv->theview);

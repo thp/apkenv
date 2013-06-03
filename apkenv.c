@@ -129,6 +129,25 @@ read_file_impl(const char *filename, char **buffer, size_t *size)
                 filename, buffer, size) == APK_OK);
 }
 
+static void *
+read_file_to_jni_array_impl(const char *filename)
+{
+    struct dummy_array *array = NULL;
+    char *buffer = NULL;
+    size_t size = 0;
+
+    if (apk_read_file(global.apklib_handle, filename, &buffer, &size) == APK_OK) {
+        array = malloc(sizeof(*array));
+        if (array == NULL)
+            return NULL;
+        array->data = buffer;
+        array->length = size;
+        array->element_size = 1;
+    }
+
+    return array;
+}
+
 static const char *
 lookup_resource_impl(const char *key)
 {
@@ -512,6 +531,7 @@ int main(int argc, char **argv)
     global.lookup_lib_symbol = lookup_lib_symbol_impl;
     global.foreach_file = foreach_file_impl;
     global.read_file = read_file_impl;
+    global.read_file_to_jni_array = read_file_to_jni_array_impl;
     global.recursive_mkdir = recursive_mkdir;
     global.lookup_resource = lookup_resource_impl;
     global.module_hacks = &global_module_hacks;

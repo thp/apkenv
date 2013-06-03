@@ -41,6 +41,22 @@
 #  define JNIENV_DEBUG_PRINTF(...)
 #endif
 
+static int
+check_obj(JNIEnv *env, const void *obj, const char *varname, const char *func)
+{
+    if (obj == NULL) {
+        JNIENV_DEBUG_PRINTF("%s: Warning: %s is NULL\n", func, varname);
+        return 0;
+    }
+    if (obj == GLOBAL_J(env)) {
+        JNIENV_DEBUG_PRINTF("%s: Warning: %s is GLOBAL\n", func, varname);
+        return 0;
+    }
+    return 1;
+}
+#define CHECK_OBJ(obj) check_obj(env, obj, #obj, __FUNCTION__)
+
+
 jint
 JNIEnv_GetVersion(JNIEnv * p0)
 {
@@ -1490,13 +1506,14 @@ JNIEnv_GetStringUTFLength(JNIEnv* p0, jstring p1)
 jsize
 JNIEnv_GetArrayLength(JNIEnv* env, jarray p1)
 {
-    JNIENV_DEBUG_PRINTF("JNIEnv_GetArrayLength(%x)\n", p1);
-    if (p1 != GLOBAL_J(env)) {
-        struct dummy_byte_array *array = p1;
-        JNIENV_DEBUG_PRINTF("JNIEnv_GetArrayLength(%x) -> %d\n", p1, array->size);
-        return array->size;
+    JNIENV_DEBUG_PRINTF("JNIEnv_GetArrayLength(%p)\n", p1);
+    jsize ret = 0;
+    if (CHECK_OBJ(p1)) {
+        struct dummy_array *array = p1;
+        ret = array->length;
     }
-    return 0;
+    JNIENV_DEBUG_PRINTF(" -> %d\n", ret);
+    return ret;
 }
 
 
@@ -1523,11 +1540,34 @@ JNIEnv_SetObjectArrayElement(JNIEnv* p0, jobjectArray p1, jsize p2, jobject p3)
 }
 
 
+static void *
+new_array(jsize len, jsize element_size)
+{
+    struct dummy_array *array;
+    if (len <= 0) {
+        JNIENV_DEBUG_PRINTF("new_array: len is %d\n", len);
+        return NULL;
+    }
+
+    array = malloc(sizeof(*array));
+    if (array == NULL)
+        return NULL;
+    array->data = calloc(len, element_size);
+    if (array->data == NULL) {
+        free(array->data);
+        return NULL;
+    }
+    array->element_size = element_size;
+    array->length = len;
+    return array;
+}
+
+
 jbooleanArray
 JNIEnv_NewBooleanArray(JNIEnv* p0, jsize p1)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_NewBooleanArray(%d)\n", p1);
-    return NULL;
+    return new_array(p1, sizeof(jboolean));
 }
 
 
@@ -1535,7 +1575,7 @@ jbyteArray
 JNIEnv_NewByteArray(JNIEnv* p0, jsize p1)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_NewByteArray(%d)\n", p1);
-    return NULL;
+    return new_array(p1, sizeof(jbyte));
 }
 
 
@@ -1543,7 +1583,7 @@ jcharArray
 JNIEnv_NewCharArray(JNIEnv* p0, jsize p1)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_NewCharArray(%d)\n", p1);
-    return NULL;
+    return new_array(p1, sizeof(jchar));
 }
 
 
@@ -1551,7 +1591,7 @@ jshortArray
 JNIEnv_NewShortArray(JNIEnv* p0, jsize p1)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_NewShortArray(%d)\n", p1);
-    return NULL;
+    return new_array(p1, sizeof(jshort));
 }
 
 
@@ -1559,7 +1599,7 @@ jintArray
 JNIEnv_NewIntArray(JNIEnv* p0, jsize p1)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_NewIntArray(%d)\n", p1);
-    return NULL;
+    return new_array(p1, sizeof(jint));
 }
 
 
@@ -1567,7 +1607,7 @@ jlongArray
 JNIEnv_NewLongArray(JNIEnv* p0, jsize p1)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_NewLongArray(%d)\n", p1);
-    return NULL;
+    return new_array(p1, sizeof(jlong));
 }
 
 
@@ -1575,7 +1615,7 @@ jfloatArray
 JNIEnv_NewFloatArray(JNIEnv* p0, jsize p1)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_NewFloatArray(%d)\n", p1);
-    return NULL;
+    return new_array(p1, sizeof(jfloat));
 }
 
 
@@ -1583,15 +1623,29 @@ jdoubleArray
 JNIEnv_NewDoubleArray(JNIEnv* p0, jsize p1)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_NewDoubleArray(%d)\n", p1);
-    return NULL;
+    return new_array(p1, sizeof(jdouble));
 }
 
+
+static void *
+get_array_elements(JNIEnv *env, void *array, jboolean *isCopy)
+{
+    void *ret = NULL;
+    if (CHECK_OBJ(array)) {
+        struct dummy_array *my_array = array;
+        ret = my_array->data;
+        if (isCopy)
+            *isCopy = JNI_FALSE;
+    }
+    JNIENV_DEBUG_PRINTF(" -> %p\n", ret);
+    return ret;
+}
 
 jboolean*
 JNIEnv_GetBooleanArrayElements(JNIEnv* p0, jbooleanArray p1, jboolean* p2)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetBooleanArrayElements(%p, %p)\n", p1, p2);
-    return NULL;
+    return get_array_elements(p0, p1, p2);
 }
 
 
@@ -1599,7 +1653,7 @@ jbyte*
 JNIEnv_GetByteArrayElements(JNIEnv* p0, jbyteArray p1, jboolean* p2)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetByteArrayElements(%p, %p)\n", p1, p2);
-    return p1;
+    return get_array_elements(p0, p1, p2);
 }
 
 
@@ -1607,7 +1661,7 @@ jchar*
 JNIEnv_GetCharArrayElements(JNIEnv* p0, jcharArray p1, jboolean* p2)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetCharArrayElements(%p, %p)\n", p1, p2);
-    return NULL;
+    return get_array_elements(p0, p1, p2);
 }
 
 
@@ -1615,7 +1669,7 @@ jshort*
 JNIEnv_GetShortArrayElements(JNIEnv* p0, jshortArray p1, jboolean* p2)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetShortArrayElements(%p, %p)\n", p1, p2);
-    return NULL;
+    return get_array_elements(p0, p1, p2);
 }
 
 
@@ -1623,7 +1677,7 @@ jint*
 JNIEnv_GetIntArrayElements(JNIEnv* p0, jintArray p1, jboolean* p2)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetIntArrayElements(%p, %p)\n", p1, p2);
-    return NULL;
+    return get_array_elements(p0, p1, p2);
 }
 
 
@@ -1631,7 +1685,7 @@ jlong*
 JNIEnv_GetLongArrayElements(JNIEnv* p0, jlongArray p1, jboolean* p2)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetLongArrayElements(%p, %p)\n", p1, p2);
-    return NULL;
+    return get_array_elements(p0, p1, p2);
 }
 
 
@@ -1639,7 +1693,7 @@ jfloat*
 JNIEnv_GetFloatArrayElements(JNIEnv* p0, jfloatArray p1, jboolean* p2)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetFloatArrayElements(%p, %p)\n", p1, p2);
-    return NULL;
+    return get_array_elements(p0, p1, p2);
 }
 
 
@@ -1647,7 +1701,7 @@ jdouble*
 JNIEnv_GetDoubleArrayElements(JNIEnv* p0, jdoubleArray p1, jboolean* p2)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetDoubleArrayElements(%p, %p)\n", p1, p2);
-    return NULL;
+    return get_array_elements(p0, p1, p2);
 }
 
 
@@ -1714,18 +1768,24 @@ JNIEnv_GetBooleanArrayRegion(JNIEnv* p0, jbooleanArray p1, jsize p2, jsize p3, j
 }
 
 
-//#include <sys/mman.h>
-
+static void
+get_array_region(JNIEnv *env, const void *arrayobj, jsize start, jsize len, void *buf)
+{
+    if (CHECK_OBJ(arrayobj)) {
+        const struct dummy_array *array = arrayobj;
+        if (start + len > array->length)
+            fprintf(stderr, "set_array_region: ArrayIndexOutOfBounds\n");
+        start *= array->element_size;
+        len *= array->element_size;
+        memcpy(buf, (char *)array->data + start, len);
+    }
+}
 
 void
 JNIEnv_GetByteArrayRegion(JNIEnv *env, jbyteArray arrayobj, jsize start, jsize len, jbyte* buf)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetByteArrayRegion(%x, %d, %d, %x)\n", arrayobj, start, len, buf);
-    if (arrayobj != GLOBAL_J(env)) {
-        struct dummy_byte_array *array = arrayobj;
-        //mprotect(buf, len, PROT_WRITE);
-        memcpy(buf, array->data+start, len);
-    }
+    get_array_region(env, arrayobj, start, len, buf);
 }
 
 
@@ -1733,6 +1793,7 @@ void
 JNIEnv_GetCharArrayRegion(JNIEnv* p0, jcharArray p1, jsize p2, jsize p3, jchar* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetCharArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    get_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1740,6 +1801,7 @@ void
 JNIEnv_GetShortArrayRegion(JNIEnv* p0, jshortArray p1, jsize p2, jsize p3, jshort* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetShortArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    get_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1747,6 +1809,7 @@ void
 JNIEnv_GetIntArrayRegion(JNIEnv* p0, jintArray p1, jsize p2, jsize p3, jint* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetIntArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    get_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1754,6 +1817,7 @@ void
 JNIEnv_GetLongArrayRegion(JNIEnv* p0, jlongArray p1, jsize p2, jsize p3, jlong* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetLongArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    get_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1761,6 +1825,7 @@ void
 JNIEnv_GetFloatArrayRegion(JNIEnv* p0, jfloatArray p1, jsize p2, jsize p3, jfloat* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetFloatArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    get_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1768,6 +1833,21 @@ void
 JNIEnv_GetDoubleArrayRegion(JNIEnv* p0, jdoubleArray p1, jsize p2, jsize p3, jdouble* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetDoubleArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    get_array_region(p0, p1, p2, p3, p4);
+}
+
+
+static void
+set_array_region(JNIEnv *env, void *arrayobj, jsize start, jsize len, const void *buf)
+{
+    if (CHECK_OBJ(arrayobj)) {
+        const struct dummy_array *array = arrayobj;
+        if (start + len > array->length)
+            fprintf(stderr, "set_array_region: ArrayIndexOutOfBounds\n");
+        start *= array->element_size;
+        len *= array->element_size;
+        memcpy((char *)array->data + start, buf, len);
+    }
 }
 
 
@@ -1775,6 +1855,7 @@ void
 JNIEnv_SetBooleanArrayRegion(JNIEnv* p0, jbooleanArray p1, jsize p2, jsize p3, const jboolean* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_SetBooleanArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    set_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1782,6 +1863,7 @@ void
 JNIEnv_SetByteArrayRegion(JNIEnv* p0, jbyteArray p1, jsize p2, jsize p3, const jbyte* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_SetByteArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    set_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1789,6 +1871,7 @@ void
 JNIEnv_SetCharArrayRegion(JNIEnv* p0, jcharArray p1, jsize p2, jsize p3, const jchar* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_SetCharArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    set_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1796,6 +1879,7 @@ void
 JNIEnv_SetShortArrayRegion(JNIEnv* p0, jshortArray p1, jsize p2, jsize p3, const jshort* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_SetShortArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    set_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1803,6 +1887,7 @@ void
 JNIEnv_SetIntArrayRegion(JNIEnv* p0, jintArray p1, jsize p2, jsize p3, const jint* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_SetIntArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    set_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1810,6 +1895,7 @@ void
 JNIEnv_SetLongArrayRegion(JNIEnv* p0, jlongArray p1, jsize p2, jsize p3, const jlong* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_SetLongArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    set_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1817,6 +1903,7 @@ void
 JNIEnv_SetFloatArrayRegion(JNIEnv* p0, jfloatArray p1, jsize p2, jsize p3, const jfloat* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_SetFloatArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    set_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1824,6 +1911,7 @@ void
 JNIEnv_SetDoubleArrayRegion(JNIEnv* p0, jdoubleArray p1, jsize p2, jsize p3, const jdouble* p4)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_SetDoubleArrayRegion(%p, %d, %d, %p)\n", p1, p2, p3, p4);
+    set_array_region(p0, p1, p2, p3, p4);
 }
 
 
@@ -1899,7 +1987,7 @@ void*
 JNIEnv_GetPrimitiveArrayCritical(JNIEnv *env, jarray array, jboolean *isCopy)
 {
     JNIENV_DEBUG_PRINTF("JNIEnv_GetPrimitiveArrayCritical(%p, %p)\n", array, isCopy);
-    return NULL;
+    return get_array_elements(env, array, isCopy);
 }
 
 

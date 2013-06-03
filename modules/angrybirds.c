@@ -78,7 +78,11 @@ struct GlobalState *global;
 /* Fill audio buffer */
 void my_audio_callback(void *ud, Uint8 *stream, int len)
 {
-    angrybirds_priv.native_mixdata(ENV(global), VM(global), audioHandle, stream, len);
+    struct dummy_array array;
+    array.data = stream;
+    array.length = len;
+    array.element_size = 1;
+    angrybirds_priv.native_mixdata(ENV(global), VM(global), audioHandle, &array, len);
 }
 
 
@@ -150,12 +154,8 @@ JNIEnv_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
             return NULL;
 #endif
 
-        size_t file_size;
-        struct dummy_byte_array *result = malloc(sizeof(struct dummy_byte_array));
+        struct dummy_array *result = global->read_file_to_jni_array(tmp);
 
-        global->read_file(tmp, &result->data, &file_size);
-
-        result->size = file_size;
         MODULE_DEBUG_PRINTF("angrybirds_readFile: %s -> %x\n", str->data, result);
         return result;
     }
@@ -172,23 +172,6 @@ JNIEnv_DeleteLocalRef(JNIEnv* p0, jobject p1)
         return;
     }
     free(p1);
-}
-
-
-jsize
-JNIEnv_GetArrayLength(JNIEnv* env, jarray p1)
-{
-    MODULE_DEBUG_PRINTF("JNIEnv_GetArrayLength(%x)\n", p1);
-
-    if (p1 != GLOBAL_J(env)) {
-
-        //if(access_ok())
-
-        struct dummy_byte_array *array = p1;
-        MODULE_DEBUG_PRINTF("JNIEnv_GetArrayLength(%x) -> %d\n", p1, array->size);
-        return array->size;
-    }
-    return 0;
 }
 
 
@@ -210,7 +193,6 @@ angrybirds_try_init(struct SupportModule *self)
     self->override_env.DeleteLocalRef = JNIEnv_DeleteLocalRef;
     self->override_env.CallVoidMethodV = JNIEnv_CallVoidMethodV;
     self->override_env.NewObjectV = JNIEnv_NewObjectV;
-    self->override_env.GetArrayLength = JNIEnv_GetArrayLength;
 
     return (self->priv->native_init != NULL &&
             self->priv->native_resize != NULL &&
