@@ -200,6 +200,7 @@ static jobject
 cuttherope_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 {
     MODULE_DEBUG_PRINTF("cuttherope_CallObjectMethodV %s (%s)\n",p2->name,p2->sig);
+    struct dummy_array *array;
 
     if (strcmp(p2->name, "loadData") == 0) {
         struct dummy_jstring *arg;
@@ -212,15 +213,9 @@ cuttherope_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 
         MODULE_DEBUG_PRINTF("   data=%s\n",arg->data);
 
-        char *buf;
-        size_t buf_size;
-        if (GLOBAL_J(env)->read_file(filename, &buf, &buf_size)) {
-            struct dummy_byte_array *array;
-            array = malloc(sizeof(struct dummy_byte_array));
-            array->data = buf;
-            array->size = buf_size;
+        if ((array = GLOBAL_J(env)->read_file_to_jni_array(filename))) {
 
-            MODULE_DEBUG_PRINTF("   data=%s size=%d\n",arg->data, buf_size);
+            MODULE_DEBUG_PRINTF("   data=%s size=%d\n", arg->data, array->length);
 
 	    // Poll for events here to avoid "not responding" messages
             SDL_Event e;
@@ -234,23 +229,12 @@ cuttherope_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
     }
     else if (strcmp(p2->name, "getBytesOfBitmap") == 0) {
 
-        char *buf;
-        size_t buf_size;
-
-        if (GLOBAL_J(env)->read_file("assets/zeptolab.png", &buf, &buf_size)) {
-            struct dummy_byte_array *array;
-            array = malloc(sizeof(struct dummy_byte_array));
-            array->data = buf;
-            array->size = buf_size;
+        if ((array = GLOBAL_J(env)->read_file_to_jni_array("assets/zeptolab.png"))) {
             return array;
         }
     }
     else if (strcmp(p2->name, "getQuadsOfBitmap")==0) {
-        struct dummy_float_array *array;
-        array = malloc(sizeof(struct dummy_float_array));
-        array->data = malloc(4*sizeof(jfloat)); memset(array->data,0,sizeof(jfloat)*4);
-        array->size = 4;
-        return array;
+        return (*env)->NewFloatArray(env, 4);
 
     }
     else if (strcmp(p2->name, "getFontGenerator")==0) {

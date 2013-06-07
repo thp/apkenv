@@ -7,13 +7,18 @@
 {"pthread_attr_setstack",my_pthread_attr_setstack},
 {"pthread_attr_setschedpolicy",my_pthread_attr_setschedpolicy},
 {"pthread_attr_setschedparam",my_pthread_attr_setschedparam},
+{"pthread_attr_getschedparam",my_pthread_attr_getschedparam},
+{"pthread_attr_getstacksize",my_pthread_attr_getstacksize},
 {"pthread_getattr_np",my_pthread_getattr_np},
+
+{"pthread_setname_np", my_pthread_setname_np},
 
 {"pthread_cond_init", my_pthread_cond_init},
 {"pthread_cond_broadcast", my_pthread_cond_broadcast},
 {"pthread_cond_signal", my_pthread_cond_signal},
 {"pthread_cond_timedwait", my_pthread_cond_timedwait},
 {"pthread_cond_wait", my_pthread_cond_wait},
+{"pthread_cond_timeout_np", my_pthread_cond_timeout_np},
 {"pthread_cond_destroy", my_pthread_cond_destroy},
 
 {"pthread_create", pthread_create},
