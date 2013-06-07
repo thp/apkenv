@@ -224,5 +224,6 @@ int dl_iterate_phdr(int (*cb)(struct dl_phdr_info *, size_t, void *), void *);
 #endif
 
 void notify_gdb_of_libraries(void);
+int add_sopath(const char *path);
 
 #endif

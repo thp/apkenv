@@ -606,21 +606,38 @@ static void dump(soinfo *si)
 }
 #endif
 
+#define SOPATH_MAX 8
+
 #if defined(PANDORA)
-static const char *sopaths[] = {
+static const char *sopaths[SOPATH_MAX + 1] = {
     "./vendor/lib",
     "./system/lib",
     "./lib",
-    0
 };
 #else
-static const char *sopaths[] = {
+static const char *sopaths[SOPATH_MAX + 1] = {
     "/vendor/lib",
     "/system/lib",
     "/opt/apkenv/bionic/",
-    0
 };
 #endif
+
+int add_sopath(const char *path)
+{
+    int i;
+    for (i = 0; i < SOPATH_MAX; i++) {
+        if (sopaths[i] == NULL) {
+            sopaths[i] = path;
+            return 0;
+        }
+
+        if (strcmp(path, sopaths[i]) == 0)
+            return 0;
+    }
+
+    ERROR("too many sopaths\n");
+    return -1;
+}
 
 static int _open_lib(const char *name)
 {
