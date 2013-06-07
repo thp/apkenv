@@ -1,0 +1,7 @@
+
+Some of these wrapper functions have been created with the wrapper generator
+(and sometimes subsequently edited/modified) - using the wrapper generator
+might be easier (and less error prone) than writing wrapper code by hand:
+
+    https://github.com/harmattan/apkenv-wrapper-generator
+

@@ -1,0 +1,9 @@
+apkenv (42.1.1-maemo0) unstable; urgency=low
+  * Initial packaging adaptation for Fremantle
+ -- Marcin Mielniczuk <marmistrz@linux.pl>  Sat, 01 Dec 2012 16:01:08 +0100
+
+apkenv (42.1.1) unstable; urgency=low
+
+  * Initial Release.
+
+ -- Thomas Perl <m@thp.io>  Wed, 21 Nov 2012 17:11:38 +0100
