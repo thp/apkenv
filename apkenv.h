@@ -79,6 +79,7 @@ typedef void *(*lookup_symbol_t)(const char *method);
 typedef void *(*lookup_lib_symbol_t)(const char *lib, const char *method);
 typedef void (*foreach_file_t)(const char *prefix, apk_for_each_file_callback callback);
 typedef int (*read_file_t)(const char *filename, char **buffer, size_t *size);
+typedef void *(*read_file_to_jni_array_t)(const char *filename);
 typedef void (*recursive_mkdir_t)(const char *path);
 typedef const char *(*lookup_resource_t)(const char *key);
 typedef void (*patch_symbol_t)(const char *symbol, void *function);
@@ -119,6 +120,7 @@ struct GlobalState {
     lookup_lib_symbol_t lookup_lib_symbol;
     foreach_file_t foreach_file;
     read_file_t read_file;
+    read_file_to_jni_array_t read_file_to_jni_array;
     recursive_mkdir_t recursive_mkdir;
     lookup_resource_t lookup_resource;
 };

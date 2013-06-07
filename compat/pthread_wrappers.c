@@ -30,6 +30,7 @@
  **/
 
 #include "pthread_wrappers.h"
+#include <sys/time.h>
 
 
 /**
@@ -186,6 +187,24 @@ my_pthread_cond_timedwait(pthread_cond_t *cond,
 }
 
 int
+my_pthread_cond_timeout_np(pthread_cond_t *cond,
+        pthread_mutex_t * mutex, unsigned msecs)
+{
+    pthread_cond_t *realcond = late_init_pthread_cond(cond);
+    pthread_mutex_t *realmutex = late_init_pthread_mutex(mutex);
+    struct timespec ts;
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    ts.tv_sec = tv.tv_sec + msecs / 1000;
+    ts.tv_nsec = tv.tv_usec * 1000 + (msecs % 1000) * 1000000;
+    if (ts.tv_nsec >= 1000000000) {
+        ts.tv_sec++;
+        ts.tv_nsec -= 1000000000;
+    }
+    return pthread_cond_timedwait(realcond, realmutex, &ts);
+}
+
+int
 my_pthread_attr_init(pthread_attr_t *__attr)
 {
     assert(__attr != NULL);
@@ -235,6 +254,15 @@ my_pthread_attr_setschedparam (pthread_attr_t * __attr,struct sched_param * __pa
 }
 
 int
+my_pthread_attr_getschedparam(pthread_attr_t *__attr, struct sched_param * __param)
+{
+    assert(__attr != NULL);
+    pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+    assert(realattr != NULL);
+    return pthread_attr_getschedparam(realattr, __param);
+}
+
+int
 my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stacksize)
 {
     assert(__attr != NULL);
@@ -243,6 +271,14 @@ my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stacksize)
     return pthread_attr_setstacksize (realattr,stacksize);
 }
 
+int
+my_pthread_attr_getstacksize(pthread_attr_t *__attr, size_t *stacksize)
+{
+    assert(__attr != NULL);
+    pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
+    assert(realattr != NULL);
+    return pthread_attr_getstacksize(realattr, stacksize);
+}
 
 int
 my_pthread_attr_getstack(pthread_attr_t *__attr, void** stackaddr, size_t* stacksize)
@@ -278,6 +314,14 @@ my_pthread_getattr_np(pthread_t __th, pthread_attr_t *__attr)
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
     assert(realattr != NULL);
     return pthread_getattr_np(__th,realattr);
+}
+
+int
+my_pthread_setname_np(pthread_t thid, const char *thname)
+{
+    // TODO?
+    printf("UNIMPLEMENTED: pthread_setname_np\n");
+    return 0;
 }
 
 void
