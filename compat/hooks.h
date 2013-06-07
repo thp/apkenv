@@ -42,6 +42,8 @@ int is_lib_builtin(const char *name);
 int is_lib_optional(const char *name);
 void hooks_init(void);
 
+extern int loader_seen_glesv1;
+extern int loader_seen_glesv2;
 
 #define SIZEOF_SF 0x54 // taken from NDK
 
