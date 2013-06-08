@@ -32,6 +32,11 @@
 #include "pthread_wrappers.h"
 #include <sys/time.h>
 
+#ifdef APKENV_DEBUG
+#  define WRAPPERS_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#else
+#  define WRAPPERS_DEBUG_PRINTF(...)
+#endif
 
 /**
  * This will take care of doing the right thing for mutexes that are not
@@ -51,18 +56,18 @@ late_init_pthread_mutex(pthread_mutex_t *mutex)
 
     pthread_mutex_t *realmutex = (pthread_mutex_t*) (*((int*)mutex));
     if (realmutex == NULL) {
-        printf("late-initializing normal mutex\n");
+        WRAPPERS_DEBUG_PRINTF("late-initializing normal mutex\n");
         realmutex = malloc(sizeof(pthread_mutex_t));
         pthread_mutex_init(realmutex, NULL);
         *((int *)mutex) = (int)realmutex;
     } else if (realmutex == BIONIC_PTHREAD_RECURSIVE_MUTEX) {
-        printf("late-initializing recursive mutex\n");
+        WRAPPERS_DEBUG_PRINTF("late-initializing recursive mutex\n");
         realmutex = malloc(sizeof(pthread_mutex_t));
         pthread_mutex_t tmp = PTHREAD_RECURSIVE_MUTEX_INITIALIZER_NP;
         memcpy(realmutex, &tmp, sizeof(pthread_mutex_t));
         *((int *)mutex) = (int)realmutex;
     } else if (realmutex == BIONIC_PTHREAD_ERRORCHECK_MUTEX) {
-        printf("late-initializing errorcheck mutex\n");
+        WRAPPERS_DEBUG_PRINTF("late-initializing errorcheck mutex\n");
         realmutex = malloc(sizeof(pthread_mutex_t));
         pthread_mutex_t tmp = PTHREAD_ERRORCHECK_MUTEX_INITIALIZER_NP;
         memcpy(realmutex, &tmp, sizeof(pthread_mutex_t));
@@ -87,7 +92,7 @@ late_init_pthread_cond(pthread_cond_t *cond)
 
     pthread_cond_t *realcond = (pthread_cond_t *) *(int *) cond;
     if (realcond == NULL) {
-        printf("late-initializing cond\n");
+        WRAPPERS_DEBUG_PRINTF("late-initializing cond\n");
         realcond = malloc(sizeof(pthread_cond_t));
         pthread_cond_t tmp = PTHREAD_COND_INITIALIZER;
         memcpy(realcond, &tmp, sizeof(pthread_cond_t));
@@ -320,7 +325,7 @@ int
 my_pthread_setname_np(pthread_t thid, const char *thname)
 {
     // TODO?
-    printf("UNIMPLEMENTED: pthread_setname_np\n");
+    WRAPPERS_DEBUG_PRINTF("pthread_setname_np(%ld, %s)\n", thid, thname);
     return 0;
 }
 

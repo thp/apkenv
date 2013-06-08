@@ -1,3 +1,3 @@
 {"eglGetProcAddress", my_eglGetProcAddress},
-{"eglGetDisplay", eglGetDisplay},
+{"eglGetDisplay", my_eglGetDisplay},
 {"eglQueryString", eglQueryString},
