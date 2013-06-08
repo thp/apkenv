@@ -69,6 +69,7 @@
 {"ftello", ftello},
 {"fseeko", fseeko},
 {"ferror", ferror},
+{"rewind", rewind},
 
 {"setenv", setenv},
 {"sysconf", sysconf},
@@ -100,7 +101,6 @@
 {"mkdir", mkdir},
 {"chmod", chmod},
 {"umask", umask},
-{"clearerr", clearerr},
 {"remove", my_remove},
 {"rename", my_rename},
 
