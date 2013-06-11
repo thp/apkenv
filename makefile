@@ -58,14 +58,10 @@ LDFLAGS += -lrt
 endif
 
 # Selection of OpenGL ES version support (if any) to include
-GLES ?= 1
-ifeq ($(GLES),2)
-    CFLAGS += -DAPKENV_GLES2
-    LDFLAGS += -lGLESv2
-else
-    CFLAGS += -DAPKENV_GLES
-    LDFLAGS += -lGLES_CM
-endif
+CFLAGS += -DAPKENV_GLES
+LDFLAGS += -lGLES_CM
+CFLAGS += -DAPKENV_GLES2
+LDFLAGS += -lGLESv2 -lEGL
 
 FREMANTLE ?= 0
 ifeq ($(FREMANTLE),1)

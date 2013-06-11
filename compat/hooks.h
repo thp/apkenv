@@ -38,13 +38,20 @@ struct _hook {
 };
 
 void *get_hooked_symbol(const char *sym);
+void *get_hooked_symbol_dlfcn(void *handle, const char *sym);
+int register_hooks(const struct _hook *hooks, size_t count);
 int is_lib_builtin(const char *name);
 int is_lib_optional(const char *name);
 void hooks_init(void);
 
-
 #define SIZEOF_SF 0x54 // taken from NDK
 
 extern char my___sF[SIZEOF_SF * 3];
+
+#define BUILTIN_DLFCN_HANDLE_BASE 0xce000000
+#define BUILTIN_DLFCN_HANDLE_MASK 0xffffff00
+
+#define is_builtin_dlfcn_handle(h) \
+    (((long)(h) & BUILTIN_DLFCN_HANDLE_MASK) == BUILTIN_DLFCN_HANDLE_BASE)
 
 #endif /* COMPAT_HOOKS_H */

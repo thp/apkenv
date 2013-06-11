@@ -59,22 +59,14 @@ const char* platform_getinstalldirectory()
 }
 
 
-int platform_init()
+int platform_init(int gles_version)
 {
 #ifdef FREMANTLE
-#ifdef APKENV_GLES2
-    SDL_GLES_Init(SDL_GLES_VERSION_2_0);
-#else /* APKENV_GLES2 */
-    SDL_GLES_Init(SDL_GLES_VERSION_1_1);
-#endif /* APKENV_GLES2 */
+    SDL_GLES_Init(gles_version == 2 ? SDL_GLES_VERSION_2_0 : SDL_GLES_VERSION_1_1);
     screen = SDL_SetVideoMode(0, 0, 0, SDL_FULLSCREEN);
     SDL_GLES_MakeCurrent(SDL_GLES_CreateContext());
 #else /* FREMANTLE */
-#ifdef APKENV_GLES2
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 2);
-#else /* APKENV_GLES2 */
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 1);
-#endif /* APKENV_GLES2 */
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gles_version);
     screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGLES | SDL_FULLSCREEN);
 #endif /* FREMANTLE */
 
