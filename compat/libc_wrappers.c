@@ -25,6 +25,12 @@ static inline void swap(void **a, void **b)
 }
 
 int my___isthreaded = 1;
+int*
+my___errno()
+{
+    WRAPPERS_DEBUG_PRINTF("__errno()\n");
+    return &errno;
+}
 void
 my_abort()
 {

@@ -36,6 +36,8 @@
 #include "../apkenv.h"
 
 extern int my___isthreaded;
+int*
+my___errno() SOFTFP;
 void
 my_abort() SOFTFP;
 double
