@@ -79,6 +79,8 @@
 {"getaddrinfo", my_getaddrinfo},
 {"freeaddrinfo", my_freeaddrinfo},
 
+{"gethostbyname", gethostbyname},
+
 {"__errno", my___errno},
 
 {"gmtime", gmtime},
