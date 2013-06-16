@@ -271,4 +271,7 @@ int my_readdir_r(DIR *dirp, struct a_dirent *entry, struct a_dirent **result);
 // workaround for unity?
 int my_munmap(void *__addr, size_t __len);
 
+long
+my_sysconf(int name) SOFTFP;
+
 void libc_wrappers_init(void);
