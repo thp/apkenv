@@ -856,6 +856,105 @@ int my_readdir_r(DIR *dirp, struct a_dirent *entry, struct a_dirent **result)
     return 0;
 }
 
+/* 
+ * values taken from bionic/libc/include/sys/sysconf.h (Simplified BSD-License)
+ * 20.06.2013 synchronized with https://github.com/android/platform_bionic/
+ * corresponding commit: a55f63083fb16b2595f517a3260083e5f8cddd02
+ */
+static inline int resolve_sysconf(int name)
+{
+    switch(name)
+    {
+        case 0x0000: return _SC_ARG_MAX;
+        case 0x0001: return _SC_BC_BASE_MAX;
+        case 0x0002: return _SC_BC_DIM_MAX;
+        case 0x0003: return _SC_BC_SCALE_MAX;
+        case 0x0004: return _SC_BC_STRING_MAX;
+        case 0x0005: return _SC_CHILD_MAX;
+        case 0x0006: return _SC_CLK_TCK;
+        case 0x0007: return _SC_COLL_WEIGHTS_MAX;
+        case 0x0008: return _SC_EXPR_NEST_MAX;
+        case 0x0009: return _SC_LINE_MAX;
+        case 0x000a: return _SC_NGROUPS_MAX;
+        case 0x000b: return _SC_OPEN_MAX;
+        case 0x000c: return _SC_PASS_MAX;
+        case 0x000d: return _SC_2_C_BIND;
+        case 0x000e: return _SC_2_C_DEV;
+        case 0x000f: return _SC_2_C_VERSION;
+        case 0x0010: return _SC_2_CHAR_TERM;
+        case 0x001d: return _SC_XOPEN_CRYPT;
+        case 0x001e: return _SC_XOPEN_ENH_I18N;
+        case 0x001f: return _SC_XOPEN_SHM;
+        case 0x0020: return _SC_XOPEN_VERSION;
+        case 0x0021: return _SC_XOPEN_XCU_VERSION;
+        case 0x0022: return _SC_XOPEN_REALTIME;
+        case 0x0023: return _SC_XOPEN_REALTIME_THREADS;
+        case 0x0024: return _SC_XOPEN_LEGACY;
+        case 0x0025: return _SC_ATEXIT_MAX;
+        case 0x0026: return _SC_IOV_MAX;
+        case 0x0027: return _SC_PAGESIZE;
+        case 0x0028: return _SC_PAGE_SIZE;
+        case 0x0029: return _SC_XOPEN_UNIX;
+        case 0x002a: return _SC_XBS5_ILP32_OFF32;
+        case 0x002b: return _SC_XBS5_ILP32_OFFBIG;
+        case 0x002c: return _SC_XBS5_LP64_OFF64;
+        case 0x002d: return _SC_XBS5_LPBIG_OFFBIG;
+        case 0x002e: return _SC_AIO_LISTIO_MAX;
+        case 0x002f: return _SC_AIO_MAX;
+        case 0x0030: return _SC_AIO_PRIO_DELTA_MAX;
+        case 0x0031: return _SC_DELAYTIMER_MAX;
+        case 0x0032: return _SC_MQ_OPEN_MAX;
+        case 0x0033: return _SC_MQ_PRIO_MAX;
+        case 0x0034: return _SC_RTSIG_MAX;
+        case 0x0035: return _SC_SEM_NSEMS_MAX;
+        case 0x0036: return _SC_SEM_VALUE_MAX;
+        case 0x0037: return _SC_SIGQUEUE_MAX;
+        case 0x0038: return _SC_TIMER_MAX;
+        case 0x0039: return _SC_ASYNCHRONOUS_IO;
+        case 0x003a: return _SC_FSYNC;
+        case 0x003b: return _SC_MAPPED_FILES;
+        case 0x003c: return _SC_MEMLOCK;
+        case 0x003d: return _SC_MEMLOCK_RANGE;
+        case 0x003e: return _SC_MEMORY_PROTECTION;
+        case 0x003f: return _SC_MESSAGE_PASSING;
+        case 0x0040: return _SC_PRIORITIZED_IO;
+        case 0x0041: return _SC_PRIORITY_SCHEDULING;
+        case 0x0042: return _SC_REALTIME_SIGNALS;
+        case 0x0043: return _SC_SEMAPHORES;
+        case 0x0044: return _SC_SHARED_MEMORY_OBJECTS;
+        case 0x0045: return _SC_SYNCHRONIZED_IO;
+        case 0x0046: return _SC_TIMERS;
+        case 0x0047: return _SC_GETGR_R_SIZE_MAX;
+        case 0x0048: return _SC_GETPW_R_SIZE_MAX;
+        case 0x0049: return _SC_LOGIN_NAME_MAX;
+        case 0x004a: return _SC_THREAD_DESTRUCTOR_ITERATIONS;
+        case 0x004b: return _SC_THREAD_KEYS_MAX;
+        case 0x004c: return _SC_THREAD_STACK_MIN;
+        case 0x004d: return _SC_THREAD_THREADS_MAX;
+        case 0x004e: return _SC_TTY_NAME_MAX;
+        case 0x004f: return _SC_THREADS;
+        case 0x0050: return _SC_THREAD_ATTR_STACKADDR;
+        case 0x0051: return _SC_THREAD_ATTR_STACKSIZE;
+        case 0x0052: return _SC_THREAD_PRIORITY_SCHEDULING;
+        case 0x0053: return _SC_THREAD_PRIO_INHERIT;
+        case 0x0054: return _SC_THREAD_PRIO_PROTECT;
+        case 0x0055: return _SC_THREAD_SAFE_FUNCTIONS;
+        case 0x0060: return _SC_NPROCESSORS_CONF;
+        case 0x0061: return _SC_NPROCESSORS_ONLN;
+        case 0x0062: return _SC_PHYS_PAGES;
+        case 0x0063: return _SC_AVPHYS_PAGES;
+        case 0x0064: return _SC_MONOTONIC_CLOCK;
+        default:
+            WRAPPERS_DEBUG_PRINTF("sysconf lookup failed: %x\n", name);
+            return name;
+    }
+}
+
+long my_sysconf(int name)
+{
+    return sysconf(resolve_sysconf(name));
+}
+
 void libc_wrappers_init(void)
 {
     stdio_files[0] = stdin;

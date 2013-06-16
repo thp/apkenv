@@ -73,7 +73,7 @@
 {"rewind", rewind},
 
 {"setenv", setenv},
-{"sysconf", sysconf},
+{"sysconf", my_sysconf},
 
 /* bionic's addrinfo struct differs from glibc's */
 {"getaddrinfo", my_getaddrinfo},
