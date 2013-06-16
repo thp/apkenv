@@ -62,7 +62,7 @@
 {"puts", puts},
 {"putc", putc},
 {"putchar", putchar},
-{"getc", putc},
+{"getc", getc},
 {"ungetc", ungetc},
 {"tmpfile", tmpfile},
 {"setvbuf", setvbuf},
