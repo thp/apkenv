@@ -29,11 +29,11 @@
  **/
 
 #include <string.h>
-#include "common.h"
 #include <pthread.h>
 #include <signal.h>
-#include "SDL/SDL.h"
-#include "SDL/SDL_mixer.h"
+#include <SDL/SDL.h>
+#include <SDL/SDL_mixer.h>
+#include "common.h"
 
 #include "../platform.h"
 
