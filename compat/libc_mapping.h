@@ -75,8 +75,9 @@
 {"setenv", setenv},
 {"sysconf", sysconf},
 
-{"getaddrinfo", getaddrinfo},
-{"freeaddrinfo", freeaddrinfo},
+/* bionic's addrinfo struct differs from glibc's */
+{"getaddrinfo", my_getaddrinfo},
+{"freeaddrinfo", my_freeaddrinfo},
 
 {"gmtime", gmtime},
 {"localtime", localtime},

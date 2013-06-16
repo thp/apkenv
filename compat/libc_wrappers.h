@@ -105,7 +105,8 @@ my_ftell(FILE *__stream) SOFTFP;
 size_t
 my_fwrite(__const void *__restrict __ptr, size_t __size, size_t __n, FILE *__restrict __s) SOFTFP;
 int
-my_getaddrinfo(__const char *__restrict __name, __const char *__restrict __service, __const struct addrinfo *__restrict __req, struct addrinfo **__restrict __pai) SOFTFP;
+my_getaddrinfo(const char *hostname, const char *servname,
+    const struct addrinfo *hints, struct addrinfo **res) SOFTFP;
 char *
 my_getenv(__const char *__name) SOFTFP;
 int

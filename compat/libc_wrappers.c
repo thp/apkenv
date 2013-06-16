@@ -17,6 +17,13 @@ static FILE *stdio_files[3];
 #define TO_STDIO_FILE(_f) \
     stdio_files[(size_t)((void *)(_f) - (void *)&my___sF) / SIZEOF_SF]
 
+static inline void swap(void **a, void **b)
+{
+    void *tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
 int my___isthreaded = 1;
 void
 my_abort()
@@ -188,6 +195,7 @@ void
 my_freeaddrinfo(struct addrinfo *__ai)
 {
     WRAPPERS_DEBUG_PRINTF("freeaddrinfo()\n", __ai);
+    swap((void**)&(__ai->ai_canonname), (void**)&(__ai->ai_addr));
     freeaddrinfo(__ai);
 }
 FILE *
@@ -237,10 +245,27 @@ my_fwrite(__const void *__restrict __ptr, size_t __size, size_t __n, FILE *__res
     return fwrite(__ptr, __size, __n, __s);
 }
 int
-my_getaddrinfo(__const char *__restrict __name, __const char *__restrict __service, __const struct addrinfo *__restrict __req, struct addrinfo **__restrict __pai)
+my_getaddrinfo(const char *hostname, const char *servname,
+    const struct addrinfo *hints, struct addrinfo **res)
 {
-    WRAPPERS_DEBUG_PRINTF("getaddrinfo()\n", __name, __service, __req, __pai);
-    return getaddrinfo(__name, __service, __req, __pai);
+    WRAPPERS_DEBUG_PRINTF("getaddrinfo(%s,%s,%p,%p)\n", hostname, servname, hints, res);
+    // make a local copy of hints
+    struct addrinfo *fixed_hints = (struct addrinfo*)malloc(sizeof(struct addrinfo));
+    memcpy(fixed_hints, hints, sizeof(struct addrinfo));
+    // fix bionic -> glibc missmatch
+    swap((void**)&(fixed_hints->ai_canonname), (void**)&(fixed_hints->ai_addr));
+    // do glibc getaddrinfo
+    int result = getaddrinfo(hostname, servname, fixed_hints, res);
+    // release the copy of hints
+    free(fixed_hints);
+    // fix bionic <- glibc missmatch
+    struct addrinfo *it = *res;
+    while(NULL != it)
+    {
+        swap((void**)&(it->ai_canonname), (void**)&(it->ai_addr));
+        it = it->ai_next;
+    }
+    return result;
 }
 char *
 my_getenv(__const char *__name)
