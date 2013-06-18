@@ -87,6 +87,10 @@ int
 my_fputs(__const char *__restrict __s, FILE *__restrict __stream) SOFTFP;
 size_t
 my_fread(void *__restrict __ptr, size_t __size, size_t __n, FILE *__restrict __stream) SOFTFP;
+int
+my_putc(int __c, FILE *__stream) SOFTFP;
+int
+my_putw(int __w, FILE *__stream) SOFTFP;
 void
 my_free(void *__ptr) SOFTFP;
 void
@@ -96,7 +100,11 @@ my_freopen(__const char *__restrict __filename, __const char *__restrict __modes
 double
 my_frexp(double __x, int *__exponent) SOFTFP;
 int
+my_fscanf(FILE *__restrict __stream, __const char *__restrict __format, ...) SOFTFP;
+int
 my_fseek(FILE *__stream, long int __off, int __whence) SOFTFP;
+int
+my_fileno(FILE *stream) SOFTFP;
 int
 my_fsync(int __fd) SOFTFP;
 long int
@@ -243,6 +251,18 @@ FILE *
 my_tmpfile() SOFTFP;
 char *
 my_tmpnam(char *__s) SOFTFP;
+void
+my_setbuf(FILE *stream, char *buf) SOFTFP;
+int
+my_setvbuf(FILE *stream, char *buf, int mode, size_t size) SOFTFP;
+void
+my_setbuffer(FILE *stream, char *buf, size_t size) SOFTFP;
+void
+my_setlinebuf(FILE *stream) SOFTFP;
+int
+my_ferror(FILE *stream) SOFTFP;
+void
+my_clearerr(FILE *stream) SOFTFP;
 int
 my_ungetc(int __c, FILE *__stream) SOFTFP;
 int
