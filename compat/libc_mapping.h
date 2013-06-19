@@ -62,20 +62,26 @@
 {"puts", puts},
 {"putc", putc},
 {"putchar", putchar},
-{"getc", putc},
+{"getc", getc},
 {"ungetc", ungetc},
 {"tmpfile", tmpfile},
 {"setvbuf", setvbuf},
 {"ftello", ftello},
 {"fseeko", fseeko},
 {"ferror", ferror},
+{"feof", feof},
 {"rewind", rewind},
 
 {"setenv", setenv},
-{"sysconf", sysconf},
+{"sysconf", my_sysconf},
 
-{"getaddrinfo", getaddrinfo},
-{"freeaddrinfo", freeaddrinfo},
+/* bionic's addrinfo struct differs from glibc's */
+{"getaddrinfo", my_getaddrinfo},
+{"freeaddrinfo", my_freeaddrinfo},
+
+{"gethostbyname", gethostbyname},
+
+{"__errno", my___errno},
 
 {"gmtime", gmtime},
 {"localtime", localtime},
@@ -236,4 +242,20 @@
 {"gzopen", gzopen},
 {"gzclose", gzclose},
 {"gzgets", gzgets},
+
+/*
+ * bionic libc's __isthreaded
+ *
+ * Must hook (and set to 1/true), otherwise android code might directly
+ * access the bionic FILE struct which differs from the one in glibc platforms
+ * and we don't wrap the FILE struct at the moment. There are other (thread
+ * related) cases where this matters too.
+ *
+ * For details see the corresponding macro definitions of feof, ferror,
+ * clearerr, fileno, getc, putc, FLOCKFILE, FUNLOCKFILE, _MALLOC_LOCK,
+ * _MALLOC_UNLOCK, _MALLOC_LOCK_INIT, _ATEXIT_LOCK, _ATEXIT_UNLOCK
+ * and the functions:  _tzLock, _tzUnlock, located in bionic/libc
+ *
+ */
+{"__isthreaded", &my___isthreaded},
 
