@@ -1963,7 +1963,7 @@ static int link_image(soinfo *si, unsigned wr_offset)
         if(d[0] == DT_NEEDED){
             DEBUG("%5d %s needs %s\n", pid, si->name, si->strtab + d[1]);
             soinfo *lsi = NULL;
-            if (!is_lib_builtin(si->strtab + d[1]))
+            if (get_builtin_lib_handle(si->strtab + d[1]) == NULL)
                 lsi = find_library(si->strtab + d[1]);
             if(lsi == 0) {
                 /**

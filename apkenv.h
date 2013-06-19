@@ -116,6 +116,9 @@ struct GlobalState {
 
     struct ResourceStrings resource_strings;
 
+    int loader_seen_glesv1;
+    int loader_seen_glesv2;
+
     lookup_symbol_t lookup_symbol;
     lookup_lib_symbol_t lookup_lib_symbol;
     foreach_file_t foreach_file;

@@ -44,7 +44,7 @@ const char* platform_getdatadirectory();
 const char* platform_getmoduledirectory();
 
 /// initialize platform video and return an s
-int platform_init();
+int platform_init(int gles_version);
 
 /// returns the width of the platform screen
 int platform_getscreenwidth();
