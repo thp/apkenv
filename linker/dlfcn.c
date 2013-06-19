@@ -55,12 +55,6 @@ static const char *dl_errors[] = {
 #define likely(expr)   __builtin_expect (expr, 1)
 #define unlikely(expr) __builtin_expect (expr, 0)
 
-#define BUILTIN_HANDLE_BASE 0xce000000
-#define BUILTIN_HANDLE_MASK 0xffffff00
-
-#define is_builtin_handle(h) \
-    (((long)(h) & BUILTIN_HANDLE_MASK) == BUILTIN_HANDLE_BASE)
-
 pthread_mutex_t dl_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void set_dlerror(int err)
@@ -89,9 +83,9 @@ void *android_dlopen(const char *filename, int flag)
 
 static void *android_dlopen_wrap(const char *filename, int flag)
 {
-    int ret = is_lib_builtin(filename);
+    void *ret = get_builtin_lib_handle(filename);
     if (ret)
-        return (void *)(BUILTIN_HANDLE_BASE | ret);
+        return ret;
 
     return android_dlopen(filename, flag);
 }
@@ -121,13 +115,13 @@ void *android_dlsym(void *handle, const char *symbol)
     }
 
     void *sym_addr;
-    if(0 != (sym_addr = get_hooked_symbol(symbol)))
+    if(0 != (sym_addr = get_hooked_symbol_dlfcn(handle, symbol)))
     {
         LINKER_DEBUG_PRINTF("symbol %s hooked to %x\n",symbol,sym_addr);
         pthread_mutex_unlock(&dl_lock);
         return sym_addr;
     }
-    if (is_builtin_handle(handle)) {
+    if (is_builtin_lib_handle(handle)) {
         /* must be hooked.. */
         set_dlerror(DL_ERR_SYMBOL_NOT_FOUND);
         goto err;
@@ -201,7 +195,7 @@ int android_dladdr(const void *addr, Dl_info *info)
 
 int android_dlclose(void *handle)
 {
-    if (is_builtin_handle(handle))
+    if (is_builtin_lib_handle(handle))
         return 0;
 
     pthread_mutex_lock(&dl_lock);

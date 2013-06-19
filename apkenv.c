@@ -47,6 +47,7 @@
 #include "apklib/keycodes.h"
 #include "debug/debug.h"
 #include "compat/gles_wrappers.h"
+#include "compat/gles2_wrappers.h"
 #include "linker/linker.h"
 #include "compat/hooks.h"
 
@@ -365,7 +366,7 @@ operation(const char *operation, const char *filename)
 
 
 static int
-system_init()
+system_init(int gles_version)
 {
     int i, j;
 
@@ -374,12 +375,13 @@ system_init()
         return 0;
     }
 
-    if ( !platform_init() ) {
+    if ( !platform_init(gles_version) ) {
         printf("platform_init failed.\n");
         return 0;
     }
 
     gles_extensions_init();
+    gles2_init();
 
     SDL_ShowCursor(0);
 
@@ -635,7 +637,21 @@ int main(int argc, char **argv)
         goto finish;
     }
 
-    if (!system_init()) {
+    /* figure out GLES version to use */
+    int gles_version = 1;
+
+    if (global.loader_seen_glesv1 && global.loader_seen_glesv2) {
+        printf("Warning: app uses both GLESv1 and GLESv2 libs\n");
+        /* TODO: perhaps consult the module what to use here? */
+    } else if (global.loader_seen_glesv2) {
+        gles_version = 2;
+    }
+#if !defined(APKENV_GLES)
+    gles_version = 2;
+#endif
+    printf("Using GLES version %d\n", gles_version);
+
+    if (!system_init(gles_version)) {
         return 0;
     }
 

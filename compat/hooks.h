@@ -38,7 +38,10 @@ struct _hook {
 };
 
 void *get_hooked_symbol(const char *sym);
-int is_lib_builtin(const char *name);
+void *get_hooked_symbol_dlfcn(void *handle, const char *sym);
+void *get_builtin_lib_handle(const char *libname);
+int is_builtin_lib_handle(void *handle);
+int register_hooks(const struct _hook *hooks, size_t count);
 int is_lib_optional(const char *name);
 void hooks_init(void);
 
