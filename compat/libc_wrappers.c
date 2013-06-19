@@ -173,9 +173,31 @@ size_t
 my_fread(void *__restrict __ptr, size_t __size, size_t __n, FILE *__restrict __stream)
 {
     WRAPPERS_DEBUG_PRINTF("fread(%x, %d, %d, %x)\n", __ptr, __size, __n, __stream);
-    size_t result = fread(__ptr, __size, __n, __stream);
+    size_t result;
+    if (IS_STDIO_FILE(__stream))
+        result = fread(__ptr, __size, __n, TO_STDIO_FILE(__stream));
+    else
+        result = fread(__ptr, __size, __n, __stream);
     WRAPPERS_DEBUG_PRINTF("fread done: %d\n", result);
     return result;
+}
+int
+my_putc(int __c, FILE *__stream)
+{
+    WRAPPERS_DEBUG_PRINTF("putc(%c, %p)\n", __c, __stream);
+    if (IS_STDIO_FILE(__stream))
+        return putc(__c, TO_STDIO_FILE(__stream));
+    else
+        return putc(__c, __stream);
+}
+int
+my_putw(int __w, FILE *__stream)
+{
+    WRAPPERS_DEBUG_PRINTF("putw(%i, %p)\n", __w, __stream);
+    if (IS_STDIO_FILE(__stream))
+        return putw(__w, TO_STDIO_FILE(__stream));
+    else
+        return putw(__w, __stream);
 }
 void
 my_free(void *__ptr)
@@ -208,14 +230,29 @@ my_frexp(double __x, int *__exponent)
 int
 my_fscanf(FILE *__restrict __stream, __const char *__restrict __format, ...)
 {
-    WRAPPERS_DEBUG_PRINTF("fscanf()\n", __stream, __format);
-    return fscanf(__stream, __format);
+    WRAPPERS_DEBUG_PRINTF("fscanf(%p, %s)\n", __stream, __format);
+    if (IS_STDIO_FILE(__stream))
+        return fscanf(TO_STDIO_FILE(__stream), __format);
+    else
+        return fscanf(__stream, __format);
 }
 int
 my_fseek(FILE *__stream, long int __off, int __whence)
 {
     WRAPPERS_DEBUG_PRINTF("fseek(%x, %d, %d)\n", __stream, __off, __whence);
-    return fseek(__stream, __off, __whence);
+    if (IS_STDIO_FILE(__stream))
+        return fseek(TO_STDIO_FILE(__stream), __off, __whence);
+    else
+        return fseek(__stream, __off, __whence);
+}
+int
+my_fileno(FILE *stream)
+{
+    WRAPPERS_DEBUG_PRINTF("fileno(%p)\n", stream);
+    if (IS_STDIO_FILE(stream))
+        return fileno(TO_STDIO_FILE(stream));
+    else
+        return fileno(stream);
 }
 int
 my_fsync(int __fd)
@@ -227,13 +264,19 @@ long int
 my_ftell(FILE *__stream)
 {
     WRAPPERS_DEBUG_PRINTF("ftell()\n", __stream);
-    return ftell(__stream);
+    if (IS_STDIO_FILE(__stream))
+        return ftell(TO_STDIO_FILE(__stream));
+    else
+        return ftell(__stream);
 }
 size_t
 my_fwrite(__const void *__restrict __ptr, size_t __size, size_t __n, FILE *__restrict __s)
 {
-    WRAPPERS_DEBUG_PRINTF("fwrite()\n", __ptr, __size, __n, __s);
-    return fwrite(__ptr, __size, __n, __s);
+    WRAPPERS_DEBUG_PRINTF("fwrite(%p, %zu, %zu, %p)\n", __ptr, __size, __n, __s);
+    if (IS_STDIO_FILE(__s))
+        return fwrite(__ptr, __size, __n, TO_STDIO_FILE(__s));
+    else
+        return fwrite(__ptr, __size, __n, __s);
 }
 int
 my_getaddrinfo(__const char *__restrict __name, __const char *__restrict __service, __const struct addrinfo *__restrict __req, struct addrinfo **__restrict __pai)
@@ -475,6 +518,15 @@ my_setsockopt(int __fd, int __level, int __optname, __const void *__optval, sock
     WRAPPERS_DEBUG_PRINTF("setsockopt()\n", __fd, __level, __optname, __optval, __optlen);
     return setsockopt(__fd, __level, __optname, __optval, __optlen);
 }
+void
+my_setbuf(FILE *stream, char *buf)
+{
+    WRAPPERS_DEBUG_PRINTF("setbuf(%p, %p)\n", stream, buf);
+    if (IS_STDIO_FILE(stream))
+        return setbuf(TO_STDIO_FILE(stream), buf);
+    else
+        return setbuf(stream, buf);
+}
 int
 my_setvbuf(FILE *__restrict __stream, char *__restrict __buf, int __modes, size_t __n)
 {
@@ -484,6 +536,24 @@ my_setvbuf(FILE *__restrict __stream, char *__restrict __buf, int __modes, size_
         return 0;
     }
     return setvbuf(__stream, __buf, __modes, __n);
+}
+void
+my_setbuffer(FILE *stream, char *buf, size_t size)
+{
+    WRAPPERS_DEBUG_PRINTF("setbuffer(%p, %p, %zd)\n", stream, buf, size);
+    if (IS_STDIO_FILE(stream))
+        return setbuffer(TO_STDIO_FILE(stream), buf, size);
+    else
+        return setbuffer(stream, buf, size);
+}
+void
+my_setlinebuf(FILE *stream)
+{
+    WRAPPERS_DEBUG_PRINTF("setlinebuf(%p)\n", stream);
+    if (IS_STDIO_FILE(stream))
+        return setlinebuf(TO_STDIO_FILE(stream));
+    else
+        return setlinebuf(stream);
 }
 double
 my_sin(double __x)
@@ -681,10 +751,31 @@ my_tmpnam(char *__s)
     return NULL;
 }
 int
+my_ferror(FILE *stream)
+{
+    WRAPPERS_DEBUG_PRINTF("ferror(%p)\n", stream);
+    if (IS_STDIO_FILE(stream))
+        return ferror(TO_STDIO_FILE(stream));
+    else
+        return ferror(stream);
+}
+void
+my_clearerr(FILE *stream)
+{
+    WRAPPERS_DEBUG_PRINTF("clearerr(%p)\n", stream);
+    if (IS_STDIO_FILE(stream))
+        clearerr(TO_STDIO_FILE(stream));
+    else
+        clearerr(stream);
+}
+int
 my_ungetc(int __c, FILE *__stream)
 {
-    WRAPPERS_DEBUG_PRINTF("ungetc()\n", __c, __stream);
-    return ungetc(__c, __stream);
+    WRAPPERS_DEBUG_PRINTF("ungetc(%c, %p)\n", __c, __stream);
+    if (IS_STDIO_FILE(__stream))
+        return ungetc(__c, TO_STDIO_FILE(__stream));
+    else
+        return ungetc(__c, __stream);
 }
 int
 my_usleep(__useconds_t __useconds)
