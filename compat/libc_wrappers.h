@@ -35,6 +35,9 @@
 
 #include "../apkenv.h"
 
+extern int my___isthreaded;
+int*
+my___errno() SOFTFP;
 void
 my_abort() SOFTFP;
 double
@@ -112,7 +115,8 @@ my_ftell(FILE *__stream) SOFTFP;
 size_t
 my_fwrite(__const void *__restrict __ptr, size_t __size, size_t __n, FILE *__restrict __s) SOFTFP;
 int
-my_getaddrinfo(__const char *__restrict __name, __const char *__restrict __service, __const struct addrinfo *__restrict __req, struct addrinfo **__restrict __pai) SOFTFP;
+my_getaddrinfo(const char *hostname, const char *servname,
+    const struct addrinfo *hints, struct addrinfo **res) SOFTFP;
 char *
 my_getenv(__const char *__name) SOFTFP;
 int
@@ -286,5 +290,8 @@ int my_readdir_r(DIR *dirp, struct a_dirent *entry, struct a_dirent **result);
 
 // workaround for unity?
 int my_munmap(void *__addr, size_t __len);
+
+long
+my_sysconf(int name) SOFTFP;
 
 void libc_wrappers_init(void);
