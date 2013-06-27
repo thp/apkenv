@@ -1,7 +1,9 @@
 #ifdef APKENV_GLES
-#include <GLES/gl.h>
+
 #define GL_GLEXT_PROTOTYPES
+#include <GLES/gl.h>
 #include <GLES/glext.h>
+
 #define IN_GLES_WRAPPERS
 #include "gles_wrappers.h"
 #include <assert.h>

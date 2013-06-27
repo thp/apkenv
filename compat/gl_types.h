@@ -2,6 +2,8 @@
 #define __apkenv_gl_types_h_
 
 #include <GLES/glplatform.h>
+#include <GLES2/gl2platform.h>
+#include <KHR/khrplatform.h>
 
 #ifdef __cplusplus
 extern "C" {

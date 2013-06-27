@@ -1,7 +1,9 @@
 #ifdef APKENV_GLES2
-#include <GLES2/gl2.h>
+
 #define GL_GLEXT_PROTOTYPES
+#include <GLES2/gl2.h>
 #include <GLES2/gl2ext.h>
+
 #define IN_GLES2_WRAPPERS
 #include "gles2_wrappers.h"
 #include <assert.h>
@@ -17,64 +19,64 @@
 
 struct gles2_functions {
     /* these funxtions exist in both GLESv1 and GLESv2, we load them manually from GLESv2 lib */
-    GL_APICALL void         GL_APIENTRY (*glActiveTexture)(GLenum texture);
-    GL_APICALL void         GL_APIENTRY (*glBindBuffer)(GLenum target, GLuint buffer);
-    GL_APICALL void         GL_APIENTRY (*glBindTexture)(GLenum target, GLuint texture);
-    GL_APICALL void         GL_APIENTRY (*glBlendFunc)(GLenum sfactor, GLenum dfactor);
-    GL_APICALL void         GL_APIENTRY (*glBufferData)(GLenum target, GLsizeiptr size, const void* data, GLenum usage);
-    GL_APICALL void         GL_APIENTRY (*glBufferSubData)(GLenum target, GLintptr offset, GLsizeiptr size, const void* data);
-    GL_APICALL void         GL_APIENTRY (*glClear)(GLbitfield mask);
-    GL_APICALL void         GL_APIENTRY (*glClearColor)(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
-    GL_APICALL void         GL_APIENTRY (*glClearDepthf)(GLclampf depth);
-    GL_APICALL void         GL_APIENTRY (*glClearStencil)(GLint s);
-    GL_APICALL void         GL_APIENTRY (*glColorMask)(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
-    GL_APICALL void         GL_APIENTRY (*glCompressedTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void* data);
-    GL_APICALL void         GL_APIENTRY (*glCompressedTexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void* data);
-    GL_APICALL void         GL_APIENTRY (*glCopyTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
-    GL_APICALL void         GL_APIENTRY (*glCopyTexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
-    GL_APICALL void         GL_APIENTRY (*glCullFace)(GLenum mode);
-    GL_APICALL void         GL_APIENTRY (*glDeleteBuffers)(GLsizei n, const GLuint* buffers);
-    GL_APICALL void         GL_APIENTRY (*glDeleteTextures)(GLsizei n, const GLuint* textures);
-    GL_APICALL void         GL_APIENTRY (*glDepthFunc)(GLenum func);
-    GL_APICALL void         GL_APIENTRY (*glDepthMask)(GLboolean flag);
-    GL_APICALL void         GL_APIENTRY (*glDepthRangef)(GLclampf zNear, GLclampf zFar);
-    GL_APICALL void         GL_APIENTRY (*glDisable)(GLenum cap);
-    GL_APICALL void         GL_APIENTRY (*glDrawArrays)(GLenum mode, GLint first, GLsizei count);
-    GL_APICALL void         GL_APIENTRY (*glDrawElements)(GLenum mode, GLsizei count, GLenum type, const void* indices);
-    GL_APICALL void         GL_APIENTRY (*glEnable)(GLenum cap);
-    GL_APICALL void         GL_APIENTRY (*glFinish)(void);
-    GL_APICALL void         GL_APIENTRY (*glFlush)(void);
-    GL_APICALL void         GL_APIENTRY (*glFrontFace)(GLenum mode);
-    GL_APICALL void         GL_APIENTRY (*glGenBuffers)(GLsizei n, GLuint* buffers);
-    GL_APICALL void         GL_APIENTRY (*glGenTextures)(GLsizei n, GLuint* textures);
-    GL_APICALL void         GL_APIENTRY (*glGetBooleanv)(GLenum pname, GLboolean* params);
-    GL_APICALL void         GL_APIENTRY (*glGetBufferParameteriv)(GLenum target, GLenum pname, GLint* params);
-    GL_APICALL GLenum       GL_APIENTRY (*glGetError)(void);
-    GL_APICALL void         GL_APIENTRY (*glGetFloatv)(GLenum pname, GLfloat* params);
-    GL_APICALL void         GL_APIENTRY (*glGetIntegerv)(GLenum pname, GLint* params);
-    GL_APICALL const GLubyte* GL_APIENTRY (*glGetString)(GLenum name);
-    GL_APICALL void         GL_APIENTRY (*glGetTexParameterfv)(GLenum target, GLenum pname, GLfloat* params);
-    GL_APICALL void         GL_APIENTRY (*glGetTexParameteriv)(GLenum target, GLenum pname, GLint* params);
-    GL_APICALL void         GL_APIENTRY (*glHint)(GLenum target, GLenum mode);
-    GL_APICALL GLboolean    GL_APIENTRY (*glIsBuffer)(GLuint buffer);
-    GL_APICALL GLboolean    GL_APIENTRY (*glIsEnabled)(GLenum cap);
-    GL_APICALL GLboolean    GL_APIENTRY (*glIsTexture)(GLuint texture);
-    GL_APICALL void         GL_APIENTRY (*glLineWidth)(GLfloat width);
-    GL_APICALL void         GL_APIENTRY (*glPixelStorei)(GLenum pname, GLint param);
-    GL_APICALL void         GL_APIENTRY (*glPolygonOffset)(GLfloat factor, GLfloat units);
-    GL_APICALL void         GL_APIENTRY (*glReadPixels)(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void* pixels);
-    GL_APICALL void         GL_APIENTRY (*glSampleCoverage)(GLclampf value, GLboolean invert);
-    GL_APICALL void         GL_APIENTRY (*glScissor)(GLint x, GLint y, GLsizei width, GLsizei height);
-    GL_APICALL void         GL_APIENTRY (*glStencilFunc)(GLenum func, GLint ref, GLuint mask);
-    GL_APICALL void         GL_APIENTRY (*glStencilMask)(GLuint mask);
-    GL_APICALL void         GL_APIENTRY (*glStencilOp)(GLenum fail, GLenum zfail, GLenum zpass);
-    GL_APICALL void         GL_APIENTRY (*glTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* pixels);
-    GL_APICALL void         GL_APIENTRY (*glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
-    GL_APICALL void         GL_APIENTRY (*glTexParameterfv)(GLenum target, GLenum pname, const GLfloat* params);
-    GL_APICALL void         GL_APIENTRY (*glTexParameteri)(GLenum target, GLenum pname, GLint param);
-    GL_APICALL void         GL_APIENTRY (*glTexParameteriv)(GLenum target, GLenum pname, const GLint* params);
-    GL_APICALL void         GL_APIENTRY (*glTexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* pixels);
-    GL_APICALL void         GL_APIENTRY (*glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+    void         (*glActiveTexture)(GLenum texture);
+    void         (*glBindBuffer)(GLenum target, GLuint buffer);
+    void         (*glBindTexture)(GLenum target, GLuint texture);
+    void         (*glBlendFunc)(GLenum sfactor, GLenum dfactor);
+    void         (*glBufferData)(GLenum target, GLsizeiptr size, const void* data, GLenum usage);
+    void         (*glBufferSubData)(GLenum target, GLintptr offset, GLsizeiptr size, const void* data);
+    void         (*glClear)(GLbitfield mask);
+    void         (*glClearColor)(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
+    void         (*glClearDepthf)(GLclampf depth);
+    void         (*glClearStencil)(GLint s);
+    void         (*glColorMask)(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
+    void         (*glCompressedTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const void* data);
+    void         (*glCompressedTexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const void* data);
+    void         (*glCopyTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
+    void         (*glCopyTexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+    void         (*glCullFace)(GLenum mode);
+    void         (*glDeleteBuffers)(GLsizei n, const GLuint* buffers);
+    void         (*glDeleteTextures)(GLsizei n, const GLuint* textures);
+    void         (*glDepthFunc)(GLenum func);
+    void         (*glDepthMask)(GLboolean flag);
+    void         (*glDepthRangef)(GLclampf zNear, GLclampf zFar);
+    void         (*glDisable)(GLenum cap);
+    void         (*glDrawArrays)(GLenum mode, GLint first, GLsizei count);
+    void         (*glDrawElements)(GLenum mode, GLsizei count, GLenum type, const void* indices);
+    void         (*glEnable)(GLenum cap);
+    void         (*glFinish)(void);
+    void         (*glFlush)(void);
+    void         (*glFrontFace)(GLenum mode);
+    void         (*glGenBuffers)(GLsizei n, GLuint* buffers);
+    void         (*glGenTextures)(GLsizei n, GLuint* textures);
+    void         (*glGetBooleanv)(GLenum pname, GLboolean* params);
+    void         (*glGetBufferParameteriv)(GLenum target, GLenum pname, GLint* params);
+    GLenum       (*glGetError)(void);
+    void         (*glGetFloatv)(GLenum pname, GLfloat* params);
+    void         (*glGetIntegerv)(GLenum pname, GLint* params);
+    const GLubyte* (*glGetString)(GLenum name);
+    void         (*glGetTexParameterfv)(GLenum target, GLenum pname, GLfloat* params);
+    void         (*glGetTexParameteriv)(GLenum target, GLenum pname, GLint* params);
+    void         (*glHint)(GLenum target, GLenum mode);
+    GLboolean    (*glIsBuffer)(GLuint buffer);
+    GLboolean    (*glIsEnabled)(GLenum cap);
+    GLboolean    (*glIsTexture)(GLuint texture);
+    void         (*glLineWidth)(GLfloat width);
+    void         (*glPixelStorei)(GLenum pname, GLint param);
+    void         (*glPolygonOffset)(GLfloat factor, GLfloat units);
+    void         (*glReadPixels)(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void* pixels);
+    void         (*glSampleCoverage)(GLclampf value, GLboolean invert);
+    void         (*glScissor)(GLint x, GLint y, GLsizei width, GLsizei height);
+    void         (*glStencilFunc)(GLenum func, GLint ref, GLuint mask);
+    void         (*glStencilMask)(GLuint mask);
+    void         (*glStencilOp)(GLenum fail, GLenum zfail, GLenum zpass);
+    void         (*glTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* pixels);
+    void         (*glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
+    void         (*glTexParameterfv)(GLenum target, GLenum pname, const GLfloat* params);
+    void         (*glTexParameteri)(GLenum target, GLenum pname, GLint param);
+    void         (*glTexParameteriv)(GLenum target, GLenum pname, const GLint* params);
+    void         (*glTexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const void* pixels);
+    void         (*glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 };
 static struct gles2_functions functions;
 
