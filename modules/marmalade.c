@@ -927,8 +927,12 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
     MODULE_DEBUG_PRINTF("runNative done.\n");
 }
 
-#define ACTION_POINTER_1_DOWN   5
-#define ACTION_POINTER_1_UP     6
+#define POINTER_DOWN 1
+#define POINTER_MOVE 3
+#define POINTER_UP 2
+#define TOUCH_DOWN 4
+#define TOUCH_MOVE 6
+#define TOUCH_UP 5
 
 static void
 marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
@@ -938,19 +942,21 @@ marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
        int action = 0;
        if(ACTION_DOWN == event)
        {
-           action = ACTION_POINTER_1_DOWN;
+           action = POINTER_DOWN;
+           MODULE_DEBUG_PRINTF("onMotionEvent: down\n");
        }
        else if(ACTION_UP == event)
        {
-           action = ACTION_POINTER_1_UP;
+           action = POINTER_UP;
+           MODULE_DEBUG_PRINTF("onMotionEvent: up\n");
        }
        else if(ACTION_MOVE == event)
        {
-           return; // TODO
+           action = POINTER_MOVE;
+           MODULE_DEBUG_PRINTF("onMotionEvent: move\n");
        }
 
-       MODULE_DEBUG_PRINTF("onMotionEvent: %s\n", action == ACTION_POINTER_1_UP ? "up" : "down");
-       self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,action-1 /* duh? */, x,y);
+       self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,action, x,y);
        MODULE_DEBUG_PRINTF("onMotionEvent done.\n");
    }
 }
