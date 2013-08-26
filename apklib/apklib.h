@@ -56,6 +56,7 @@ struct ResourceStrings {
     size_t count;
     /* convenience pointer to appropriate entries[x].value */
     const char *app_name;
+    const char *game_name;
 };
 
 typedef void (*apk_for_each_file_callback)(const char *filename, char *buffer, size_t size);

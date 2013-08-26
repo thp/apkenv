@@ -315,6 +315,7 @@ apk_read_resources(AndroidApk *apk, struct ResourceStrings *rstrings)
 
     rstrings->count = rstr_i = 0;
     rstrings->app_name = NULL;
+    rstrings->game_name = NULL;
     rstr_alloc = 32;
     rstrings->entries = malloc(rstr_alloc * sizeof(rstrings->entries[0]));
     if (rstrings->entries == NULL) {
@@ -379,8 +380,10 @@ apk_read_resources(AndroidApk *apk, struct ResourceStrings *rstrings)
                 keys + key_index[entry->key.index], key_pool->flags & UTF8_FLAG);
             rstrings->entries[rstr_i].value = apk_get_res_string(
                 values + value_index[value->data], value_pool->flags & UTF8_FLAG);
-            if (strcmp(rstrings->entries[rstr_i].key, "app_name") == 0)
+            if (rstrings->app_name==NULL && strcmp(rstrings->entries[rstr_i].key, "app_name") == 0)
                 rstrings->app_name = rstrings->entries[rstr_i].value;
+            if (rstrings->game_name==NULL && strcmp(rstrings->entries[rstr_i].key, "game_name") == 0)
+                rstrings->game_name = rstrings->entries[rstr_i].value;
 
             rstr_i++;
             if (rstr_i >= rstr_alloc) {
