@@ -1,8 +1,8 @@
 /// jpeg loader, (C) crow_riot 2013
 
-
-
 #include "imagelib.h"
+#include "imagelib_priv.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -50,7 +50,7 @@ static void jpeg_mem_src (j_decompress_ptr cinfo, void* buffer, long nbytes)
     src->next_input_byte = (JOCTET*)buffer;
 }
 
-image_t* loadjpeg_mem(char* buf, size_t size, const imageloadersettings_t settings)
+image_t* imagelib_load_jpeg_from_mem(char* buf, size_t size, const imageloadersettings_t settings)
 {
     struct jpeg_decompress_struct cinfo;
     struct jpeg_error_mgr jerr;
@@ -126,22 +126,4 @@ image_t* loadjpeg_mem(char* buf, size_t size, const imageloadersettings_t settin
     jpeg_destroy_decompress(&cinfo);
 
     return image;
-}
-
-
-image_t* loadjpeg_disk(const char *filename, const imageloadersettings_t settings)
-{
-    FILE *fp = fopen(filename,"rb");
-    if (!fp)
-        return NULL;
-
-    fseek(fp,0,SEEK_END);
-    size_t size = ftell(fp);
-    fseek(fp,0,SEEK_SET);
-
-    char* buf = malloc(sizeof(char)*size);
-    fread(buf,size,1,fp);
-    fclose(fp);
-
-    return loadjpeg_mem(buf,size,settings);
 }

@@ -32,9 +32,6 @@
  * Cut the Rope Lite - 0.1 crow_riot based on the works of thp
  **/
 
-#include "../imagelib/imagelib.h"
-#include "../imagelib/loadjpeg.c"
-#include "../imagelib/loadpng.c"
 #include "../apklib/keycodes.h"
 #include <linux/limits.h>
 #include <sys/stat.h>
@@ -288,13 +285,7 @@ cuttherope_loadImage(JNIEnv *env, const char *filename )
             .swaprb = 1,
         };
 
-        if (strstr(filepath,".png")!=0) {
-            img->image = loadpng_mem(buf,buf_size,loadsettings);
-        }
-        else
-        if (strstr(filepath,".jpeg")!=0) {
-            img->image = loadjpeg_mem(buf,buf_size,loadsettings);
-        }
+        img->image = GLOBAL_J(env)->image_loader(buf, buf_size, loadsettings);
     }
 
     return img->image;

@@ -32,6 +32,7 @@
 
 #include "apklib/apklib.h"
 #include "jni/jni.h"
+#include "imagelib/imagelib.h"
 
 #define APKENV_NAME "apkenv"
 #define APKENV_VERSION "42.4.0"
@@ -152,6 +153,7 @@ struct GlobalState {
     read_file_to_jni_array_t read_file_to_jni_array;
     recursive_mkdir_t recursive_mkdir;
     lookup_resource_t lookup_resource;
+    image_loader_t image_loader;
 };
 
 #define VM(global_ptr) (&((global_ptr)->vm))

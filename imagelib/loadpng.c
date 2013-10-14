@@ -1,9 +1,11 @@
 /// png loader, (c) crow_riot 2013
 
+#include "imagelib.h"
+#include "imagelib_priv.h"
+
 #include <stdio.h>
 #include <libpng12/png.h>
 #include <stdlib.h>
-#include "imagelib.h"
 
 typedef struct
 {
@@ -29,7 +31,7 @@ static void png_read_data(png_structp png_ptr, png_bytep outbuffer, png_size_t b
 }
 
 
-image_t* loadpng_mem( char* buffer, size_t size, const imageloadersettings_t settings )
+image_t* imagelib_load_png_from_mem( char* buffer, size_t size, const imageloadersettings_t settings )
 {
     png_structp png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING,NULL,NULL,NULL);
     if ( !png_ptr ) {
@@ -164,25 +166,3 @@ image_t* loadpng_mem( char* buffer, size_t size, const imageloadersettings_t set
 
     return image;
 }
-
-
-image_t* loadpng_disk( const char *filepath, const imageloadersettings_t settings)
-{
-    FILE *fp = fopen(filepath,"rb");
-    if (!fp)
-        return NULL;
-
-    fseek(fp,0,SEEK_END);
-    size_t size = ftell(fp);
-    fseek(fp,0,SEEK_SET);
-
-    char* buf = malloc(sizeof(char)*size);
-    fread(buf,size,1,fp);
-    fclose(fp);
-
-    image_t *image = loadpng_mem(buf,size,settings);
-    free(buf);
-
-    return image;
-}
-

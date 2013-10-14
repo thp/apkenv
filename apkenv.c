@@ -44,6 +44,7 @@
 #include "jni/shlib.h"
 #include "apklib/apklib.h"
 #include "apklib/keycodes.h"
+#include "imagelib/imagelib_priv.h"
 #include "debug/debug.h"
 #include "compat/gles_wrappers.h"
 #include "compat/gles2_wrappers.h"
@@ -377,6 +378,7 @@ int main(int argc, char **argv)
     global.read_file_to_jni_array = read_file_to_jni_array_impl;
     global.recursive_mkdir = recursive_mkdir;
     global.lookup_resource = lookup_resource_impl;
+    global.image_loader = imagelib_load_from_mem;
     global.module_hacks = &global_module_hacks;
 
     hooks_init();
