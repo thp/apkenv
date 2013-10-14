@@ -43,6 +43,7 @@
 #define GLOBAL_M (self->global)
 #define ENV_M ENV(GLOBAL_M)
 #define VM_M VM(GLOBAL_M)
+#define PLATFORM_M ((GLOBAL_M)->platform)
 #define LOOKUP_M(method) (GLOBAL_M->lookup_symbol(method))
 #define LOOKUP_LIBM(lib,method) (GLOBAL_M->lookup_lib_symbol(lib,method))
 

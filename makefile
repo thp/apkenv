@@ -14,12 +14,6 @@ JNIENV_SOURCES=$(wildcard jni/*.c)
 # Support modules for specific applications
 MODULES_SOURCES=$(wildcard modules/*.c)
 
-# Maemo/MeeGo-specific stuff
-MAEMO_SOURCES=$(wildcard n9xx/*.c)
-
-# Pandora specific stuff
-PANDORA_SOURCES=$(wildcard pandora/*.c)
-
 # JPEG and PNG loaders
 IMAGELIB_SOURCES=$(wildcard imagelib/*.c)
 
@@ -42,9 +36,9 @@ SOURCES += $(DEBUG_SOURCES)
 
 PANDORA ?= 0
 ifeq ($(PANDORA),1)
-SOURCES += $(PANDORA_SOURCES)
+SOURCES += platform/pandora.c
 else
-SOURCES += $(MAEMO_SOURCES)
+SOURCES += platform/maemo.c
 endif
 
 OBJS = $(patsubst %.c,%.o,$(SOURCES))

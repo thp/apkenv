@@ -35,8 +35,6 @@
 #include <SDL/SDL_mixer.h>
 #include "common.h"
 
-#include "../platform.h"
-
 #define ORIENTATION_LANDSCAPE 2
 #define ORIENTATION_PORTRAIT 1
 
@@ -649,11 +647,11 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     }
     else if(method_is(glSwapBuffers))
     {
-        if (marmalade_priv.global->module_hacks->input_update(marmalade_priv.module)) {
+        if (marmalade_priv.global->platform->input_update(marmalade_priv.module)) {
             // FIXME: do something to make runNative return (shutdownNative crashes)
             exit(1);
         }
-        marmalade_priv.global->module_hacks->system_update();
+        marmalade_priv.global->platform->update();
     }
     else if(method_is(videoStop))
     {
@@ -731,7 +729,7 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_BYTE, indices);
         glDeleteTextures(1,&doDraw_tex);
         */
-        marmalade_priv.global->module_hacks->system_update();
+        marmalade_priv.global->platform->update();
     }
     else
     {
@@ -883,8 +881,6 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
     self->priv->module = self;
     self->priv->home = strdup(home);
 
-    GLOBAL_M->module_hacks->handle_update = 1;
-
     MODULE_DEBUG_PRINTF("JNI_OnLoad\n");
     self->priv->JNI_OnLoad(VM_M, NULL);
     MODULE_DEBUG_PRINTF("JNI_OnLoad done.\n");
@@ -997,7 +993,7 @@ marmalade_resume(struct SupportModule *self)
 static int
 marmalade_requests_exit(struct SupportModule *self)
 {
-    return 0;
+    return 1;
 }
 
 APKENV_MODULE(marmalade, MODULE_PRIORITY_GENERIC)

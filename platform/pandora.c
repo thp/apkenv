@@ -28,7 +28,7 @@
  **/
 
 
-#include "../platform.h"
+#include "../apkenv.h"
 
 #include <GLES/gl.h>
 #include <EGL/egl.h>
@@ -49,6 +49,46 @@
 #ifndef NULL
 #define NULL 0
 #endif
+
+static unsigned char keymap[] = {
+    /* 0-9, A-Z filled in later */
+    [SDLK_UNKNOWN]  = AKEYCODE_UNKNOWN,
+    [SDLK_UP]       = AKEYCODE_DPAD_UP,
+    [SDLK_DOWN]     = AKEYCODE_DPAD_DOWN,
+    [SDLK_RIGHT]    = AKEYCODE_DPAD_RIGHT,
+    [SDLK_LEFT]     = AKEYCODE_DPAD_LEFT,
+    [SDLK_COMMA]    = AKEYCODE_COMMA,
+    [SDLK_PERIOD]   = AKEYCODE_PERIOD,
+    [SDLK_RALT]     = AKEYCODE_ALT_RIGHT,
+    [SDLK_LSHIFT]   = AKEYCODE_SHIFT_LEFT,
+    [SDLK_TAB]      = AKEYCODE_TAB,
+    [SDLK_SPACE]    = AKEYCODE_SPACE,
+    [SDLK_RETURN]   = AKEYCODE_ENTER,
+    [SDLK_DELETE]   = AKEYCODE_DEL,
+    [SDLK_MINUS]    = AKEYCODE_MINUS,
+    [SDLK_EQUALS]   = AKEYCODE_EQUALS,
+    [SDLK_LEFTBRACKET]  = AKEYCODE_LEFT_BRACKET,
+    [SDLK_RIGHTBRACKET] = AKEYCODE_RIGHT_BRACKET,
+    [SDLK_BACKSLASH]    = AKEYCODE_BACKSLASH,
+    [SDLK_SEMICOLON]    = AKEYCODE_SEMICOLON,
+    [SDLK_SLASH]    = AKEYCODE_SLASH,
+    [SDLK_AT]       = AKEYCODE_AT,
+    [SDLK_PLUS]     = AKEYCODE_PLUS,
+    [SDLK_BACKSPACE]= AKEYCODE_BACK,
+    [SDLK_F1]       = AKEYCODE_MENU,
+    [SDLK_F2]       = AKEYCODE_HOME,
+    [SDLK_F3]       = AKEYCODE_SOFT_LEFT,
+    [SDLK_F4]       = AKEYCODE_SOFT_RIGHT,
+    [SDLK_LALT]     = AKEYCODE_BUTTON_START,
+    [SDLK_LCTRL]    = AKEYCODE_BUTTON_SELECT,
+    [SDLK_PAGEUP]   = AKEYCODE_BUTTON_Y,
+    [SDLK_PAGEDOWN] = AKEYCODE_BUTTON_X,
+    [SDLK_HOME]     = AKEYCODE_BUTTON_A,
+    [SDLK_END]      = AKEYCODE_BUTTON_B,
+    [SDLK_RSHIFT]   = AKEYCODE_BUTTON_L1,
+    [SDLK_RCTRL]    = AKEYCODE_BUTTON_R1,
+    [SDLK_LAST]     = AKEYCODE_UNKNOWN,
+};
 
 
 #define FRAMEBUFFERDEVICE "/dev/fb0"
@@ -93,25 +133,39 @@ GLES_Data* G_Data = NULL;
 
 /* -------- */
 
-const char* platform_getdatadirectory()
+
+static const char *
+pandora_get_path(enum PlatformPath which)
 {
-    return "./data/";
+    switch (which) {
+        case PLATFORM_PATH_INSTALL_DIRECTORY:
+            return NULL; /* install not supported on pandora yet */
+        case PLATFORM_PATH_DATA_DIRECTORY:
+            return "./data/";
+        case PLATFORM_PATH_MODULE_DIRECTORY:
+            return "./modules";
+        default:
+            return NULL;
+    }
 }
 
-
-const char* platform_getmoduledirectory()
+static int
+pandora_init(int gles_version)
 {
-    return "./modules";
-}
+    int i, j;
 
-const char* platform_getinstalldirectory()
-{
-    return 0;
-}
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
+        return 0;
+    }
 
+    for (i = SDLK_0, j = AKEYCODE_0; i <= SDLK_9; i++, j++) {
+        keymap[i] = j;
+    }
 
-int platform_init(int gles_version)
-{
+    for (i = SDLK_a, j = AKEYCODE_A; i <= SDLK_z; i++, j++) {
+        keymap[i] = j;
+    }
+
     EGLint egl_config[] =
     {
         EGL_BUFFER_SIZE, 16,
@@ -172,17 +226,20 @@ int platform_init(int gles_version)
 
     G_Data = data;
 
+    SDL_ShowCursor(0);
     return 1;
 }
 
-int platform_getscreenwidth()
+static void
+pandora_get_size(int *width, int *height)
 {
-    return G_Data->screen->w;
-}
+    if (width) {
+        *width = G_Data->screen->w;
+    }
 
-int platform_getscreenheight()
-{
-    return G_Data->screen->h;
+    if (height) {
+        *height = G_Data->screen->h;
+    }
 }
 
 static unsigned int get_time_ms(void)
@@ -192,7 +249,75 @@ static unsigned int get_time_ms(void)
     return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
-int platform_update()
+static int
+pandora_input_update(struct SupportModule *module)
+{
+    static int emulate_multitouch = 0;
+    const int emulate_finger_id = 2;
+    int width = G_Data->screen->w;
+    int height = G_Data->screen->h;
+
+    SDL_Event e;
+    while (SDL_PollEvent(&e)) {
+        if (e.type == SDL_KEYDOWN) {
+            if (e.key.keysym.sym==SDLK_ESCAPE) {
+                return 1;
+            }
+            else if (e.key.keysym.sym==SDLK_RSHIFT) {
+                //emulate_multitouch = 1;
+                module->input(module,ACTION_DOWN, width / 2 - 1, height / 2, emulate_finger_id);
+            } else {
+                module->key_input(module, ACTION_DOWN, keymap[e.key.keysym.sym], e.key.keysym.unicode);
+            }
+        }
+        else if (e.type == SDL_KEYUP) {
+            if (e.key.keysym.sym==SDLK_RSHIFT) {
+                //emulate_multitouch = 0;
+                module->input(module,ACTION_UP, width / 2 - 1, height / 2, emulate_finger_id);
+            } else {
+                module->key_input(module, ACTION_UP, keymap[e.key.keysym.sym], e.key.keysym.unicode);
+            }
+        } else if (e.type == SDL_MOUSEBUTTONDOWN) {
+            module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
+            if (emulate_multitouch) {
+                module->input(module,ACTION_DOWN, width-e.button.x, height-e.button.y,emulate_finger_id);
+            }
+        } else if (e.type == SDL_MOUSEBUTTONUP) {
+            module->input(module, ACTION_UP, e.button.x, e.button.y, e.button.which);
+            if (emulate_multitouch) {
+                module->input(module,ACTION_UP, width-e.button.x, height-e.button.y,emulate_finger_id);
+            }
+        } else if (e.type == SDL_MOUSEMOTION) {
+            module->input(module, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
+            if (emulate_multitouch) {
+                module->input(module,ACTION_MOVE, width-e.button.x, height-e.button.y,emulate_finger_id);
+            }
+        } else if (e.type == SDL_QUIT) {
+            return 1;
+        } else if (e.type == SDL_ACTIVEEVENT) {
+            if (e.active.state == SDL_APPACTIVE && e.active.gain == 0) {
+                module->pause(module);
+                while (1) {
+                    SDL_WaitEvent(&e);
+                    if (e.type == SDL_ACTIVEEVENT) {
+                        if (e.active.state == SDL_APPACTIVE &&
+                                e.active.gain == 1) {
+                            break;
+                        }
+                    } else if (e.type == SDL_QUIT) {
+                        return 1;
+                    }
+                }
+                module->resume(module);
+            }
+        }
+    }
+
+    return 0;
+}
+
+static void
+pandora_update()
 {
     static unsigned int last_time;
     unsigned int now;
@@ -215,14 +340,11 @@ int platform_update()
 #ifdef APKENV_DEBUG
         // printf("%d swap\n",pthread_self());
 #endif
-        return 1;
     }
-
-    return 0;
 }
 
-
-int platform_exit( )
+static void
+pandora_exit()
 {
     GLES_Data* data = G_Data;
     if (data) {
@@ -234,7 +356,13 @@ int platform_exit( )
         free(data);
     }
     G_Data = NULL;
-    return 0;
 }
 
-
+struct PlatformSupport platform_support = {
+    pandora_init,
+    pandora_get_path,
+    pandora_get_size,
+    pandora_input_update,
+    pandora_update,
+    pandora_exit,
+};

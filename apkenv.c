@@ -31,6 +31,7 @@
 #include <dlfcn.h>
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <dirent.h>
 #include <unistd.h>
@@ -38,8 +39,6 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-
-#include <SDL/SDL.h>
 
 #include "jni/jnienv.h"
 #include "jni/shlib.h"
@@ -52,58 +51,10 @@
 #include "compat/hooks.h"
 
 #include "apkenv.h"
-#include "platform.h"
 
 /* Global application state */
 struct GlobalState global;
 struct ModuleHacks global_module_hacks;
-
-static unsigned char keymap[] = {
-    /* 0-9, A-Z filled in later */
-    [SDLK_UNKNOWN]  = AKEYCODE_UNKNOWN,
-    [SDLK_UP]       = AKEYCODE_DPAD_UP,
-    [SDLK_DOWN]     = AKEYCODE_DPAD_DOWN,
-    [SDLK_RIGHT]    = AKEYCODE_DPAD_RIGHT,
-    [SDLK_LEFT]     = AKEYCODE_DPAD_LEFT,
-    [SDLK_COMMA]    = AKEYCODE_COMMA,
-    [SDLK_PERIOD]   = AKEYCODE_PERIOD,
-    [SDLK_RALT]     = AKEYCODE_ALT_RIGHT,
-    [SDLK_LSHIFT]   = AKEYCODE_SHIFT_LEFT,
-    [SDLK_TAB]      = AKEYCODE_TAB,
-    [SDLK_SPACE]    = AKEYCODE_SPACE,
-    [SDLK_RETURN]   = AKEYCODE_ENTER,
-    [SDLK_DELETE]   = AKEYCODE_DEL,
-    [SDLK_MINUS]    = AKEYCODE_MINUS,
-    [SDLK_EQUALS]   = AKEYCODE_EQUALS,
-    [SDLK_LEFTBRACKET]  = AKEYCODE_LEFT_BRACKET,
-    [SDLK_RIGHTBRACKET] = AKEYCODE_RIGHT_BRACKET,
-    [SDLK_BACKSLASH]    = AKEYCODE_BACKSLASH,
-    [SDLK_SEMICOLON]    = AKEYCODE_SEMICOLON,
-    [SDLK_SLASH]    = AKEYCODE_SLASH,
-    [SDLK_AT]       = AKEYCODE_AT,
-    [SDLK_PLUS]     = AKEYCODE_PLUS,
-    [SDLK_BACKSPACE]= AKEYCODE_BACK,
-    [SDLK_F1]       = AKEYCODE_MENU,
-    [SDLK_F2]       = AKEYCODE_HOME,
-    [SDLK_F3]       = AKEYCODE_SOFT_LEFT,
-    [SDLK_F4]       = AKEYCODE_SOFT_RIGHT,
-#ifndef PANDORA
-    [SDLK_LALT]     = AKEYCODE_ALT_LEFT,
-    [SDLK_RSHIFT]   = AKEYCODE_SHIFT_RIGHT,
-    [SDLK_PAGEUP]   = AKEYCODE_PAGE_UP,
-    [SDLK_PAGEDOWN] = AKEYCODE_PAGE_DOWN,
-#else
-    [SDLK_LALT]     = AKEYCODE_BUTTON_START,
-    [SDLK_LCTRL]    = AKEYCODE_BUTTON_SELECT,
-    [SDLK_PAGEUP]   = AKEYCODE_BUTTON_Y,
-    [SDLK_PAGEDOWN] = AKEYCODE_BUTTON_X,
-    [SDLK_HOME]     = AKEYCODE_BUTTON_A,
-    [SDLK_END]      = AKEYCODE_BUTTON_B,
-    [SDLK_RSHIFT]   = AKEYCODE_BUTTON_L1,
-    [SDLK_RCTRL]    = AKEYCODE_BUTTON_R1,
-#endif
-    [SDLK_LAST]     = AKEYCODE_UNKNOWN,
-};
 
 static void *
 lookup_symbol_impl(const char *method)
@@ -275,7 +226,7 @@ install_overrides(struct SupportModule *module)
 static void
 usage()
 {
-    if (platform_getinstalldirectory()==0) {
+    if (global.platform->get_path(PLATFORM_PATH_INSTALL_DIRECTORY) != NULL) {
         printf("Usage: %s <file.apk>\n",global.apkenv_executable);
     } else {
         printf("Usage: %s [--install] <file.apk>\n",global.apkenv_executable);
@@ -296,7 +247,10 @@ apk_basename(const char *filename)
 static void
 operation(const char *operation, const char *filename)
 {
-    if (strcmp(operation, "--install") == 0 && platform_getinstalldirectory()!=0) {
+    const char *install_directory = global.platform->get_path(PLATFORM_PATH_INSTALL_DIRECTORY);
+    const char *data_directory = global.platform->get_path(PLATFORM_PATH_DATA_DIRECTORY);
+
+    if (strcmp(operation, "--install") == 0 && install_directory != NULL) {
         char apkenv_absolute[PATH_MAX];
         char apk_absolute[PATH_MAX];
 
@@ -307,7 +261,7 @@ operation(const char *operation, const char *filename)
         const char *app_name = apk_basename(filename);
 
         char icon_filename[PATH_MAX];
-        sprintf(icon_filename, "%s%s.png", platform_getdatadirectory(), app_name);
+        sprintf(icon_filename, "%s%s.png", data_directory, app_name);
 
         struct stat st;
         if (stat(icon_filename, &st) != 0) {
@@ -341,9 +295,8 @@ operation(const char *operation, const char *filename)
         }
 
         char desktop_filename[PATH_MAX];
-        recursive_mkdir(platform_getinstalldirectory());
-        sprintf(desktop_filename, "%s/%s.desktop", platform_getinstalldirectory(),
-                app_name);
+        recursive_mkdir(install_directory);
+        sprintf(desktop_filename, "%s/%s.desktop", install_directory, app_name);
 
         FILE *desktop = fopen(desktop_filename, "w");
         assert(desktop != NULL);
@@ -368,27 +321,13 @@ operation(const char *operation, const char *filename)
 static int
 system_init(int gles_version)
 {
-    int i, j;
-
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
-        printf("SDL Init failed.\n");
-        return 0;
-    }
-
-    if ( !platform_init(gles_version) ) {
-        printf("platform_init failed.\n");
+    if (!(global.platform->init(gles_version))) {
+        printf("Platform initialization failed.\n");
         return 0;
     }
 
     gles_extensions_init();
     gles2_init();
-
-    SDL_ShowCursor(0);
-
-    for (i = SDLK_0, j = AKEYCODE_0; i <= SDLK_9; i++, j++)
-        keymap[i] = j;
-    for (i = SDLK_a, j = AKEYCODE_A; i <= SDLK_z; i++, j++)
-        keymap[i] = j;
 
     /* SDL loads some libs.. */
     notify_gdb_of_libraries();
@@ -396,95 +335,18 @@ system_init(int gles_version)
     return 1;
 }
 
-static int
-system_update(void)
-{
-    return platform_update();
-}
-
-static void
-system_exit()
-{
-    platform_exit();
-}
-
-/* returns 1 on quit key/event, 0 otherwise */
-static int
-input_update(struct SupportModule *module)
-{
-    static int emulate_multitouch = 0;
-    const int emulate_finger_id = 2;
-
-    SDL_Event e;
-    while (SDL_PollEvent(&e)) {
-        if (e.type == SDL_KEYDOWN) {
-#ifdef PANDORA
-            if (e.key.keysym.sym==SDLK_ESCAPE) {
-                return 1;
-            }
-            else if (e.key.keysym.sym==SDLK_RSHIFT) {
-                //emulate_multitouch = 1;
-                module->input(module,ACTION_DOWN, platform_getscreenwidth() / 2 - 1, platform_getscreenheight() / 2, emulate_finger_id);
-            }
-            else
-#endif
-            module->key_input(module, ACTION_DOWN, keymap[e.key.keysym.sym], e.key.keysym.unicode);
-        }
-        else if (e.type == SDL_KEYUP) {
-#ifdef PANDORA
-            if (e.key.keysym.sym==SDLK_RSHIFT) {
-                //emulate_multitouch = 0;
-                module->input(module,ACTION_UP, platform_getscreenwidth() / 2 - 1, platform_getscreenheight() / 2, emulate_finger_id);
-            }
-            else
-#endif
-            module->key_input(module, ACTION_UP, keymap[e.key.keysym.sym], e.key.keysym.unicode);
-        } else if (e.type == SDL_MOUSEBUTTONDOWN) {
-            module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
-            if (emulate_multitouch) {
-                module->input(module,ACTION_DOWN, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
-            }
-        } else if (e.type == SDL_MOUSEBUTTONUP) {
-            module->input(module, ACTION_UP, e.button.x, e.button.y, e.button.which);
-            if (emulate_multitouch) {
-                module->input(module,ACTION_UP, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
-            }
-        } else if (e.type == SDL_MOUSEMOTION) {
-            module->input(module, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
-            if (emulate_multitouch) {
-                module->input(module,ACTION_MOVE, platform_getscreenwidth()-e.button.x, platform_getscreenheight()-e.button.y,emulate_finger_id);
-            }
-        } else if (e.type == SDL_QUIT) {
-            return 1;
-        } else if (e.type == SDL_ACTIVEEVENT) {
-            if (e.active.state == SDL_APPACTIVE && e.active.gain == 0) {
-                module->pause(module);
-                while (1) {
-                    SDL_WaitEvent(&e);
-                    if (e.type == SDL_ACTIVEEVENT) {
-                        if (e.active.state == SDL_APPACTIVE &&
-                                e.active.gain == 1) {
-                            break;
-                        }
-                    } else if (e.type == SDL_QUIT) {
-                        return 1;
-                    }
-                }
-                module->resume(module);
-            }
-        }
-    }
-
-    return 0;
-}
+/* Provided by one of the support modules in "platform/" */
+extern struct PlatformSupport platform_support;
 
 int main(int argc, char **argv)
 {
+    global.platform = &platform_support;
+
     debug_init();
 
     char **tmp;
 
-    const char *main_data_dir = platform_getdatadirectory();
+    const char *main_data_dir = global.platform->get_path(PLATFORM_PATH_DATA_DIRECTORY);
     recursive_mkdir(main_data_dir);
 
     global.apkenv_executable = argv[0];
@@ -516,9 +378,6 @@ int main(int argc, char **argv)
     global.recursive_mkdir = recursive_mkdir;
     global.lookup_resource = lookup_resource_impl;
     global.module_hacks = &global_module_hacks;
-
-    global.module_hacks->system_update = system_update;
-    global.module_hacks->input_update = input_update;
 
     hooks_init();
     jnienv_init(&global);
@@ -587,7 +446,7 @@ int main(int argc, char **argv)
     global.libraries = head;
 
     load_modules(".");
-    load_modules(platform_getmoduledirectory());
+    load_modules(global.platform->get_path(PLATFORM_PATH_MODULE_DIRECTORY));
     notify_gdb_of_libraries();
 
     if (global.support_modules == NULL) {
@@ -667,11 +526,11 @@ int main(int argc, char **argv)
 
     apk_read_resources(global.apklib_handle, &global.resource_strings);
 
-    module->init(module, platform_getscreenwidth(), platform_getscreenheight(), data_directory);
+    int width, height;
+    global.platform->get_size(&width, &height);
+    module->init(module, width, height, data_directory);
 
     notify_gdb_of_libraries();
-
-    if(global.module_hacks->handle_update) goto finish;
 
     while (1) {
 
@@ -679,12 +538,12 @@ int main(int argc, char **argv)
             break;
         }
 
-        if (input_update(module)) {
+        if (global.platform->input_update(module)) {
             break;
         }
 
         module->update(module);
-        system_update();
+        global.platform->update();
     }
 
 finish:
@@ -707,7 +566,7 @@ finish:
         munmap((void *)global.apk_in_mem, global.apk_size);
     close(global.apk_fd);
     apk_close(global.apklib_handle);
-    system_exit();
+    global.platform->exit();
 
     return 0;
 }

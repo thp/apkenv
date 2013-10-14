@@ -34,10 +34,10 @@
 #include "jni/jni.h"
 
 #define APKENV_NAME "apkenv"
-#define APKENV_VERSION "42.3.17"
+#define APKENV_VERSION "42.4.0"
 #define APKENV_WEBSITE "http://thp.io/2012/apkenv/"
 #define APKENV_HEADLINE APKENV_NAME " " APKENV_VERSION " - " APKENV_WEBSITE
-#define APKENV_COPYRIGHT "Copyright (c) 2012 Thomas Perl <m@thp.io>"
+#define APKENV_COPYRIGHT "Copyright (c) 2012, 2013 Thomas Perl <m@thp.io>"
 
 struct GlobalState;
 struct SupportModule;
@@ -47,10 +47,6 @@ struct ModuleHacks {
     int gles_landscape_to_portrait;
     int gles_downscale_images;
     int gles_no_readpixels;
-
-    int handle_update;
-    int (*system_update)(void);
-    int (*input_update)(struct SupportModule *module);
 };
 
 struct SupportModule {
@@ -91,11 +87,41 @@ struct JniLibrary {
     char **method_table;
 };
 
+enum PlatformPath {
+    /* Path to where .apk files should be installed, or NULL if unsupported */
+    PLATFORM_PATH_INSTALL_DIRECTORY = 1,
+    /* Path to where application data should be stored */
+    PLATFORM_PATH_DATA_DIRECTORY = 2,
+    /* Path from where support modules should be loaded */
+    PLATFORM_PATH_MODULE_DIRECTORY = 3,
+};
+
+struct PlatformSupport {
+    /* Initialize the video mode, return nonzero on success, zero on error */
+    int (*init)(int gles_version);
+
+    /* Get a device path (see enum PlatformPath), don't free() the result */
+    const char *(*get_path)(enum PlatformPath which);
+
+    /* Get the size of the device screen */
+    void (*get_size)(int *width, int *height);
+
+    /* Process input events and forward to "module", return nonzero to exit */
+    int (*input_update)(struct SupportModule *module);
+
+    /* Called once per rendering frame to swap buffers, etc... */
+    void (*update)();
+
+    /* Called when apkenv shuts down (for platform-specific cleanups) */
+    void (*exit)();
+};
 
 struct GlobalState {
     const char *apkenv_executable;
     const char *apkenv_headline;
     const char *apkenv_copyright;
+
+    struct PlatformSupport *platform;
 
     struct JNINativeInterface fake_env;
     JNIEnv env;
