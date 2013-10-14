@@ -43,7 +43,6 @@
 #include "jni/jnienv.h"
 #include "jni/shlib.h"
 #include "apklib/apklib.h"
-#include "apklib/keycodes.h"
 #include "imagelib/imagelib_priv.h"
 #include "debug/debug.h"
 #include "compat/gles_wrappers.h"

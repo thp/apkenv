@@ -29,6 +29,7 @@
 
 
 #include "../apkenv.h"
+#include "../compat/android_keycodes.h"
 
 #include <GLES/gl.h>
 #include <EGL/egl.h>

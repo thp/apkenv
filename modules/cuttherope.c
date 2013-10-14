@@ -32,7 +32,7 @@
  * Cut the Rope Lite - 0.1 crow_riot based on the works of thp
  **/
 
-#include "../apklib/keycodes.h"
+#include "../compat/android_keycodes.h"
 #include <linux/limits.h>
 #include <sys/stat.h>
 #include <unistd.h>
