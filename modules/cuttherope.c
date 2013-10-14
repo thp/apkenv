@@ -217,9 +217,8 @@ cuttherope_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 
             MODULE_DEBUG_PRINTF("   data=%s size=%d\n", arg->data, array->length);
 
-	    // Poll for events here to avoid "not responding" messages
-            SDL_Event e;
-            while (SDL_PollEvent(&e));
+            // Process input to prevent "not responding" message
+            cuttherope_priv.global->platform->input_update(cuttherope_priv.global->active_module);
 
             return array;
         } else {
