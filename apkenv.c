@@ -45,6 +45,7 @@
 #include "apklib/apklib.h"
 #include "imagelib/imagelib_priv.h"
 #include "debug/debug.h"
+#include "debug/wrappers.h"
 #include "compat/gles_wrappers.h"
 #include "compat/gles2_wrappers.h"
 #include "linker/linker.h"
@@ -227,10 +228,22 @@ static void
 usage()
 {
     if (global.platform->get_path(PLATFORM_PATH_INSTALL_DIRECTORY) != NULL) {
-        printf("Usage: %s <file.apk>\n",global.apkenv_executable);
+        printf("Usage: %s [options] <file.apk>\n",global.apkenv_executable);
+        printf("Available options are:\n");
     } else {
-        printf("Usage: %s [--install] <file.apk>\n",global.apkenv_executable);
+        printf("Usage: %s [options] <file.apk>\n",global.apkenv_executable);
+        printf("Available options are:\n");
+        printf("\t--install\tinstall the apk and set up desktop entries.\n");
     }
+    printf("\t--enable-trace-latehooked|-l\t\tEnable tracing of late hooked functions.\n");
+    printf("\t--enable-trace_unhooked|-u\t\tEnable tracing of unhooked functions.\n");
+    printf("\t--enable-trace-dynhook|-d\t\tEnable tracing of dynamically loaded functions.\n");
+    printf("\t--enable-trace-arm-injection|-ai\tEnable tracing of unhooked internal ARM functions. (EXPERIMENTAL)\n");
+    printf("\t--enable-trace-thumb-injection|-ti\tEnable tracing of unhooked internal THUMB functions. (HIGHLY EXPERIMENTAL)\n");
+    printf("\t--trace-function|-tf <function>\t\tTrace the specified function.\n");
+    printf("\t--trace-all|-ta\t\t\t\tTrace all functions.\n");
+    printf("\t--help|-h\t\t\t\tPrint this help.\n");
+    
     exit(1);
 }
 
@@ -311,10 +324,7 @@ operation(const char *operation, const char *filename)
                 app_name, apkenv_absolute, apk_absolute, icon_filename);
         fclose(desktop);
         printf("Installed: %s\n", desktop_filename);
-        exit(0);
     }
-
-    usage();
 }
 
 
@@ -354,20 +364,95 @@ int main(int argc, char **argv)
     global.apkenv_copyright = APKENV_COPYRIGHT;
 
     printf("%s\n%s\n\n", global.apkenv_headline, global.apkenv_copyright);
-
-    switch (argc) {
-        case 2:
-            /* One argument - the .apk (continue below) */
-            break;
-        case 3:
-            /* Two arguments - operation + the apk */
-            operation(argv[1], argv[2]);
-            break;
-        default:
-            /* Wrong number of arguments */
-            usage();
+   
+    global.trace_all = 0;
+    global.trace_latehooked = 0;
+    global.trace_unhooked = 0;
+    global.trace_dynhooked = 0;
+    global.trace_arm_injection = 0;
+    global.trace_thumb_injection = 0; 
+    global.functions_to_trace = NULL;
+    
+    if(argc <= 1) {
+        printf("ERROR: too few arguments\n");
+        usage();
+    }
+    
+    if(argc >= 2) {
+        int i;
+        // parse argv, last argument has to be the apk
+        for(i=1;i<argc;i++) {
+            if(0 == strcmp(argv[i], "--install")) {
+                i++;
+                if(i >= argc) {
+                    printf("missing argument to --install\n");
+                    return -1;
+                }
+                operation(argv[i-1],argv[i]);
+            }
+            else if(0 == strcmp(argv[i], "--help")
+                 || 0 == strcmp(argv[i], "-h")) {
+                usage();
+            }
+            else if(0 == strcmp(argv[i], "--enable-trace-latehooked")
+                 || 0 == strcmp(argv[i], "-l")) {
+                global.trace_latehooked = 1;
+            }
+            else if(0 == strcmp(argv[i], "--enable-trace-unhooked")
+                 || 0 == strcmp(argv[i], "-u")) {
+                global.trace_unhooked = 1;
+            }
+            else if(0 == strcmp(argv[i], "--enable-trace-dynhooked")
+                 || 0 == strcmp(argv[i], "-d")) {
+                global.trace_dynhooked = 1;
+            }
+            else if(0 == strcmp(argv[i], "--enable-trace-arm-injection")
+                 || 0 == strcmp(argv[i], "-ai")) {
+                global.trace_arm_injection = 1;
+            }
+            else if(0 == strcmp(argv[i], "--enable-trace-thumb-injection")
+                 || 0 == strcmp(argv[i], "-ti")) {
+                global.trace_thumb_injection = 1;
+            }
+            else if(0 == strcmp(argv[i], "--trace-all")
+                 || 0 == strcmp(argv[i], "-ta")) {
+                global.trace_all = 1;
+            }
+            else if(0 == strcmp(argv[i], "--trace-function")
+                 || 0 == strcmp(argv[i], "-tf")) {
+                i++;
+                if(i >= argc) {
+                    printf("ERROR: missing argument to %s", argv[i-1]);
+                    usage();
+                }
+                if(NULL == global.functions_to_trace) {
+                    global.functions_to_trace = (struct trace_list*)malloc(sizeof(struct trace_list));
+                    global.functions_to_trace->name = argv[i];
+                    global.functions_to_trace->next = NULL;
+                }
+                else {
+                    struct trace_list *it = global.functions_to_trace;
+                    struct trace_list *last = NULL;
+                    while(NULL != it) {
+                        last = it;
+                        it = it->next;
+                    }
+                    last->next = (struct trace_list*)malloc(sizeof(struct trace_list));
+                    last->next->name = argv[i];
+                    last->next->next = NULL;
+                }
+            }
+        }
     }
 
+    if((global.trace_all || NULL != global.functions_to_trace)
+    && !global.trace_latehooked && !global.trace_unhooked
+    && !global.trace_dynhooked && !global.trace_arm_injection
+    && !global.trace_thumb_injection) {
+        printf("WARNING: specified --trace-all or --trace-function but no type of tracing is enabled\n");
+        usage();
+    }
+    
     memset(&global_module_hacks,0,sizeof(global_module_hacks));
 
     global.lookup_symbol = lookup_symbol_impl;
@@ -569,6 +654,17 @@ finish:
     apk_close(global.apklib_handle);
     global.platform->exit();
 
+    release_all_wrappers();
+    if(NULL != global.functions_to_trace) {
+        struct trace_list *it = global.functions_to_trace;
+        struct trace_list *next;
+        while(it != NULL) {
+            next = it->next;
+            free(it);
+            it = next;
+        }
+    }
+    
     return 0;
 }
 

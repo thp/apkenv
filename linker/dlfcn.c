@@ -25,6 +25,9 @@
 /* for get_hooked_symbol */
 #include "../compat/hooks.h"
 
+/* for create_wrapper */
+#include "../debug/wrappers.h"
+
 #include "linker_debug.h"
 
 #ifdef APKENV_DEBUG
@@ -148,7 +151,7 @@ void *android_dlsym(void *handle, const char *symbol)
         if(likely((bind == STB_GLOBAL) && (sym->st_shndx != 0))) {
             unsigned ret = sym->st_value + found->base;
             pthread_mutex_unlock(&dl_lock);
-            return (void*)ret;
+            return create_wrapper((char*)symbol, (void*)ret, WRAPPER_DYNHOOK);
         }
 
         set_dlerror(DL_ERR_SYMBOL_NOT_GLOBAL);

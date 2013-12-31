@@ -43,6 +43,8 @@
 #include "gles2_wrappers.h"
 #include "pthread_wrappers.h"
 
+#include "../debug/wrappers.h"
+
 extern struct GlobalState global;
 
 char my___sF[SIZEOF_SF * 3];
@@ -106,7 +108,7 @@ hook_cmp(const void *p1, const void *p2)
 
 #define HOOK_SIZE (sizeof(struct _hook))
 
-void *get_hooked_symbol(const char *sym)
+void *get_hooked_symbol(const char *sym, int die_if_pthread)
 {
     struct _hook target;
     target.name = sym;
@@ -120,7 +122,7 @@ void *get_hooked_symbol(const char *sym)
 
     if (strstr(sym, "pthread") != NULL) {
         printf("Unimplemented: %s\n", sym);
-        exit(0);
+        if(die_if_pthread) exit(0);
     }
 
     return NULL;
@@ -154,7 +156,7 @@ void *get_hooked_symbol_dlfcn(void *handle, const char *sym)
 #endif
     }
 
-    return get_hooked_symbol(sym);
+    return get_hooked_symbol(sym, 1);
 }
 
 int register_hooks(const struct _hook *new_hooks, size_t count)

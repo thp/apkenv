@@ -11,7 +11,7 @@ void *
 my_eglGetProcAddress(const char *procname)
 {
     WRAPPERS_DEBUG_PRINTF("eglGetProcAddress(%s)\n", procname);
-    void *sym = get_hooked_symbol(procname);
+    void *sym = get_hooked_symbol(procname, 1);
     if (sym == NULL)
         printf("eglGetProcAddress: unimplemented: %s\n", procname);
     return sym;

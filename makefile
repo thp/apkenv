@@ -20,7 +20,24 @@ IMAGELIB_SOURCES=$(wildcard imagelib/*.c)
 # segfault catch
 DEBUG_SOURCES=$(wildcard debug/*.c)
 
+# debug wrappers
+WRAPPER_INJECT_ARM_SOURCE=debug/wrappers/wrapper_ARM.c
+WRAPPER_INJECT_THUMB_SOURCE=debug/wrappers/wrapper_THUMB.c
+WRAPPER_INJECT_GENERIC_SOURCE=debug/wrappers/wrapper_GENERIC.c
+WRAPPER_INJECT_SOURCES=$(WRAPPER_INJECT_ARM_SOURCE) $(WRAPPER_INJECT_THUMB_SOURCE) $(WRAPPER_INJECT_GENERIC_SOURCE)
+WRAPPER_INJECT_TARGETS=$(patsubst %.c,%.instructions,$(WRAPPER_INJECT_SOURCES))
+
 TARGET = apkenv
+
+# we need objdump for getting a disassembly of the debug-wrappers
+OBJDUMP ?= objdump
+
+# enable latehooks
+LATEHOOKS ?= 1
+
+ifeq ($(LATEHOOKS),1)
+	CFLAGS += -DLATEHOOKS
+endif
 
 DESTDIR ?= /
 PREFIX ?= /opt/$(TARGET)/
@@ -33,6 +50,7 @@ SOURCES += $(APKLIB_SOURCES)
 SOURCES += $(JNIENV_SOURCES)
 SOURCES += $(IMAGELIB_SOURCES)
 SOURCES += $(DEBUG_SOURCES)
+SOURCES += $(WRAPPER_SOURCES)
 
 PANDORA ?= 0
 ifeq ($(PANDORA),1)
@@ -70,7 +88,7 @@ else
     CFLAGS += -O2 -DLINKER_DEBUG=0
 endif
 
-all: $(TARGET) $(MODULES)
+all: $(WRAPPER_INJECT_TARGETS) $(TARGET) $(MODULES)
 
 %.o: %.c
 	@echo -e "\tCC\t$@"
@@ -87,6 +105,30 @@ $(TARGET): $(OBJS)
 strip:
 	@echo -e "\tSTRIP"
 	@strip $(TARGET) $(MODULES)
+
+$(patsubst %.c,%.instructions,$(WRAPPER_INJECT_ARM_SOURCE)): $(WRAPPER_INJECT_ARM_SOURCE)
+	@echo -e "\tCC_W\t$<"
+	@$(CC) -marm -Wno-unused-function -O0 -c -o $(patsubst %.c,%.o,$<) $<
+	@echo -e "\tDEC\t$(patsubst %.c,%.o,$<)"
+	@$(OBJDUMP) -d $(patsubst %.c,%.o,$<) | ./tools/extract_wrapper_code.sh | ./tools/to_code_arm.sh > $(patsubst %.c,%.instructions,$<)
+	@echo -e "\tSIZE\t$(patsubst %.c,%.instructions,$<)"
+	@wc -l $(patsubst %.c,%.instructions,$<) | awk '{print $$1}' > $(patsubst %.c,%.size,$<)
+
+$(patsubst %.c,%.instructions,$(WRAPPER_INJECT_THUMB_SOURCE)): $(WRAPPER_INJECT_THUMB_SOURCE)
+	@echo -e "\tCC_W\t$<"
+	@$(CC) -mthumb -Wno-unused-function -O0 -c -o $(patsubst %.c,%.o,$<) $<
+	@echo -e "\tDEC\t$(patsubst %.c,%.o,$<)"
+	@$(OBJDUMP) -d $(patsubst %.c,%.o,$<) | ./tools/extract_wrapper_code.sh | ./tools/to_code_thumb.sh > $(patsubst %.c,%.instructions,$<)
+	@echo -e "\tSIZE\t$(patsubst %.c,%.instructions,$<)"
+	@wc -l $(patsubst %.c,%.instructions,$<) | awk '{print $$1}' > $(patsubst %.c,%.size,$<)
+
+$(patsubst %.c,%.instructions,$(WRAPPER_INJECT_GENERIC_SOURCE)): $(WRAPPER_INJECT_GENERIC_SOURCE)
+	@echo -e "\tCC_W\t$<"
+	@$(CC) -marm -Wno-unused-function -O0 -c -o $(patsubst %.c,%.o,$<) $<
+	@echo -e "\tDEC\t$(patsubst %.c,%.o,$<)"
+	@$(OBJDUMP) -d $(patsubst %.c,%.o,$<) | ./tools/extract_wrapper_code.sh | ./tools/to_code_arm.sh > $(patsubst %.c,%.instructions,$<)
+	@echo -e "\tSIZE\t$(patsubst %.c,%.instructions,$<)"
+	@wc -l $(patsubst %.c,%.instructions,$<) | awk '{print $$1}' > $(patsubst %.c,%.size,$<)
 
 install: $(TARGET) $(MODULES)
 	@echo -e "\tMKDIR"
@@ -112,8 +154,7 @@ endif
 
 clean:
 	@echo -e "\tCLEAN"
-	@rm -rf $(TARGET) $(OBJS) $(MODULES)
-
+	@rm -rf $(TARGET) $(OBJS) $(MODULES) $(WRAPPER_INJECT_TARGETS) $(patsubst %.c,%.o, $(WRAPPER_INJECT_SOURCES)) $(patsubst %.c,%.size, $(WRAPPER_INJECT_SOURCES))
 
 .DEFAULT: all
 .PHONY: strip install clean

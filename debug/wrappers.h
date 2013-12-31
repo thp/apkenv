@@ -1,10 +1,8 @@
-#ifndef COMPAT_HOOKS_H
-#define COMPAT_HOOKS_H
 
+#ifndef __WRAPPERS_H__
+#define __WRAPPERS_H__
 /**
- * apkenv
- * Copyright (c) 2012, Thomas Perl <m@thp.io>
- * Based on code from libhybris: Copyright (c) 2012 Carsten Munk
+ * Copyright (c) 2013, Franz-Josef Haider <f_haider@gmx.at>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,24 +29,14 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **/
 
-#include <stddef.h>
+#define WRAPPER_LATEHOOK            0
+#define WRAPPER_UNHOOKED            1
+#define WRAPPER_DYNHOOK             2
+#define WRAPPER_ARM_INJECTION       3
+#define WRAPPER_THUMB_INJECTION     4
 
-struct _hook {
-  const char *name;
-  void *func;
-};
+void *create_wrapper(char *symbol, void *function, int wrapper_type);
+void release_all_wrappers();
 
-void *get_hooked_symbol(const char *sym, int die_if_pthread);
-void *get_hooked_symbol_dlfcn(void *handle, const char *sym);
-void *get_builtin_lib_handle(const char *libname);
-int is_builtin_lib_handle(void *handle);
-int register_hooks(const struct _hook *hooks, size_t count);
-int is_lib_optional(const char *name);
-void hooks_init(void);
+#endif
 
-
-#define SIZEOF_SF 0x54 // taken from NDK
-
-extern char my___sF[SIZEOF_SF * 3];
-
-#endif /* COMPAT_HOOKS_H */
