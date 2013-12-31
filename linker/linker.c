@@ -55,6 +55,8 @@
 
 /* for get_hooked_symbol */
 #include "../compat/hooks.h"
+/* for create_wrapper */
+#include "../debug/wrappers.h"
 
 #include "linker.h"
 #include "linker_debug.h"
@@ -1364,7 +1366,7 @@ static int reloc_library(soinfo *si, Elf32_Rel *rel, unsigned count)
         if(sym != 0) {
             sym_name = (char *)(strtab + symtab[sym].st_name);
             sym_addr = 0;
-            if ((sym_addr = (unsigned)get_hooked_symbol(sym_name)) != 0) {
+            if ((sym_addr = (unsigned)get_hooked_symbol(sym_name, 1)) != 0) {
                LINKER_DEBUG_PRINTF("%s hooked symbol %s to %x\n", si->name, sym_name, sym_addr);
             }
             else
@@ -1442,6 +1444,10 @@ static int reloc_library(soinfo *si, Elf32_Rel *rel, unsigned count)
 #endif
                 sym_addr = (unsigned)(s->st_value + base);
                 LINKER_DEBUG_PRINTF("%s symbol (from %s) %s to %x\n", si->name, last_library_used, sym_name, sym_addr);
+                if(ELF32_ST_TYPE(s->st_info) == STT_FUNC) {
+                    sym_addr = (unsigned)create_wrapper(sym_name, (void*)sym_addr, WRAPPER_UNHOOKED);
+                }
+                    
 	    }
             COUNT_RELOC(RELOC_SYMBOL);
         } else {
@@ -1744,6 +1750,91 @@ static int nullify_closed_stdio (void)
     return return_value;
 }
 
+void wrap_function(void *sym_addr, char *sym_name, int is_thumb, soinfo *si)
+{
+    void *hook = NULL;
+#ifdef LATEHOOKS
+    if((hook = get_hooked_symbol(sym_name, 0)) != NULL)
+    {
+        // if we have a hook redirect the call to that by overwriting
+        // the first 2 instruction of the function
+        // this should work in any case unless the hook is wrong
+        // or the function shorter than 64-bit (2 32-Bit instructions)
+        if(!is_thumb)
+        {
+            DEBUG("HOOKING INTERNAL (ARM) FUNCTION %s@%x (in %s) TO: %x\n",sym_name,sym_addr,si->name,hook);
+            ((int32_t*)sym_addr)[0] = 0xe51ff004; // ldr pc, [pc, -#4] (load the hooks address into pc)
+            ((int32_t*)sym_addr)[1] = (uint32_t)create_wrapper(sym_name, hook, WRAPPER_LATEHOOK);
+            
+            __clear_cache((int32_t*)sym_addr, (int32_t*)sym_addr + 2);
+        }
+        else
+        {
+            DEBUG("HOOKING INTERNAL (THUMB) FUNCTION %s@%x (in %s) TO: %x\n",sym_name,sym_addr,si->name,hook);
+            sym_addr = (void*)((char*)sym_addr - 1); // get actual sym_addr
+            
+            ((int16_t*)sym_addr)[0] = 0xf8df;
+            ((int16_t*)sym_addr)[1] = 0xf000; // ldr pc, [pc] (load the hooks address into pc)
+            
+            void *wrp = create_wrapper(sym_name, hook, WRAPPER_LATEHOOK);
+            
+            // store the hooks address
+            ((int16_t*)sym_addr)[2] = (uint32_t)wrp & 0x0000FFFF;
+            ((int16_t*)sym_addr)[3] = (uint32_t)wrp >> 16;
+            
+            __clear_cache((int16_t*)sym_addr, (int16_t*)sym_addr + 4);
+        }
+    }
+    else
+#endif /* LATEHOOKS */
+    // TODO: this will fail if the first 2 instructions do something pc related
+    // (this DOES NOT happen very often)
+    if(sym_addr && !is_thumb)
+    {
+        DEBUG("CREATING ARM WRAPPER FOR: %s@%x (in %s)\n", sym_name, sym_addr, si->name);
+        
+        create_wrapper(sym_name, sym_addr, WRAPPER_ARM_INJECTION);
+    }
+    // TODO: this will fail if the first 2-5 instructions do something pc related
+    // (this DOES happen very often)
+    else if(sym_addr && is_thumb)
+    {
+        DEBUG("CREATING THUMB WRAPPER FOR: %s@%x (in %s)\n",sym_name,sym_addr,si->name);
+        
+        create_wrapper(sym_name, sym_addr, WRAPPER_THUMB_INJECTION);
+    }
+}
+
+
+/* Franz-Josef Haider create_latehook_wrappers */
+void create_latehook_wrappers(soinfo *si)
+{
+    Elf32_Sym *s;
+    
+    unsigned int n = 0;
+    for(n=0;n<si->nchain;n++)
+    {
+        s = si->symtab + n;
+        switch(ELF32_ST_BIND(s->st_info))
+        {
+            case STB_GLOBAL:
+            case STB_WEAK:
+                if(s->st_shndx == 0) continue;
+                
+                if(ELF32_ST_TYPE(s->st_info) == STT_FUNC) // only wrap functions
+                {
+                    char *sym_name = (char*)(si->strtab + s->st_name);
+                    void *sym_addr = (void*)(si->base + s->st_value);
+
+                    int is_thumb = ((int32_t)sym_addr) & 0x00000001;
+                    
+                    wrap_function(sym_addr,sym_name,is_thumb,si);
+               }
+        }
+    }
+}
+
+
 static int link_image(soinfo *si, unsigned wr_offset)
 {
     unsigned *d;
@@ -2003,6 +2094,8 @@ static int link_image(soinfo *si, unsigned wr_offset)
             goto fail;
     }
 
+    create_latehook_wrappers(si);
+    
     si->flags |= FLAG_LINKED;
     DEBUG("[ %5d finished linking %s ]\n", pid, si->name);
 

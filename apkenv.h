@@ -117,6 +117,11 @@ struct PlatformSupport {
     void (*exit)();
 };
 
+struct trace_list {
+    char *name;
+    struct trace_list *next;
+};
+
 struct GlobalState {
     const char *apkenv_executable;
     const char *apkenv_headline;
@@ -142,6 +147,18 @@ struct GlobalState {
     struct ModuleHacks *module_hacks;
 
     struct ResourceStrings resource_strings;
+
+    /* tracing/debugging */
+    int trace_latehooked;
+    int trace_unhooked;
+    int trace_dynhooked;
+    int trace_arm_injection;
+    int trace_thumb_injection;
+    struct trace_list *functions_to_trace;
+    int trace_all;
+    
+    int use_dvm;
+    char *android_path;
 
     int loader_seen_glesv1;
     int loader_seen_glesv2;

@@ -45,6 +45,7 @@
 #include "apklib/apklib.h"
 #include "imagelib/imagelib_priv.h"
 #include "debug/debug.h"
+#include "debug/wrappers.h"
 #include "compat/gles_wrappers.h"
 #include "compat/gles2_wrappers.h"
 #include "linker/linker.h"
@@ -52,6 +53,8 @@
 
 #include "apkenv.h"
 
+extern void *android_dlopen(const char *filename, int flag);
+extern int android_dlclose(void *handle);
 /* Global application state */
 struct GlobalState global;
 struct ModuleHacks global_module_hacks;
@@ -227,10 +230,23 @@ static void
 usage()
 {
     if (global.platform->get_path(PLATFORM_PATH_INSTALL_DIRECTORY) != NULL) {
-        printf("Usage: %s <file.apk>\n",global.apkenv_executable);
+        printf("Usage: %s [options] <file.apk>\n",global.apkenv_executable);
+        printf("Available options are:\n");
     } else {
-        printf("Usage: %s [--install] <file.apk>\n",global.apkenv_executable);
+        printf("Usage: %s [options] <file.apk>\n",global.apkenv_executable);
+        printf("Available options are:\n");
+        printf("\t--install\tinstall the apk and set up desktop entries.\n");
     }
+    printf("\t--enable-trace-latehooked|-l\t\tEnable tracing of late hooked functions.\n");
+    printf("\t--enable-trace_unhooked|-u\t\tEnable tracing of unhooked functions.\n");
+    printf("\t--enable-trace-dynhook|-d\t\tEnable tracing of dynamically loaded functions.\n");
+    printf("\t--enable-trace-arm-injection|-ai\tEnable tracing of unhooked internal ARM functions. (EXPERIMENTAL)\n");
+    printf("\t--enable-trace-thumb-injection|-ti\tEnable tracing of unhooked internal THUMB functions. (HIGHLY EXPERIMENTAL)\n");
+    printf("\t--trace-function|-tf <function>\t\tTrace the specified function.\n");
+    printf("\t--trace-all|-ta\t\t\t\tTrace all functions.\n");
+    printf("\t--use-dvm <path/to/android>\t\tUse the dalvikvm instead of our fake vm.\n");
+    printf("\t--help|-h\t\t\t\tPrint this help.\n");
+    
     exit(1);
 }
 
@@ -311,10 +327,7 @@ operation(const char *operation, const char *filename)
                 app_name, apkenv_absolute, apk_absolute, icon_filename);
         fclose(desktop);
         printf("Installed: %s\n", desktop_filename);
-        exit(0);
     }
-
-    usage();
 }
 
 
@@ -335,6 +348,39 @@ system_init(int gles_version)
     return 1;
 }
 
+int init_dvm(struct GlobalState *global, void *libdvm_handle)
+{
+    jint (*JNI_CreateJavaVM)(JavaVM **p_vm, void **p_env, void *vm_args);
+    struct JavaVMInitArgs vm_args;
+    struct JavaVMOption *options;
+    char option_string[1024];
+    
+    JNI_CreateJavaVM = android_dlsym(libdvm_handle, "JNI_CreateJavaVM");
+    if(NULL == JNI_CreateJavaVM)
+        return 0; // failed
+    
+    options = (struct JavaVMOption*)malloc(sizeof(struct JavaVMOption));
+    strcpy(option_string, "-Djava.class.path=");
+    strcat(option_string, global->apk_filename);
+
+    options->optionString = option_string;
+    
+    vm_args.version = JNI_VERSION_1_4;
+    vm_args.options = options;
+    vm_args.nOptions = 1;
+    vm_args.ignoreUnrecognized = JNI_FALSE;
+    
+    JavaVM *vm = &(global->vm);
+    void *env = &(global->env);
+       
+    if(JNI_CreateJavaVM(&vm, (void**)env, &vm_args) < 0) {
+        printf("ERROR: JNI_CreateJavaVM failed.\n");
+        return 0; // failed
+    }
+    
+    return 1; // success
+}
+
 /* Provided by one of the support modules in "platform/" */
 extern struct PlatformSupport platform_support;
 
@@ -345,6 +391,7 @@ int main(int argc, char **argv)
     debug_init();
 
     char **tmp;
+    void *libdvm_handle = NULL;
 
     const char *main_data_dir = global.platform->get_path(PLATFORM_PATH_DATA_DIRECTORY);
     recursive_mkdir(main_data_dir);
@@ -354,18 +401,105 @@ int main(int argc, char **argv)
     global.apkenv_copyright = APKENV_COPYRIGHT;
 
     printf("%s\n%s\n\n", global.apkenv_headline, global.apkenv_copyright);
+   
+    global.trace_all = 0;
+    global.trace_latehooked = 0;
+    global.trace_unhooked = 0;
+    global.trace_dynhooked = 0;
+    global.trace_arm_injection = 0;
+    global.trace_thumb_injection = 0; 
+    global.functions_to_trace = NULL;
+    
+    global.use_dvm = 0;
 
-    switch (argc) {
-        case 2:
-            /* One argument - the .apk (continue below) */
-            break;
-        case 3:
-            /* Two arguments - operation + the apk */
-            operation(argv[1], argv[2]);
-            break;
-        default:
-            /* Wrong number of arguments */
-            usage();
+    if(argc <= 1) {
+        printf("ERROR: too few arguments\n");
+        usage();
+    }
+    
+    if(argc >= 2) {
+        int i;
+        // parse argv, last argument has to be the apk
+        for(i=1;i<argc;i++) {
+            if(0 == strcmp(argv[i], "--install")) {
+                i++;
+                if(i >= argc) {
+                    printf("missing argument to --install\n");
+                    return -1;
+                }
+                operation(argv[i-1],argv[i]);
+            }
+            else if(0 == strcmp(argv[i], "--help")
+                 || 0 == strcmp(argv[i], "-h")) {
+                usage();
+            }
+            else if(0 == strcmp(argv[i], "--enable-trace-latehooked")
+                 || 0 == strcmp(argv[i], "-l")) {
+                global.trace_latehooked = 1;
+            }
+            else if(0 == strcmp(argv[i], "--enable-trace-unhooked")
+                 || 0 == strcmp(argv[i], "-u")) {
+                global.trace_unhooked = 1;
+            }
+            else if(0 == strcmp(argv[i], "--enable-trace-dynhooked")
+                 || 0 == strcmp(argv[i], "-d")) {
+                global.trace_dynhooked = 1;
+            }
+            else if(0 == strcmp(argv[i], "--enable-trace-arm-injection")
+                 || 0 == strcmp(argv[i], "-ai")) {
+                global.trace_arm_injection = 1;
+            }
+            else if(0 == strcmp(argv[i], "--enable-trace-thumb-injection")
+                 || 0 == strcmp(argv[i], "-ti")) {
+                global.trace_thumb_injection = 1;
+            }
+            else if(0 == strcmp(argv[i], "--trace-all")
+                 || 0 == strcmp(argv[i], "-ta")) {
+                global.trace_all = 1;
+            }
+            else if(0 == strcmp(argv[i], "--trace-function")
+                 || 0 == strcmp(argv[i], "-tf")) {
+                i++;
+                if(i >= argc) {
+                    printf("ERROR: missing argument to %s", argv[i-1]);
+                    usage();
+                }
+                if(NULL == global.functions_to_trace) {
+                    global.functions_to_trace = (struct trace_list*)malloc(sizeof(struct trace_list));
+                    global.functions_to_trace->name = argv[i];
+                    global.functions_to_trace->next = NULL;
+                }
+                else {
+                    struct trace_list *it = global.functions_to_trace;
+                    struct trace_list *last = NULL;
+                    while(NULL != it) {
+                        last = it;
+                        it = it->next;
+                    }
+                    last->next = (struct trace_list*)malloc(sizeof(struct trace_list));
+                    last->next->name = argv[i];
+                    last->next->next = NULL;
+                }
+            }
+            else if(0 == strcmp(argv[i], "--use-dvm"))
+            {
+                i++;
+                if(i >= argc) {
+                    printf("ERROR: missing argument to --use-dvm\n");
+                    usage();
+                }
+                global.use_dvm = 1;
+                global.android_path = argv[i];
+            }
+        }
+    }
+
+    if((global.trace_all || NULL != global.functions_to_trace)
+    && !global.trace_latehooked && !global.trace_unhooked
+    && !global.trace_dynhooked && !global.trace_arm_injection
+    && !global.trace_thumb_injection) {
+        printf("WARNING: specified --trace-all or --trace-function but no type of tracing is enabled\n");
+        usage();
     }
 
     memset(&global_module_hacks,0,sizeof(global_module_hacks));
@@ -380,10 +514,34 @@ int main(int argc, char **argv)
     global.image_loader = imagelib_load_from_mem;
     global.module_hacks = &global_module_hacks;
 
-    hooks_init();
-    jnienv_init(&global);
-    javavm_init(&global);
     global.apk_filename = strdup(argv[argc-1]);
+    
+    hooks_init();
+    
+    if(global.use_dvm) {
+        char path[1024];
+        strcpy(path, global.android_path);
+        strcat(path, "/system/lib/libdvm.so");
+        libdvm_handle = android_dlopen(path, RTLD_LAZY);
+        if(NULL == libdvm_handle) {
+            printf("ERROR: could not load libdvm.so. Falling back to fakevm\n");
+            libdvm_handle = NULL;
+            jnienv_init(&global);
+            javavm_init(&global);
+        }
+        else if(!init_dvm(&global, libdvm_handle)) {
+            printf("ERROR: failed to initialize the dalvikvm. Falling back to fakevm.\n");
+            android_dlclose(libdvm_handle);
+            libdvm_handle = NULL;
+            jnienv_init(&global);
+            javavm_init(&global);
+        }
+    }
+    else {
+        jnienv_init(&global);
+        javavm_init(&global);
+    }
+    
     global.apklib_handle = apk_open(global.apk_filename);
     global.support_modules = NULL;
 
@@ -569,6 +727,22 @@ finish:
     apk_close(global.apklib_handle);
     global.platform->exit();
 
+    if(NULL != libdvm_handle) {
+        android_dlclose(libdvm_handle);
+        libdvm_handle = NULL;
+    }
+    
+    release_all_wrappers();
+    if(NULL != global.functions_to_trace) {
+        struct trace_list *it = global.functions_to_trace;
+        struct trace_list *next;
+        while(it != NULL) {
+            next = it->next;
+            free(it);
+            it = next;
+        }
+    }
+    
     return 0;
 }
 
