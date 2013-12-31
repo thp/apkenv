@@ -1,5 +1,9 @@
 
-These libraries have been extracted from
+
+libdvm_compat.so is a simple wrapper around libdvm.so (build against nitdroid sources)
+    sources are in android/dalvik_compat (which is a slightly modified dalvikvm)
+    
+The other libraries have been extracted from
 
     http://downloads.nitdroid.com/e-yes/n9/nitdroid_n9_ics_alpha4.tar.bz2
 

@@ -157,6 +157,9 @@ struct GlobalState {
     struct trace_list *functions_to_trace;
     int trace_all;
     
+    int use_dvm;
+    char *android_path;
+
     int loader_seen_glesv1;
     int loader_seen_glesv2;
 
