@@ -55,10 +55,12 @@ maemo_init(int gles_version)
 
 #ifdef FREMANTLE
     SDL_GLES_Init(gles_version == 2 ? SDL_GLES_VERSION_2_0 : SDL_GLES_VERSION_1_1);
+    SDL_GLES_SetAttribute(SDL_GLES_DEPTH_SIZE, 16);
     priv.screen = SDL_SetVideoMode(0, 0, 0, SDL_FULLSCREEN);
     SDL_GLES_MakeCurrent(SDL_GLES_CreateContext());
 #else /* FREMANTLE */
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gles_version);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
     priv.screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGLES | SDL_FULLSCREEN);
 #endif /* FREMANTLE */
 
