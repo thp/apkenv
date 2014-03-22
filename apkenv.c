@@ -524,10 +524,16 @@ int main(int argc, char **argv)
     global.support_modules = NULL;
 
     static const char* libdir[] = {
+#ifdef FREMANTLE
+        // On Fremantle, only use non-v7a armeabi libs
+        "assets/libs/armeabi",
+        "lib/armeabi",
+#else
         "assets/libs/armeabi-v7a",
         "assets/libs/armeabi",
         "lib/armeabi-v7a",
         "lib/armeabi",
+#endif
         0
     };
     static const char* libblacklist[] = {
