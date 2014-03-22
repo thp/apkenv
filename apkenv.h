@@ -35,10 +35,10 @@
 #include "imagelib/imagelib.h"
 
 #define APKENV_NAME "apkenv"
-#define APKENV_VERSION "42.4.0"
+#define APKENV_VERSION "42.7.0"
 #define APKENV_WEBSITE "http://thp.io/2012/apkenv/"
 #define APKENV_HEADLINE APKENV_NAME " " APKENV_VERSION " - " APKENV_WEBSITE
-#define APKENV_COPYRIGHT "Copyright (c) 2012, 2013 Thomas Perl <m@thp.io>"
+#define APKENV_COPYRIGHT "Copyright (c) 2012, 2013, 2014 Thomas Perl <m@thp.io>"
 
 struct GlobalState;
 struct SupportModule;
