@@ -174,12 +174,14 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
                 * sizeof(uint32_t); // 32-Bit
             msg = msg_arm_injection;
             break;
+#ifndef FREMANTLE
         case WRAPPER_THUMB_INJECTION:
             wrapper_size = 
 #include "wrappers/wrapper_THUMB.size"
                 * sizeof(uint16_t); // 16-Bit
             msg = msg_thumb_injection;
             break;
+#endif /* FREMANTLE */
         default:
             assert(NULL == "ERROR: invalid wrapper type!\n");
     }

@@ -621,6 +621,8 @@ static const char *sopaths[SOPATH_MAX + 1] = {
     "/vendor/lib",
     "/system/lib",
     "/opt/apkenv/bionic/",
+    // Also allow local directory during development
+    "./libs/",
 };
 #endif
 
