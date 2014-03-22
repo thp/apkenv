@@ -54,7 +54,7 @@
 {"fscanf", my_fscanf},
 {"vscanf", vscanf},
 {"vfscanf", vfscanf},
-//{"sscanf", sscanf},
+{"sscanf", sscanf},
 {"fseek", my_fseek},
 {"fileno", my_fileno},
 {"fsync", fsync},
