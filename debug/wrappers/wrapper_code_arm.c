@@ -1,5 +1,7 @@
-static void dummy_f() __attribute__((naked,noinline));
-static void dummy_f()
+#include "wrapper_code.h"
+
+void
+wrapper_code_arm()
 {
     asm volatile(
         // don't use any labels within the code because our *.o to code converter will stop at the first label
@@ -29,10 +31,9 @@ static void dummy_f()
         // necessary and this is easier
 
         // dummy instructions, this is where we locate our pointers
-        "name: mov r0, r0\n" // name of function to call
-        "fun: mov r0, r0\n" // function to call (actually the pointer to the third instruction)
-        "tc: mov r0, r0\n" // address of trace_callback
-        "str: mov r0, #0\n" // the string being printed in trace_callback
+        "name: .word 0xFFFFFFFF\n" // name of function to call
+        "fun: .word 0xFFFFFFFF\n" // function to call (actually the pointer to the third instruction)
+        "tc: .word 0xFFFFFFFF\n" // address of trace_callback
+        "str: .word 0xFFFFFFFF\n" // the string being printed in trace_callback
     );
 }
-

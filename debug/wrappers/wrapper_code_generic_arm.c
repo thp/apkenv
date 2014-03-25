@@ -1,5 +1,7 @@
-static void dummy_f() __attribute__((naked,noinline));
-static void dummy_f()
+#include "wrapper_code.h"
+
+void
+wrapper_code_generic()
 {
     // we can never use r0-r11, neither the stack
     asm volatile(
@@ -21,10 +23,9 @@ static void dummy_f()
         // necessary and this is easier
 
         // dummy instructions, this is where we locate our pointers
-        "name: mov r0, #0\n" // name of function to call
-        "fun: mov r0, #0\n" // function to call
-        "tc: mov r0, #0\n" // address of trace_callback
-        "str: mov r0, #0\n" // the string being printed in trace_callback
+        "name: .word 0xFFFFFFFF\n" // name of function to call
+        "fun: .word 0xFFFFFFFF\n" // function to call
+        "tc: .word 0xFFFFFFFF\n" // address of trace_callback
+        "str: .word 0xFFFFFFFF\n" // the string being printed in trace_callback
     );
 }
-

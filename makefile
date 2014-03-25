@@ -21,11 +21,7 @@ IMAGELIB_SOURCES=$(wildcard imagelib/*.c)
 DEBUG_SOURCES=$(wildcard debug/*.c)
 
 # debug wrappers
-WRAPPER_INJECT_ARM_SOURCE=debug/wrappers/wrapper_ARM.c
-WRAPPER_INJECT_THUMB_SOURCE=debug/wrappers/wrapper_THUMB.c
-WRAPPER_INJECT_GENERIC_SOURCE=debug/wrappers/wrapper_GENERIC.c
-WRAPPER_INJECT_SOURCES=$(WRAPPER_INJECT_ARM_SOURCE) $(WRAPPER_INJECT_THUMB_SOURCE) $(WRAPPER_INJECT_GENERIC_SOURCE)
-WRAPPER_INJECT_TARGETS=$(patsubst %.c,%.instructions,$(WRAPPER_INJECT_SOURCES))
+WRAPPER_SOURCES=$(wildcard debug/wrappers/*.c)
 
 TARGET = apkenv
 
@@ -88,7 +84,15 @@ else
     CFLAGS += -O2 -DLINKER_DEBUG=0
 endif
 
-all: $(WRAPPER_INJECT_TARGETS) $(TARGET) $(MODULES)
+all: $(TARGET) $(MODULES)
+
+debug/wrappers/%_thumb.o: debug/wrappers/%_thumb.c
+	@echo -e "\tCC (TH)\t$@"
+	@$(CC) -mthumb -O0 -c -o $@ $<
+
+debug/wrappers/%_arm.o: debug/wrappers/%_arm.c
+	@echo -e "\tCC\t$@"
+	@$(CC) -marm -O0 -c -o $@ $<
 
 %.o: %.c
 	@echo -e "\tCC\t$@"
@@ -105,30 +109,6 @@ $(TARGET): $(OBJS)
 strip:
 	@echo -e "\tSTRIP"
 	@strip $(TARGET) $(MODULES)
-
-$(patsubst %.c,%.instructions,$(WRAPPER_INJECT_ARM_SOURCE)): $(WRAPPER_INJECT_ARM_SOURCE)
-	@echo -e "\tCC_W\t$<"
-	@$(CC) -marm -Wno-unused-function -O0 -c -o $(patsubst %.c,%.o,$<) $<
-	@echo -e "\tDEC\t$(patsubst %.c,%.o,$<)"
-	@$(OBJDUMP) -d $(patsubst %.c,%.o,$<) | ./tools/extract_wrapper_code.sh | ./tools/to_code_arm.sh > $(patsubst %.c,%.instructions,$<)
-	@echo -e "\tSIZE\t$(patsubst %.c,%.instructions,$<)"
-	@wc -l $(patsubst %.c,%.instructions,$<) | awk '{print $$1}' > $(patsubst %.c,%.size,$<)
-
-$(patsubst %.c,%.instructions,$(WRAPPER_INJECT_THUMB_SOURCE)): $(WRAPPER_INJECT_THUMB_SOURCE)
-	@echo -e "\tCC_W\t$<"
-	@$(CC) -mthumb -Wno-unused-function -O0 -c -o $(patsubst %.c,%.o,$<) $<
-	@echo -e "\tDEC\t$(patsubst %.c,%.o,$<)"
-	@$(OBJDUMP) -d $(patsubst %.c,%.o,$<) | ./tools/extract_wrapper_code.sh | ./tools/to_code_thumb.sh > $(patsubst %.c,%.instructions,$<)
-	@echo -e "\tSIZE\t$(patsubst %.c,%.instructions,$<)"
-	@wc -l $(patsubst %.c,%.instructions,$<) | awk '{print $$1}' > $(patsubst %.c,%.size,$<)
-
-$(patsubst %.c,%.instructions,$(WRAPPER_INJECT_GENERIC_SOURCE)): $(WRAPPER_INJECT_GENERIC_SOURCE)
-	@echo -e "\tCC_W\t$<"
-	@$(CC) -marm -Wno-unused-function -O0 -c -o $(patsubst %.c,%.o,$<) $<
-	@echo -e "\tDEC\t$(patsubst %.c,%.o,$<)"
-	@$(OBJDUMP) -d $(patsubst %.c,%.o,$<) | ./tools/extract_wrapper_code.sh | ./tools/to_code_arm.sh > $(patsubst %.c,%.instructions,$<)
-	@echo -e "\tSIZE\t$(patsubst %.c,%.instructions,$<)"
-	@wc -l $(patsubst %.c,%.instructions,$<) | awk '{print $$1}' > $(patsubst %.c,%.size,$<)
 
 install: $(TARGET) $(MODULES)
 	@echo -e "\tMKDIR"
@@ -154,7 +134,7 @@ endif
 
 clean:
 	@echo -e "\tCLEAN"
-	@rm -rf $(TARGET) $(OBJS) $(MODULES) $(WRAPPER_INJECT_TARGETS) $(patsubst %.c,%.o, $(WRAPPER_INJECT_SOURCES)) $(patsubst %.c,%.size, $(WRAPPER_INJECT_SOURCES))
+	@rm -rf $(TARGET) $(OBJS) $(MODULES)
 
 .DEFAULT: all
 .PHONY: strip install clean

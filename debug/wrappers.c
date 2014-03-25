@@ -30,6 +30,7 @@
 #include "wrappers.h"
 #include "../compat/hooks.h"
 #include "../apkenv.h"
+#include "wrappers/wrapper_code.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -115,14 +116,27 @@ const char *msg_thumb_injection = "called injected THUMB wrapper";
 #define IS_T32(hi16) \
             (((hi16) & 0xe000) == 0xe000 && ((hi16) & 0x1800))
 
+static size_t
+get_wrapper_code_size(void *wrapper)
+{
+    // Find first occurence of 0xFFFFFFFF in the code object,
+    // which is the placeholder for the attached data words
+    uint32_t *ptr = wrapper;
+    while (*ptr != 0xFFFFFFFF) {
+        ptr++;
+    }
+    return ((void *)ptr - (void *)wrapper);
+}
+
 void *create_wrapper(char *symbol, void *function, int wrapper_type)
 {   
-    int helper = 0;
-    int wrapper_size = 0;
+    size_t wrapper_size = 0;
+    void *wrapper_code = NULL;
     void *wrapper_addr = NULL;
+    int helper = 0;
 
     const char *msg = NULL;
-    
+
     switch(wrapper_type)
     {
         case WRAPPER_LATEHOOK:
@@ -151,41 +165,31 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
     switch(wrapper_type)
     {
         case WRAPPER_LATEHOOK:
-            wrapper_size = 
-#include "wrappers/wrapper_GENERIC.size"
-                * sizeof(uint32_t);
+            wrapper_code = wrapper_code_generic;
             msg = msg_latehook;
             break;
         case WRAPPER_UNHOOKED:
-            wrapper_size = 
-#include "wrappers/wrapper_GENERIC.size"
-                * sizeof(uint32_t);
+            wrapper_code = wrapper_code_generic;
             msg = msg_unhooked;
             break;
         case WRAPPER_DYNHOOK:
-            wrapper_size = 
-#include "wrappers/wrapper_GENERIC.size"
-                * sizeof(uint32_t);
+            wrapper_code = wrapper_code_generic;
             msg = msg_dynhook;
             break;
         case WRAPPER_ARM_INJECTION:
-            wrapper_size = 
-#include "wrappers/wrapper_ARM.size"
-                * sizeof(uint32_t); // 32-Bit
+            wrapper_code = wrapper_code_arm;
             msg = msg_arm_injection;
             break;
-#ifndef FREMANTLE
         case WRAPPER_THUMB_INJECTION:
-            wrapper_size = 
-#include "wrappers/wrapper_THUMB.size"
-                * sizeof(uint16_t); // 16-Bit
+            wrapper_code = wrapper_code_thumb;
             msg = msg_thumb_injection;
             break;
-#endif /* FREMANTLE */
         default:
             assert(NULL == "ERROR: invalid wrapper type!\n");
     }
-    
+
+    wrapper_size = get_wrapper_code_size(wrapper_code);
+
     // 4 additional longs for data storage, see below
     wrapper_size += 4 * sizeof(uint32_t);
     
@@ -204,19 +208,22 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
     // this variable is used to determine how many operations we need to copy from the thumb code
     int thumb_fifth_nop = 0;
     
+    memcpy(wrapper_addr, wrapper_code, wrapper_size);
+
+    // Helper = offset of data fields in wrapper_addr (interpreted as int32_t)
+    helper = wrapper_size / sizeof(uint32_t) - 4;
+
     switch(wrapper_type)
     {
         case WRAPPER_LATEHOOK:
         case WRAPPER_UNHOOKED:
         case WRAPPER_DYNHOOK:
-#include "wrappers/wrapper_GENERIC.instructions"
             ((int32_t*)wrapper_addr)[helper++] = (uint32_t)symbol;
             ((int32_t*)wrapper_addr)[helper++] = (uint32_t)function;
             ((int32_t*)wrapper_addr)[helper++] = (uint32_t)trace_callback;
             ((int32_t*)wrapper_addr)[helper++] = (uint32_t)msg;
             break;
         case WRAPPER_ARM_INJECTION:
-#include "wrappers/wrapper_ARM.instructions"
             // relocate the first 2 instructions
             // this is EXPERIMENTAL! it works in many cases because of how
             // ARM methods are layout in ASM.
@@ -244,7 +251,6 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
             function = (void*)((char*)function - 1);
             // fix wrapper addr (tell the processor this is THUMB code)
             wrapper_addr = (void*)((char*)wrapper_addr + 1);
-#include "wrappers/wrapper_THUMB.instructions"
             thumb_fifth_nop = IS_T32(*((int16_t*)function + 4)) && (
                         (!IS_T32(*((int16_t*)function)) && !IS_T32(*((int16_t*)function + 1)) && !IS_T32(*((int16_t*)function + 3))) ||
                         (!IS_T32(*((int16_t*)function)) &&  IS_T32(*((int16_t*)function + 1))                                      ) ||
@@ -292,6 +298,7 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
             ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)msg) >> 16;
             break;
         default:
+            assert(0);
             break;
     };
     
