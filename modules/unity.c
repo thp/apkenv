@@ -197,56 +197,12 @@ unity_try_init(struct SupportModule *self)
     self->override_env.GetObjectClass = JNIEnv_GetObjectClass;
     self->override_env.CallObjectMethod = JNIEnv_CallObjectMethod;
     self->override_env.CallStaticObjectMethod = JNIEnv_CallStaticObjectMethod;
-    self->override_env.RegisterNatives = JNIEnv_RegisterNatives;
     self->override_env.GetStringUTFChars = JNIEnv_GetStringUTFChars;
     self->override_env.NewGlobalRef = JNIEnv_NewGlobalRef;
 
     return (self->priv->JNI_OnLoad_libunity!=NULL);
 }
 
-
-#define UNITYPLAYER_CLASS_NAME "com/unity3d/player/UnityPlayer"
-#define PLAYERPREFS_CLASS_NAME "com/unity3d/player/PlayerPrefs"
-#define method_is(native) (strcmp(method->name,#native)==0)
-
-jint
-JNIEnv_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint p3)
-{
-    MODULE_DEBUG_PRINTF("JNIEnv_RegisterNatives()\n");
-
-    struct dummy_jclass *clazz = (struct dummy_jclass*)p1;
-    MODULE_DEBUG_PRINTF("\n\tClass: %s\n", clazz->name);
-
-    int is_unity_player = strcmp(clazz->name,UNITYPLAYER_CLASS_NAME)==0;
-    int is_player_prefs = strcmp(clazz->name,PLAYERPREFS_CLASS_NAME)==0;
-
-    int i=0;
-    const JNINativeMethod *method = p2;
-    while (i<p3) {
-        MODULE_DEBUG_PRINTF("\tName: %-20s Sig: %-10s Addr: %x\n", method->name, method->signature, method->fnPtr);
-
-        if (is_unity_player) {
-
-            if (method_is(nativeInit)) { unity_priv.nativeInit = (unity_nativeInit_t)method->fnPtr;} else
-            if (method_is(nativeFile)) { unity_priv.nativeFile = (unity_nativeFile_t)method->fnPtr;} else
-            if (method_is(nativeRender)) { unity_priv.nativeRender = (unity_nativeRender_t)method->fnPtr;} else
-            if (method_is(initJni)) { unity_priv.initJni = (unity_initJni_t)method->fnPtr;} else
-            if (method_is(unityAndroidInit)) { unity_priv.unityAndroidInit = (unity_androidinit_t)method->fnPtr;} else
-            if (method_is(unityAndroidPrepareGameLoop)) {unity_priv.unityAndroidPrepareGameLoop = (unity_androidpreparegameloop_t)method->fnPtr;} else
-            ;
-        } else if (is_player_prefs) {
-
-            if (method_is(InitPlayerPrefs)) { unity_priv.InitPlayerPrefs = (unity_InitPlayerPrefs_t)method->fnPtr;} else
-            ;
-        }
-
-        method++;
-        i++;
-    }
-    MODULE_DEBUG_PRINTF("\n");
-
-    return 0;
-}
 
 const char *
 JNIEnv_GetStringUTFChars(JNIEnv *env, jstring string, jboolean *isCopy)
@@ -265,6 +221,8 @@ JNIEnv_GetStringUTFChars(JNIEnv *env, jstring string, jboolean *isCopy)
 }
 
 
+#define UNITYPLAYER_CLASS_NAME "com/unity3d/player/UnityPlayer"
+#define PLAYERPREFS_CLASS_NAME "com/unity3d/player/PlayerPrefs"
 
 static void
 unity_init(struct SupportModule *self, int width, int height, const char *home)
@@ -277,6 +235,13 @@ unity_init(struct SupportModule *self, int width, int height, const char *home)
     self->priv->JNI_OnLoad_libunity(VM_M,0);
     MODULE_DEBUG_PRINTF("JNI_OnLoad done.\n");
 
+    self->priv->nativeInit = jnienv_find_native_method(UNITYPLAYER_CLASS_NAME, "nativeInit");
+    self->priv->nativeFile = jnienv_find_native_method(UNITYPLAYER_CLASS_NAME, "nativeFile");
+    self->priv->nativeRender = jnienv_find_native_method(UNITYPLAYER_CLASS_NAME, "nativeRender");
+    self->priv->initJni = jnienv_find_native_method(UNITYPLAYER_CLASS_NAME, "initJni");
+    self->priv->unityAndroidInit = jnienv_find_native_method(UNITYPLAYER_CLASS_NAME, "unityAndroidInit");
+    self->priv->unityAndroidPrepareGameLoop = jnienv_find_native_method(UNITYPLAYER_CLASS_NAME, "unityAndroidPrepareGameLoop");
+    self->priv->InitPlayerPrefs = jnienv_find_native_method(PLAYERPREFS_CLASS_NAME, "InitPlayerPrefs");
 
     MODULE_DEBUG_PRINTF("nativeInit\n");
     self->priv->nativeInit(ENV_M,GLOBAL_M,width,height);

@@ -287,6 +287,7 @@ const char *JNIEnv_GetStringUTFChars(JNIEnv *env, jstring string, jboolean *isCo
 void JNIEnv_ReleaseStringUTFChars(JNIEnv *env, jstring string, const char *utf) SOFTFP;
 
 void jnienv_init(struct GlobalState *global) SOFTFP;
+void *jnienv_find_native_method(const char *klass, const char *method) SOFTFP;
 
 jint JavaVM_DestroyJavaVM(JavaVM *vm) SOFTFP;
 jint JavaVM_AttachCurrentThread(JavaVM *vm, JNIEnv **env, void *args) SOFTFP;

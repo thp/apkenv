@@ -43,7 +43,6 @@
 
 #define ASSET_FILE_PETALS3D_TNX "assets/petals3d.tnx"
 
-jint RegisterNatives(JNIEnv *env, jclass klass, const JNINativeMethod *method, jint count) SOFTFP;
 jobject CallStaticObjectMethodV(JNIEnv *env, jclass klass, jmethodID method, va_list args) SOFTFP;
 
 typedef void (*petalsredux_init_t)(JNIEnv *env, jobject obj) SOFTFP;
@@ -78,31 +77,6 @@ struct SupportModulePriv {
 };
 static struct SupportModulePriv petalsredux_priv;
 
-#define REGISTER_METHOD(x, y) \
-    if (strcmp(method[i].name, x) == 0) { \
-        petalsredux_priv.y = method[i].fnPtr; \
-    }
-
-jint
-RegisterNatives(JNIEnv *env, jclass klass, const JNINativeMethod *method, jint count)
-{
-    int i;
-
-    for (i = 0; i < count; i++) {
-        REGISTER_METHOD("nativeStart", native_start);
-        REGISTER_METHOD("nativePause", native_pause);
-        REGISTER_METHOD("nativeResume", native_resume);
-        REGISTER_METHOD("nativeBack", native_back);
-        REGISTER_METHOD("nativeInit", native_init);
-        REGISTER_METHOD("nativeResize", native_resize);
-        REGISTER_METHOD("nativeRender", native_render);
-        REGISTER_METHOD("nativeTouch", native_touch);
-        REGISTER_METHOD("nativeMix", native_mix);
-    }
-
-    return 0;
-}
-
 jobject
 CallStaticObjectMethodV(JNIEnv *env, jclass klass, jmethodID method, va_list args)
 {
@@ -125,7 +99,6 @@ petalsredux_try_init(struct SupportModule *self)
     self->priv->JNI_OnLoad = (jni_onload_t)LOOKUP_M("JNI_OnLoad");
 
     GLOBAL_M->foreach_file(ASSET_FILE_PETALS3D_TNX, check_petalsredux);
-    self->override_env.RegisterNatives = RegisterNatives;
     self->override_env.CallStaticObjectMethodV = CallStaticObjectMethodV;
 
     return (self->priv->JNI_OnLoad != NULL && self->priv->is_petalsredux);
@@ -147,6 +120,16 @@ static void
 petalsredux_init(struct SupportModule *self, int width, int height, const char *home)
 {
     self->priv->JNI_OnLoad(VM_M, NULL);
+
+    self->priv->native_start = jnienv_find_native_method(NULL, "nativeStart");
+    self->priv->native_pause = jnienv_find_native_method(NULL, "nativePause");
+    self->priv->native_resume = jnienv_find_native_method(NULL, "nativeResume");
+    self->priv->native_back = jnienv_find_native_method(NULL, "nativeBack");
+    self->priv->native_init = jnienv_find_native_method(NULL, "nativeInit");
+    self->priv->native_resize = jnienv_find_native_method(NULL, "nativeResize");
+    self->priv->native_render = jnienv_find_native_method(NULL, "nativeRender");
+    self->priv->native_touch = jnienv_find_native_method(NULL, "nativeTouch");
+    self->priv->native_mix = jnienv_find_native_method(NULL, "nativeMix");
 
     const char *locale = getenv("LANG");
     if (!locale) {

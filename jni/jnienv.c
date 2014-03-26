@@ -1914,6 +1914,50 @@ JNIEnv_SetDoubleArrayRegion(JNIEnv* p0, jdoubleArray p1, jsize p2, jsize p3, con
     set_array_region(p0, p1, p2, p3, p4);
 }
 
+struct NativeMethodEntry {
+    char *klass;
+    char *method;
+    void *function;
+    struct NativeMethodEntry *next;
+};
+
+static struct NativeMethodEntry *
+g_native_methods = NULL;
+
+void *
+jnienv_find_native_method(const char *klass, const char *method)
+{
+    struct NativeMethodEntry *cur = g_native_methods;
+
+    JNIENV_DEBUG_PRINTF("%s: %s %s\n", __func__, klass ? klass : "*", method);
+
+    while (cur) {
+        if ((klass == NULL || strcmp(cur->klass, klass) == 0) && strcmp(cur->method, method) == 0) {
+            JNIENV_DEBUG_PRINTF("%s: Found %x\n", __func__, cur->function);
+            return cur->function;
+        }
+
+        cur = cur->next;
+    }
+
+    JNIENV_DEBUG_PRINTF("%s: Not found.\n", __func__);
+    return NULL;
+}
+
+static void
+jnienv_register_native_method(const char *klass, const char *method, void *function)
+{
+    struct NativeMethodEntry *entry = (struct NativeMethodEntry *)
+        malloc(sizeof(struct NativeMethodEntry));
+
+    JNIENV_DEBUG_PRINTF("%s: Registering %s %s %x\n", __func__, klass, method, function);
+    entry->klass = strdup(klass);
+    entry->method = strdup(method);
+    entry->function = function;
+    entry->next = g_native_methods;
+
+    g_native_methods = entry;
+}
 
 jint
 JNIEnv_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint p3)
@@ -1927,6 +1971,7 @@ JNIEnv_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint p3
     const JNINativeMethod *method = p2;
     while (i<p3) {
         JNIENV_DEBUG_PRINTF("\tName: %-20s Sig: %-10s Addr: %x\n", method->name, method->signature, method->fnPtr);
+        jnienv_register_native_method(clazz->name, method->name, method->fnPtr);
         method++;
         i++;
     }
