@@ -95,7 +95,7 @@ struct _jobject {
 };
 
 jobject
-JNIEnv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
+openframeworks_jnienv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
 {
     MODULE_DEBUG_PRINTF("module_NewObjectV(%p, %s)\n", p1, p2->name);
     struct _jobject *object = malloc(sizeof(*object));
@@ -105,9 +105,9 @@ JNIEnv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
 }
 
 void
-JNIEnv_CallVoidMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
+openframeworks_jnienv_CallVoidMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 {
-    MODULE_DEBUG_PRINTF("module_JNIEnv_CallVoidMethodV(%x, %s, %s)\n", p1, p2->name, p2->sig);
+    MODULE_DEBUG_PRINTF("module_openframeworks_jnienv_CallVoidMethodV(%x, %s, %s)\n", p1, p2->name, p2->sig);
 
     if (strcmp(p2->name, "reportScore") == 0
        && strcmp(openframeworks_priv.app_name, "Super Hexagon") == 0)
@@ -296,8 +296,8 @@ openframeworks_try_init(struct SupportModule *self)
     self->priv->update = (openframeworks_update_t)LOOKUP_M(
         "Java_cc_openframeworks_OFAndroid_update");
 
-    self->override_env.NewObjectV = JNIEnv_NewObjectV;
-    self->override_env.CallVoidMethodV = JNIEnv_CallVoidMethodV;
+    self->override_env.NewObjectV = openframeworks_jnienv_NewObjectV;
+    self->override_env.CallVoidMethodV = openframeworks_jnienv_CallVoidMethodV;
 
     return (self->priv->JNI_OnLoad != NULL) && !failed_syms;
 }

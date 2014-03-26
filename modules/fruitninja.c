@@ -106,7 +106,7 @@ load_sound_callback(const char *filename, char *buffer, size_t size)
 }
 
 jobject
-JNIEnv_CallStaticObjectMethodV(JNIEnv*env, jclass p1, jmethodID p2, va_list p3)
+fruitninja_jnienv_CallStaticObjectMethodV(JNIEnv*env, jclass p1, jmethodID p2, va_list p3)
 {
     struct dummy_jclass *jcl = p1;
 
@@ -138,7 +138,7 @@ JNIEnv_CallStaticObjectMethodV(JNIEnv*env, jclass p1, jmethodID p2, va_list p3)
     }
     else
     {
-        MODULE_DEBUG_PRINTF("module_JNIEnv_CallStaticObjectMethodV(%s, %s, %s)\n",
+        MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_CallStaticObjectMethodV(%s, %s, %s)\n",
             jcl->name, p2->name, p2->sig);
     }
 
@@ -176,11 +176,11 @@ musicFinished()
 }
 
 void
-JNIEnv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
+fruitninja_jnienv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
 {
     struct dummy_jclass *jcl = p1;
 
-    MODULE_DEBUG_PRINTF("module_JNIEnv_CallStaticVoidMethodV(%x, %s, %s)\n", jcl->name, p2->name, p2->sig);
+    MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_CallStaticVoidMethodV(%x, %s, %s)\n", jcl->name, p2->name, p2->sig);
 
 
     if( strcmp( p2->name, "SongPlay" ) == 0 ) // Play some sweet backround music?
@@ -219,46 +219,46 @@ JNIEnv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
             Mix_VolumeChunk(SFX[i].sound, soundvol);
         }
     } else {
-        MODULE_DEBUG_PRINTF("module_JNIEnv_CallStaticVoidMethodV(%x, %s, %s)\n", jcl->name, p2->name, p2->sig);
+        MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_CallStaticVoidMethodV(%x, %s, %s)\n", jcl->name, p2->name, p2->sig);
     }
 }
 
 /* Overrides to fix SegFault on end of classic mode (dirty hack?) */
 jclass
-JNIEnv_GetObjectClass(JNIEnv* env, jobject p1)
+fruitninja_jnienv_GetObjectClass(JNIEnv* env, jobject p1)
 {
-    MODULE_DEBUG_PRINTF("module_JNIEnv_GetObjectClass(%x, %x)\n", env, p1);
+    MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_GetObjectClass(%x, %x)\n", env, p1);
     struct dummy_jclass *class = malloc(sizeof(struct dummy_jclass));
     class->name = strdup(p1);
     return class;
 }
 jobject
-JNIEnv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
+fruitninja_jnienv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
 {
     struct dummy_jclass *clazz = p1;
-    MODULE_DEBUG_PRINTF("JNIEnv_NewObjectV(%x, %s, %s)\n", p1, p2->name, clazz->name);
+    MODULE_DEBUG_PRINTF("fruitninja_jnienv_NewObjectV(%x, %s, %s)\n", p1, p2->name, clazz->name);
     return NULL;
 }
 jfieldID
-JNIEnv_GetFieldID(JNIEnv* p0, jclass p1, const char* p2, const char* p3)
+fruitninja_jnienv_GetFieldID(JNIEnv* p0, jclass p1, const char* p2, const char* p3)
 {
     struct dummy_jclass *jcl = p1;
-    MODULE_DEBUG_PRINTF("module_JNIEnv_GetFieldID(%s, %s, %s)\n", jcl->name, p2, p3);
+    MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_GetFieldID(%s, %s, %s)\n", jcl->name, p2, p3);
     return 0;
 }
 
 /* Following overrides are just to suppress some not important debug messages... */
 jclass
-JNIEnv_FindClass(JNIEnv* p0, const char* p1)
+fruitninja_jnienv_FindClass(JNIEnv* p0, const char* p1)
 {
     if( !strcmp( p1, "com/openfeint/api/OpenFeint" ) == 0 )
-        MODULE_DEBUG_PRINTF("module_JNIEnv_FindClass('%s')\n", p1);
+        MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_FindClass('%s')\n", p1);
     struct dummy_jclass *class = malloc(sizeof(struct dummy_jclass));
     class->name = strdup(p1);
     return class;
 }
 jmethodID
-JNIEnv_GetStaticMethodID(JNIEnv* p0, jclass clazz, const char* name, const char* sig)
+fruitninja_jnienv_GetStaticMethodID(JNIEnv* p0, jclass clazz, const char* name, const char* sig)
 {
     if (strcmp(name,"isNetworkConnected")==0) {
         if (fruitninja_priv.isNetworkConnected==0) {
@@ -269,7 +269,7 @@ JNIEnv_GetStaticMethodID(JNIEnv* p0, jclass clazz, const char* name, const char*
         }
         return fruitninja_priv.isNetworkConnected;
     }
-    MODULE_DEBUG_PRINTF("module_JNIEnv_GetStaticMethodID(%x, %s, %s)\n", clazz, name, sig);
+    MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_GetStaticMethodID(%x, %s, %s)\n", clazz, name, sig);
     jmethodID id = malloc(sizeof(struct _jmethodID));
     id->clazz = clazz;
     id->name = strdup(name);
@@ -277,32 +277,32 @@ JNIEnv_GetStaticMethodID(JNIEnv* p0, jclass clazz, const char* name, const char*
     return id;
 }
 jboolean
-JNIEnv_CallStaticBooleanMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
+fruitninja_jnienv_CallStaticBooleanMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
 {
     //struct dummy_jclass *clazz = (struct dummy_jclass*)p1;
     if( strcmp( p2->name, "isNetworkConnected" ) != 0 ) {
-        MODULE_DEBUG_PRINTF("module_JNIEnv_CallStaticBooleanMethodV(%x, %s, %s)\n", p2->clazz, p2->name, p2->sig);
+        MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_CallStaticBooleanMethodV(%x, %s, %s)\n", p2->clazz, p2->name, p2->sig);
     }
     return 0;
 }
 jint
-JNIEnv_CallStaticIntMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
+fruitninja_jnienv_CallStaticIntMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
 {
-    MODULE_DEBUG_PRINTF("module_JNIEnv_CallStaticIntMethodMethodV(%x, %s, %s)\n", p2->clazz, p2->name, p2->sig);
+    MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_CallStaticIntMethodMethodV(%x, %s, %s)\n", p2->clazz, p2->name, p2->sig);
     if (strcmp(p2->name,"GetWifi")==0) return 0;
     if (strcmp(p2->name,"GetTouchscreenCapabilities")==0) return 0;
     return 0;
 }
 void
-JNIEnv_ExceptionClear(JNIEnv* p0)
+fruitninja_jnienv_ExceptionClear(JNIEnv* p0)
 {
-    //MODULE_DEBUG_PRINTF("module_JNIEnv_ExceptionClear()\n");
+    //MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_ExceptionClear()\n");
 }
 
 jthrowable
-JNIEnv_ExceptionOccurred(JNIEnv* p0)
+fruitninja_jnienv_ExceptionOccurred(JNIEnv* p0)
 {
-    //MODULE_DEBUG_PRINTF("module_JNIEnv_ExceptionOccurred()\n");
+    //MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_ExceptionOccurred()\n");
     return NULL;
 }
 
@@ -326,18 +326,18 @@ fruitninja_try_init(struct SupportModule *self)
     self->priv->native_initjavasoundmanager = (fruitninja_initjavasoundmanager_t)LOOKUP_M("_NativeGameLib_native_1InitJavaSoundManager");
     self->priv->isNetworkConnected = 0;
 
-    /* override for JNIEnv_ */
-    self->override_env.CallStaticObjectMethodV = JNIEnv_CallStaticObjectMethodV;
-    self->override_env.GetObjectClass = JNIEnv_GetObjectClass;
-    self->override_env.NewObjectV = JNIEnv_NewObjectV;
-    self->override_env.GetFieldID = JNIEnv_GetFieldID;
-    self->override_env.FindClass = JNIEnv_FindClass;
-    self->override_env.GetStaticMethodID = JNIEnv_GetStaticMethodID;
-    self->override_env.ExceptionClear = JNIEnv_ExceptionClear;
-    self->override_env.CallStaticBooleanMethodV = JNIEnv_CallStaticBooleanMethodV;
-    self->override_env.CallStaticVoidMethodV = JNIEnv_CallStaticVoidMethodV;
-    self->override_env.ExceptionOccurred = JNIEnv_ExceptionOccurred;
-    self->override_env.CallStaticIntMethodV = JNIEnv_CallStaticIntMethodV;
+    /* override for fruitninja_jnienv_ */
+    self->override_env.CallStaticObjectMethodV = fruitninja_jnienv_CallStaticObjectMethodV;
+    self->override_env.GetObjectClass = fruitninja_jnienv_GetObjectClass;
+    self->override_env.NewObjectV = fruitninja_jnienv_NewObjectV;
+    self->override_env.GetFieldID = fruitninja_jnienv_GetFieldID;
+    self->override_env.FindClass = fruitninja_jnienv_FindClass;
+    self->override_env.GetStaticMethodID = fruitninja_jnienv_GetStaticMethodID;
+    self->override_env.ExceptionClear = fruitninja_jnienv_ExceptionClear;
+    self->override_env.CallStaticBooleanMethodV = fruitninja_jnienv_CallStaticBooleanMethodV;
+    self->override_env.CallStaticVoidMethodV = fruitninja_jnienv_CallStaticVoidMethodV;
+    self->override_env.ExceptionOccurred = fruitninja_jnienv_ExceptionOccurred;
+    self->override_env.CallStaticIntMethodV = fruitninja_jnienv_CallStaticIntMethodV;
 
 
     return (//self->priv->JNI_OnLoad != NULL &&

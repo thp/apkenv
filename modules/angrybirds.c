@@ -88,9 +88,9 @@ void my_audio_callback(void *ud, Uint8 *stream, int len)
 
 /* CallVoidMethodV override. Signal when to start or stop audio */
 void
-JNIEnv_CallVoidMethodV(JNIEnv* p0, jobject p1, jmethodID p2, va_list p3)
+angrybirds_jnienv_CallVoidMethodV(JNIEnv* p0, jobject p1, jmethodID p2, va_list p3)
 {
-    MODULE_DEBUG_PRINTF("module_JNIEnv_CallVoidMethodV(%x, %s, %s)\n", p1, p2->name, p2->sig);
+    MODULE_DEBUG_PRINTF("module_angrybirds_jnienv_CallVoidMethodV(%x, %s, %s)\n", p1, p2->name, p2->sig);
     if (strcmp(p2->name, "startOutput") == 0)
     {
         MODULE_DEBUG_PRINTF("Start audio Output\n");
@@ -106,10 +106,10 @@ JNIEnv_CallVoidMethodV(JNIEnv* p0, jobject p1, jmethodID p2, va_list p3)
 
 /* NewObjectV override. Initialize audio output */
 jobject
-JNIEnv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
+angrybirds_jnienv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
 {
     struct dummy_jclass *clazz = p1;
-    MODULE_DEBUG_PRINTF("module_JNIEnv_NewObjectV(%x, %s, %s)\n", p1, p2->name, clazz->name);
+    MODULE_DEBUG_PRINTF("module_angrybirds_jnienv_NewObjectV(%x, %s, %s)\n", p1, p2->name, clazz->name);
     if (strcmp(clazz->name, "com/rovio/ka3d/AudioOutput") == 0)
     {
         /* Open the audio device */
@@ -137,9 +137,9 @@ JNIEnv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
 
 /* CallObjectMethodV override. AB calls readFile to read data from apk */
 jobject
-JNIEnv_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
+angrybirds_jnienv_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 {
-    MODULE_DEBUG_PRINTF("module_JNIEnv_CallObjectMethodV(%x, %s, %s, ...)\n", p1, p2->name, p2->sig);
+    MODULE_DEBUG_PRINTF("module_angrybirds_jnienv_CallObjectMethodV(%x, %s, %s, ...)\n", p1, p2->name, p2->sig);
     if (strcmp(p2->name, "readFile") == 0)
     {
         // Process input to prevent "not responding" message when game starts
@@ -165,9 +165,9 @@ JNIEnv_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 
 /* DeleteLocalRef override. Free some memory :) */
 void
-JNIEnv_DeleteLocalRef(JNIEnv* p0, jobject p1)
+angrybirds_jnienv_DeleteLocalRef(JNIEnv* p0, jobject p1)
 {
-    MODULE_DEBUG_PRINTF("JNIEnv_DeleteLocalRef(%x)\n", p1);
+    MODULE_DEBUG_PRINTF("angrybirds_jnienv_DeleteLocalRef(%x)\n", p1);
     if (p1 == GLOBAL_J(p0) || p1 == NULL) {
         MODULE_DEBUG_PRINTF("WARNING: DeleteLocalRef on global\n");
         return;
@@ -189,11 +189,11 @@ angrybirds_try_init(struct SupportModule *self)
     self->priv->native_mixdata = (angrybirds_mixdata_t)LOOKUP_M("ka3d_AudioOutput_nativeMixData");
     self->priv->native_deinit = (angrybirds_deinit_t)LOOKUP_M("ka3d_MyRenderer_nativeDeinit");
 
-    /* Overrides for JNIEnv_ */
-    self->override_env.CallObjectMethodV = JNIEnv_CallObjectMethodV;
-    self->override_env.DeleteLocalRef = JNIEnv_DeleteLocalRef;
-    self->override_env.CallVoidMethodV = JNIEnv_CallVoidMethodV;
-    self->override_env.NewObjectV = JNIEnv_NewObjectV;
+    /* Overrides for angrybirds_jnienv_ */
+    self->override_env.CallObjectMethodV = angrybirds_jnienv_CallObjectMethodV;
+    self->override_env.DeleteLocalRef = angrybirds_jnienv_DeleteLocalRef;
+    self->override_env.CallVoidMethodV = angrybirds_jnienv_CallVoidMethodV;
+    self->override_env.NewObjectV = angrybirds_jnienv_NewObjectV;
 
     return (self->priv->native_init != NULL &&
             self->priv->native_resize != NULL &&

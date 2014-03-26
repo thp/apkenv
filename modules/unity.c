@@ -53,15 +53,15 @@ typedef struct
 /* -------- */
 
 
-jfieldID JNIEnv_GetStaticFieldID(JNIEnv *p0, jclass p1, const char *p2, const char *p3) SOFTFP;
-jobject JNIEnv_GetStaticObjectField(JNIEnv *p0, jclass p1, jfieldID p2) SOFTFP;
-jclass JNIEnv_GetObjectClass(JNIEnv *p0, jobject p1) SOFTFP;
-jobject JNIEnv_CallObjectMethod(JNIEnv* env, jobject p1, jmethodID p2, ...) SOFTFP;
-jobject JNIEnv_CallStaticObjectMethod(JNIEnv* env, jclass p1, jmethodID p2, ...) SOFTFP;
-const char * JNIEnv_GetStringUTFChars(JNIEnv *env, jstring string, jboolean *isCopy) SOFTFP;
+jfieldID unity_jnienv_GetStaticFieldID(JNIEnv *p0, jclass p1, const char *p2, const char *p3) SOFTFP;
+jobject unity_jnienv_GetStaticObjectField(JNIEnv *p0, jclass p1, jfieldID p2) SOFTFP;
+jclass unity_jnienv_GetObjectClass(JNIEnv *p0, jobject p1) SOFTFP;
+jobject unity_jnienv_CallObjectMethod(JNIEnv* env, jobject p1, jmethodID p2, ...) SOFTFP;
+jobject unity_jnienv_CallStaticObjectMethod(JNIEnv* env, jclass p1, jmethodID p2, ...) SOFTFP;
+const char * unity_jnienv_GetStringUTFChars(JNIEnv *env, jstring string, jboolean *isCopy) SOFTFP;
 
 
-jfieldID JNIEnv_GetStaticFieldID(JNIEnv *p0, jclass p1, const char *p2, const char *p3)
+jfieldID unity_jnienv_GetStaticFieldID(JNIEnv *p0, jclass p1, const char *p2, const char *p3)
 {
     struct dummy_jclass* cls = (struct dummy_jclass*)p1;
     MODULE_DEBUG_PRINTF("GetStaticFieldID %s %s %s\n", cls->name, p2, p3);
@@ -75,7 +75,7 @@ jfieldID JNIEnv_GetStaticFieldID(JNIEnv *p0, jclass p1, const char *p2, const ch
     return (jfieldID)field;
 }
 
-jobject JNIEnv_GetStaticObjectField(JNIEnv *p0, jclass p1, jfieldID p2)
+jobject unity_jnienv_GetStaticObjectField(JNIEnv *p0, jclass p1, jfieldID p2)
 {
     struct dummy_jclass* cls = p1;
     struct _jfieldID* fld = (void *)p2;
@@ -89,7 +89,7 @@ jobject JNIEnv_GetStaticObjectField(JNIEnv *p0, jclass p1, jfieldID p2)
     return obj;
 }
 
-jclass JNIEnv_GetObjectClass(JNIEnv *p0, jobject p1)
+jclass unity_jnienv_GetObjectClass(JNIEnv *p0, jobject p1)
 {
     MODULE_DEBUG_PRINTF("GetObjectClass %x\n",p1);
     if (p1!=NULL)
@@ -101,7 +101,7 @@ jclass JNIEnv_GetObjectClass(JNIEnv *p0, jobject p1)
 }
 
 
-jobject JNIEnv_CallObjectMethod(JNIEnv* env, jobject p1, jmethodID p2, ...)
+jobject unity_jnienv_CallObjectMethod(JNIEnv* env, jobject p1, jmethodID p2, ...)
 {
     MODULE_DEBUG_PRINTF("CallObjectMethod %x %x\n",p1,p2);
 
@@ -115,12 +115,12 @@ jobject JNIEnv_CallObjectMethod(JNIEnv* env, jobject p1, jmethodID p2, ...)
 }
 
 jobject
-JNIEnv_CallStaticObjectMethod(JNIEnv* env, jclass p1, jmethodID p2, ...)
+unity_jnienv_CallStaticObjectMethod(JNIEnv* env, jclass p1, jmethodID p2, ...)
 {
     struct dummy_jclass* clazz = p1;
     jmethodID method = p2;
 
-    MODULE_DEBUG_PRINTF("JNIEnv_CallStaticObjectMethod(%s,%s)\n",clazz->name,method->name);
+    MODULE_DEBUG_PRINTF("unity_jnienv_CallStaticObjectMethod(%s,%s)\n",clazz->name,method->name);
 
     if (strcmp(method->name,"getProperty")==0) {
         //jstring property = va_arg(p3,jstring);
@@ -138,9 +138,9 @@ JNIEnv_CallStaticObjectMethod(JNIEnv* env, jclass p1, jmethodID p2, ...)
 }
 
 jobject
-JNIEnv_NewGlobalRef(JNIEnv* p0, jobject p1)
+unity_jnienv_NewGlobalRef(JNIEnv* p0, jobject p1)
 {
-    MODULE_DEBUG_PRINTF("JNIEnv_NewGlobalRef(%x)\n", p1);
+    MODULE_DEBUG_PRINTF("unity_jnienv_NewGlobalRef(%x)\n", p1);
     if (p1==NULL) {
         struct dummy_jclass* cls = malloc(sizeof(struct dummy_jclass));
         cls->name = "null";
@@ -148,7 +148,7 @@ JNIEnv_NewGlobalRef(JNIEnv* p0, jobject p1)
         dummy_jobject* obj = malloc(sizeof(dummy_jobject));
         obj->clazz = cls;
         obj->field = NULL;
-        MODULE_DEBUG_PRINTF("JNIEnv_NewGlobalRef(%x) -> %x\n", p1, obj);
+        MODULE_DEBUG_PRINTF("unity_jnienv_NewGlobalRef(%x) -> %x\n", p1, obj);
         return obj;
     }
     //dummy_jobject
@@ -192,22 +192,22 @@ unity_try_init(struct SupportModule *self)
     self->priv->JNI_OnLoad_libunity = (jni_onload_t)LOOKUP_LIBM("libunity","JNI_OnLoad");
     self->priv->JNI_OnLoad_libmono = (jni_onload_t)LOOKUP_LIBM("libmono","JNI_OnLoad");
 
-    self->override_env.GetStaticFieldID = JNIEnv_GetStaticFieldID;
-    self->override_env.GetStaticObjectField = JNIEnv_GetStaticObjectField;
-    self->override_env.GetObjectClass = JNIEnv_GetObjectClass;
-    self->override_env.CallObjectMethod = JNIEnv_CallObjectMethod;
-    self->override_env.CallStaticObjectMethod = JNIEnv_CallStaticObjectMethod;
-    self->override_env.GetStringUTFChars = JNIEnv_GetStringUTFChars;
-    self->override_env.NewGlobalRef = JNIEnv_NewGlobalRef;
+    self->override_env.GetStaticFieldID = unity_jnienv_GetStaticFieldID;
+    self->override_env.GetStaticObjectField = unity_jnienv_GetStaticObjectField;
+    self->override_env.GetObjectClass = unity_jnienv_GetObjectClass;
+    self->override_env.CallObjectMethod = unity_jnienv_CallObjectMethod;
+    self->override_env.CallStaticObjectMethod = unity_jnienv_CallStaticObjectMethod;
+    self->override_env.GetStringUTFChars = unity_jnienv_GetStringUTFChars;
+    self->override_env.NewGlobalRef = unity_jnienv_NewGlobalRef;
 
     return (self->priv->JNI_OnLoad_libunity!=NULL);
 }
 
 
 const char *
-JNIEnv_GetStringUTFChars(JNIEnv *env, jstring string, jboolean *isCopy)
+unity_jnienv_GetStringUTFChars(JNIEnv *env, jstring string, jboolean *isCopy)
 {
-    MODULE_DEBUG_PRINTF("JNIEnv_GetStringUTFChars(%x)\n", string);
+    MODULE_DEBUG_PRINTF("unity_jnienv_GetStringUTFChars(%x)\n", string);
     if (string == GLOBAL_J(env)) {
         MODULE_DEBUG_PRINTF("WARNING: GetStringUTFChars on global\n");
         return NULL;
