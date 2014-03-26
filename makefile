@@ -14,6 +14,7 @@ SOURCES += $(wildcard jni/*.c)
 SOURCES += $(wildcard imagelib/*.c)
 SOURCES += $(wildcard debug/*.c)
 SOURCES += $(wildcard debug/wrappers/*.c)
+SOURCES += $(wildcard accelerometer/*.c)
 
 # Platform-specific targets and configuration
 PLATFORM_INSTALL_TARGETS :=

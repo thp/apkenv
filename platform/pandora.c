@@ -37,6 +37,8 @@
 #include <SDL/SDL_syswm.h>
 #include <SDL/SDL_video.h>
 
+#include "common/sdl_accelerometer_impl.h"
+
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/fb.h>
@@ -228,6 +230,10 @@ pandora_init(int gles_version)
     G_Data = data;
 
     SDL_ShowCursor(0);
+
+    // XXX: Does Pandora expose the accelerometer via SDL?
+    apkenv_accelerometer_register(sdl_accelerometer);
+
     return 1;
 }
 

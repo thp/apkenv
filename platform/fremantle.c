@@ -29,15 +29,74 @@
 
 
 #include "../apkenv.h"
+#include "../accelerometer/accelerometer.h"
 
 #include <SDL/SDL.h>
 #include <SDL/SDL_gles.h>
+#include <stdio.h>
 
 struct PlatformPriv {
     SDL_Surface *screen;
 };
 
 static struct PlatformPriv priv;
+
+
+struct N900Accelerometer {
+    // Must have the same structure as struct Accelerometer from accelerometer.h
+    int (*init)(struct N900Accelerometer *accelerometer);
+    int (*get)(struct N900Accelerometer *accelerometer, float *x, float *y, float *z);
+};
+
+static int
+n900_accelerometer_init(struct N900Accelerometer *accelerometer)
+{
+    return 1;
+}
+
+static int
+n900_accelerometer_get(struct N900Accelerometer *accelerometer, float *x, float *y, float *z)
+{
+    FILE *fp = fopen("/sys/class/i2c-adapter/i2c-3/3-001d/coord", "r");
+    int xx = 0, yy = 0, zz = 0;
+    int result = 0;
+
+    if (!fp) {
+        return 0;
+    }
+
+    if (fscanf(fp, "%i %i %i", &xx, &yy, &zz) == 3) {
+        // X and Y are swapped, and X is negative; compare:
+        // http://wiki.maemo.org/N900_accelerometer
+        // http://developer.android.com/reference/android/hardware/SensorEvent.html
+
+        if (x) {
+            *x = 2 * 0.001 * yy;
+        }
+
+        if (y) {
+            *y = 2 * 0.001 * -xx;
+        }
+
+        if (z) {
+            *z = 2 * 0.001 * zz;
+        }
+
+        result = 1;
+    }
+
+    fclose(fp);
+    return result;
+}
+
+static struct N900Accelerometer
+g_n900_accelerometer = {
+    n900_accelerometer_init,
+    n900_accelerometer_get,
+};
+
+static struct Accelerometer *
+n900_accelerometer = (struct Accelerometer *)(&g_n900_accelerometer);
 
 
 static int
@@ -57,6 +116,9 @@ fremantle_init(int gles_version)
     }
 
     SDL_ShowCursor(0);
+
+    apkenv_accelerometer_register(n900_accelerometer);
+
     return 1;
 }
 

@@ -36,6 +36,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
+#include "common/sdl_accelerometer_impl.h"
+
 struct PlatformPriv {
     SDL_Surface *screen;
 };
@@ -75,6 +77,9 @@ harmattan_init(int gles_version)
             PropModeReplace, (unsigned char*)region, 4);
 
     SDL_ShowCursor(0);
+
+    apkenv_accelerometer_register(sdl_accelerometer);
+
     return 1;
 }
 

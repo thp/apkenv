@@ -35,8 +35,8 @@
  **/
 
 #include "common.h"
+#include "../accelerometer/accelerometer.h"
 
-#include <SDL/SDL.h>
 
 typedef void (*trg2_init_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*trg2_resize_t)(JNIEnv *env, jobject obj, jint width, jint height) SOFTFP;
@@ -51,7 +51,6 @@ struct SupportModulePriv {
     trg2_touch_t native_touch;
     trg2_render_t native_render;
     trg2_accelerometer_t native_accelerometer;
-    SDL_Joystick *joystick;
 };
 static struct SupportModulePriv trg2_priv;
 
@@ -75,7 +74,7 @@ trg2_try_init(struct SupportModule *self)
 static void
 trg2_init(struct SupportModule *self, int width, int height, const char *home)
 {
-    self->priv->joystick = SDL_JoystickOpen(0);
+    apkenv_accelerometer_init();
     self->priv->JNI_OnLoad(VM_M, NULL);
     self->priv->native_init(ENV_M, GLOBAL_M);
     self->priv->native_resize(ENV_M, GLOBAL_M, width, height);
@@ -92,18 +91,12 @@ trg2_key_input(struct SupportModule *self, int event, int keycode, int unicode)
 {
 }
 
-#define CONVERT_ACCELEROMETER(x) ((float)(x) / 32768. * 9.81 * 2)
-#define GET_AXIS(j, x) CONVERT_ACCELEROMETER(SDL_JoystickGetAxis(j, x))
-
 static void
 trg2_update(struct SupportModule *self)
 {
-    if (self->priv->native_accelerometer != NULL) {
-        SDL_JoystickUpdate();
-        self->priv->native_accelerometer(ENV_M, GLOBAL_M,
-                GET_AXIS(self->priv->joystick, 0),
-                GET_AXIS(self->priv->joystick, 1),
-                GET_AXIS(self->priv->joystick, 2));
+    float x, y, z;
+    if (apkenv_accelerometer_get(&x, &y, &z)) {
+        self->priv->native_accelerometer(ENV_M, GLOBAL_M, x, y, z);
     }
 
     self->priv->native_render(ENV_M, GLOBAL_M);
