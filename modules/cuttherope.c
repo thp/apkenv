@@ -36,11 +36,10 @@
 #include <linux/limits.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-#include <SDL/SDL.h>
-#include <SDL/SDL_mixer.h>
+#include <string.h>
 
 #include "common.h"
+#include "../mixer/mixer.h"
 
 typedef void (*cuttherope_init_t)(JNIEnv *env, jobject obj, jobject resourceLoader, jobject soundManager, jobject preferences,
             jobject saveManager, jobject flurry, jobject videoPlayer, jobject scorer,
@@ -61,7 +60,7 @@ typedef void (*cuttherope_nativeplaybackfinished_t)(JNIEnv *env, jobject p0, jin
 #define MAX_SOUNDS 256
 typedef struct {
     char* name;
-    Mix_Chunk* sound;
+    struct MixerSound *sound;
 } Sound;
 
 #define MAX_IMAGES 200
@@ -99,7 +98,7 @@ struct SupportModulePriv {
     const char* home;
     Sound sounds[MAX_SOUNDS];
     Image images[MAX_IMAGES];
-    Mix_Music* music;
+    struct MixerMusic *music;
     char musicpath[PATH_MAX];
     KeyValue keyvalues[MAX_KEYVALUES];
     int want_exit;
@@ -330,8 +329,7 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
             char* buffer;
             size_t size;
             if (GLOBAL_J(env)->read_file(filepath,&buffer,&size)) {
-                SDL_RWops *rw = SDL_RWFromMem(buffer, size);
-                Mix_Chunk *sound = Mix_LoadWAV_RW(rw, 1);
+                struct MixerSound *sound = apkenv_mixer_load_sound_buffer(buffer, size);
                 cuttherope_priv.sounds[soundId].sound = sound;
                 MODULE_DEBUG_PRINTF("loadSound id=%d %s.\n",soundId,sound?"ok":"failed");
             }
@@ -362,7 +360,7 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
         if (soundId>=0 && soundId<MAX_SOUNDS && cuttherope_priv.sounds[soundId].sound!=0) {
             MODULE_DEBUG_PRINTF("playSoundLooped id=%d loop=%d\n",soundId,loop);
 
-            Mix_PlayChannel(-1,cuttherope_priv.sounds[soundId].sound,loop);
+            apkenv_mixer_play_sound(cuttherope_priv.sounds[soundId].sound, loop);
         }
     }
     else
@@ -376,17 +374,17 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
 
         if (strcmp(cuttherope_priv.musicpath,musicpath)!=0) {
             if (cuttherope_priv.music!=NULL) {
-                Mix_HaltMusic();
-                Mix_FreeMusic(cuttherope_priv.music);
+                apkenv_mixer_stop_music(cuttherope_priv.music);
+                apkenv_mixer_free_music(cuttherope_priv.music);
             }
-            cuttherope_priv.music = Mix_LoadMUS(musicpath);
-            Mix_PlayMusic(cuttherope_priv.music,-1);
+            cuttherope_priv.music = apkenv_mixer_load_music(musicpath);
+            apkenv_mixer_play_music(cuttherope_priv.music, 1);
         }
     }
     else
     if (strcmp(p2->name,"stopMusic")==0) {
         if(cuttherope_priv.music!=NULL) {
-            Mix_HaltMusic();
+            apkenv_mixer_stop_music(cuttherope_priv.music);
         }
     }
     else
@@ -599,20 +597,7 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
     self->priv->home = strdup(home);
 
     // init sound stuff
-    Mix_Init(MIX_INIT_OGG);
-
-    int audio_rate = 22050;
-    uint16_t audio_format = AUDIO_S16SYS;
-    int audio_channels = 2;
-    int audio_buffers = 1024;
-
-    if(Mix_OpenAudio(audio_rate,audio_format,audio_channels,audio_buffers)<0)
-    {
-        printf("Mix_OpenAudio failed %s.\n",Mix_GetError());
-        exit(-1);
-    }
-
-    Mix_AllocateChannels(16);
+    apkenv_mixer_open(22050, AudioFormat_S16SYS, 2, 1024);
 
     memset(self->priv->sounds,0,sizeof(self->priv->sounds));
     self->priv->music = NULL;
@@ -703,7 +688,7 @@ cuttherope_update(struct SupportModule *self)
 static void
 cuttherope_deinit(struct SupportModule *self)
 {
-    Mix_CloseAudio();
+    apkenv_mixer_close();
 
     save_preferences(); //not saving here in harmattan
 }

@@ -417,7 +417,7 @@ worldofgoo_init(struct SupportModule *self, int width, int height, const char *h
     self->priv->apk_in_mem = GLOBAL_M->apk_in_mem;
     build_apk_index(GLOBAL_M->apk_filename);
 
-    Mix_Init(MIX_INIT_OGG);
+    //Mix_Init(MIX_INIT_OGG);
 
     /* init sound, must use 32000Hz because music is at that rate,
      * and SDL_mixer doesn't resample to/from 32000 */

@@ -31,9 +31,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <string.h>
-#include <SDL/SDL_mixer.h>
 
 #include "common.h"
+#include "../mixer/mixer.h"
 
 /* from OF 0.7.4 source */
 typedef void (*openframeworks_setAppDataDir_t)(JNIEnv *env, jobject thiz,
@@ -82,11 +82,10 @@ static struct SupportModulePriv openframeworks_priv;
 static void publish_superhexagon_score(int level, int score);
 
 struct player_sound {
-    Mix_Music *music;
-    Mix_Chunk *chunk;
+    struct MixerMusic *music;
+    struct MixerSound *chunk;
     int loop;
     int music_playing;
-    int chunk_channel;
 };
 
 struct _jobject {
@@ -137,11 +136,10 @@ openframeworks_jnienv_CallVoidMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_
         struct player_sound *player = calloc(1, sizeof(*player));
         const char *ext = arg->data + strlen(arg->data) - 3;
         if (strcasecmp(ext, "wav") == 0)
-            player->chunk = Mix_LoadWAV(arg->data);
+            player->chunk = apkenv_mixer_load_sound(arg->data);
         else
-            player->music = Mix_LoadMUS(arg->data);
+            player->music = apkenv_mixer_load_music(arg->data);
         player->loop = 0;
-        player->chunk_channel = -1;
         obj->priv = player;
     }
     else if (strcmp(p2->name, "setLoop") == 0)
@@ -153,11 +151,11 @@ openframeworks_jnienv_CallVoidMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_
     else if (strcmp(p2->name, "play") == 0)
     {
         MODULE_DEBUG_PRINTF("play obj %p\n", obj);
-        if (player->chunk != NULL)
-            player->chunk_channel =
-                Mix_PlayChannel(-1, player->chunk, player->loop);
+        if (player->chunk != NULL) {
+            apkenv_mixer_play_sound(player->chunk, player->loop);
+        }
         else if (player->music != NULL) {
-            Mix_PlayMusic(player->music, player->loop ? -1 : 1);
+            apkenv_mixer_play_music(player->music, player->loop);
             player->music_playing = 1;
         } else
             fprintf(stderr, "play issued with nothing set to play\n");
@@ -166,12 +164,9 @@ openframeworks_jnienv_CallVoidMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_
     {
         MODULE_DEBUG_PRINTF("stop obj %p\n", obj);
         if (player->chunk != NULL) {
-            if (player->chunk_channel >= 0) {
-                Mix_HaltChannel(player->chunk_channel);
-                player->chunk_channel = -1;
-            }
+            apkenv_mixer_stop_sound(player->chunk);
         } else {
-            Mix_HaltMusic();
+            apkenv_mixer_stop_music(player->music);
             player->music_playing = 0;
         }
     }
@@ -182,18 +177,19 @@ openframeworks_jnienv_CallVoidMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_
         if (player->music != NULL && player->music_playing) {
             // note: SDL_mixer has seek broken when compiled with tremor
             // http://bugzilla.libsdl.org/show_bug.cgi?id=1807
-            Mix_SetMusicPosition((double)arg / 1000.0);
+            //Mix_SetMusicPosition((double)arg / 1000.0);
+            // FIXME
         }
     }
     else if (strcmp(p2->name, "setVolume") == 0)
     {
-        double arg = va_arg(p3, double);
+        double volume = va_arg(p3, double);
         MODULE_DEBUG_PRINTF("setVolume %.3f, obj %p\n", arg, obj);
-        int sdl_volume = (int)(arg * MIX_MAX_VOLUME);
-        if (player->chunk != NULL)
-            Mix_VolumeChunk(player->chunk, sdl_volume);
-        else if (player->music != NULL && player->music_playing)
-            Mix_VolumeMusic(sdl_volume);
+        if (player->chunk != NULL) {
+            apkenv_mixer_volume_sound(player->chunk, volume);
+        } else if (player->music != NULL && player->music_playing) {
+            apkenv_mixer_volume_music(player->music, volume);
+        }
     }
 }
 
@@ -324,13 +320,7 @@ openframeworks_init(struct SupportModule *self, int width, int height, const cha
     }
 
     /* init sound */
-    Mix_Init(MIX_INIT_OGG);
-
-    if (Mix_OpenAudio(44100, AUDIO_S16SYS, 2, 1024) < 0)
-    {
-        fprintf(stderr, "Mix_OpenAudio failed: %s.\n", Mix_GetError());
-        exit(-1);
-    }
+    apkenv_mixer_open(44100, AudioFormat_S16SYS, 2, 1024);
 
     /* note: order is important here */
     self->priv->JNI_OnLoad(VM_M, NULL);
@@ -405,7 +395,7 @@ openframeworks_deinit(struct SupportModule *self)
     /* onStop(), onDestroy(), exit() never called? */
     openframeworks_pause(self);
 
-    Mix_CloseAudio();
+    apkenv_mixer_close();
 }
 
 static int

@@ -36,11 +36,11 @@
 #define MAX_SOUNDS  150
 
 #include "common.h"
+#include "../mixer/mixer.h"
+
 #include <string.h>
 #include <limits.h>
 #include <unistd.h>
-#include "SDL/SDL.h"
-#include "SDL/SDL_mixer.h"
 
 // Typedefs. Got these from classes.dex (http://stackoverflow.com/questions/1249973/decompiling-dex-into-java-sourcecode)
 
@@ -80,14 +80,14 @@ struct GlobalState *global;
 typedef struct
 {
     char* name;
-    Mix_Chunk *sound;
+    struct MixerSound *sound;
 } SFXInfo;
 
 SFXInfo SFX[MAX_SOUNDS+1]; //<bugfix, MAX_SOUNDS loops are <= (crow_riot)
 int SoundCount = 0;
 
 //The music that will be played
-Mix_Music *music = NULL;
+struct MixerMusic *music = NULL;
 char Music_Path[PATH_MAX];
 
 /* Load all SFX into memory */
@@ -98,10 +98,7 @@ load_sound_callback(const char *filename, char *buffer, size_t size)
     MODULE_DEBUG_PRINTF("module: Load sound: %s\n", fname);
     SFX[SoundCount].name = strdup(fname);
 
-    SDL_RWops *rw = SDL_RWFromMem(buffer, size);
-    Mix_Chunk *sound = Mix_LoadWAV_RW(rw, 1);
-
-    SFX[SoundCount].sound = sound;
+    SFX[SoundCount].sound = apkenv_mixer_load_sound_buffer(buffer, size);
     SoundCount++;
 }
 
@@ -125,7 +122,7 @@ fruitninja_jnienv_CallStaticObjectMethodV(JNIEnv*env, jclass p1, jmethodID p2, v
             if ( memcmp(SFX[i].name, soundname, strlen(soundname)) == 0 ) {
                 /* Play some sweet sounds? */
                 MODULE_DEBUG_PRINTF("module: Play sound: %s\n", SFX[i].name);
-                Mix_PlayChannel( -1, SFX[i].sound, 0 );
+                apkenv_mixer_play_sound(SFX[i].sound, 0);
                 return NULL;
             }
         }
@@ -165,16 +162,6 @@ extract_files_callback(const char *filename, char *buffer, size_t size)
     fclose(my_file);
 }
 
-/* If music is started with Mix_PlayMusic( music, -1 ) it should loop right?
-   At least for me it did not so reload music and start again... */
-void
-musicFinished()
-{
-   MODULE_DEBUG_PRINTF("module: Music finished, trying to restart...\n");
-   music = Mix_LoadMUS( Music_Path );
-   Mix_PlayMusic( music, 0 );
-}
-
 void
 fruitninja_jnienv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
 {
@@ -187,8 +174,10 @@ fruitninja_jnienv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_
     {
         struct dummy_jstring *str = va_arg(p3,struct dummy_jstring*); //Music file?
 
-        if( Mix_PlayingMusic() != 0 ) Mix_FreeMusic( music );
-
+        if (music) {
+            apkenv_mixer_stop_music(music);
+            apkenv_mixer_free_music(music);
+        }
 
         char* musicname = strdup(str->data);
         int i;
@@ -202,21 +191,20 @@ fruitninja_jnienv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_
 
         MODULE_DEBUG_PRINTF("module: Play music: %s\n", Music_Path);
 
-        music = Mix_LoadMUS( Music_Path );
-        Mix_PlayMusic( music, 0 ); // -1 should loop music? Not for me?
-        Mix_HookMusicFinished(musicFinished);
+        music = apkenv_mixer_load_music(Music_Path);
+        apkenv_mixer_play_music(music, 1);
     } else if( strcmp( p2->name, "SetMusicVolume" ) == 0 ){
-        int musicvol = va_arg(p3, double) * MIX_MAX_VOLUME;
-        MODULE_DEBUG_PRINTF("module: SetMusicVolume: %i\n", musicvol);
-        Mix_VolumeMusic(musicvol);
+        double musicvol = va_arg(p3, double);
+        MODULE_DEBUG_PRINTF("module: SetMusicVolume: %.2f\n", musicvol);
+        apkenv_mixer_volume_music(music, musicvol);
     } else if( strcmp( p2->name, "SetSFXVolume" ) == 0 ){
-        int soundvol = va_arg(p3, double) * MIX_MAX_VOLUME;
+        double soundvol = va_arg(p3, double);
         int i;
-        MODULE_DEBUG_PRINTF("module: SetSFXVolume: %i\n", soundvol);
+        MODULE_DEBUG_PRINTF("module: SetSFXVolume: %.2f\n", soundvol);
         for(i=0; i <= MAX_SOUNDS; i++)
         {
             if ( SFX[i].sound == NULL ) break;
-            Mix_VolumeChunk(SFX[i].sound, soundvol);
+            apkenv_mixer_volume_sound(SFX[i].sound, soundvol);
         }
     } else {
         MODULE_DEBUG_PRINTF("module_fruitninja_jnienv_CallStaticVoidMethodV(%x, %s, %s)\n", jcl->name, p2->name, p2->sig);
@@ -359,18 +347,7 @@ fruitninja_init(struct SupportModule *self, int width, int height, const char *h
     global = GLOBAL_M;
     self->priv->myHome = strdup(home);
 
-    /* Init audio. I am too lazy to find out if fruitninja reports right
-       settings so I just hardcode these into here... */
-    int audio_rate = 22050;
-    Uint16 audio_format = AUDIO_S16SYS;
-    int audio_channels = 2;
-    int audio_buffers = 1024;
-
-    if(Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) != 0) {
-        fprintf(stderr, "Unable to initialize audio: %s\n", Mix_GetError());
-        exit(1);
-    }
-    Mix_AllocateChannels(16);
+    apkenv_mixer_open(22050, AudioFormat_S16SYS, 2, 1024);
 
     /* Load sounds */
     global->foreach_file("assets/sound", load_sound_callback);
@@ -413,15 +390,18 @@ fruitninja_update(struct SupportModule *self)
 static void
 fruitninja_deinit(struct SupportModule *self)
 {
-    if( Mix_PlayingMusic() != 0 ) Mix_FreeMusic( music );
+    if (music) {
+        apkenv_mixer_stop_music(music);
+        apkenv_mixer_free_music(music);
+    }
 
     int i;
     for(i=0; i <= MAX_SOUNDS; i++)
     {
         if ( SFX[i].sound == NULL ) break;
-        Mix_FreeChunk(SFX[i].sound);
+        apkenv_mixer_free_sound(SFX[i].sound);
     }
-    Mix_CloseAudio();
+    apkenv_mixer_close();
 }
 
 static void

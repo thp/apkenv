@@ -31,9 +31,9 @@
 #include <string.h>
 #include <pthread.h>
 #include <signal.h>
-#include <SDL/SDL.h>
-#include <SDL/SDL_mixer.h>
+
 #include "common.h"
+#include "../mixer/mixer.h"
 
 #define ORIENTATION_LANDSCAPE 2
 #define ORIENTATION_PORTRAIT 1
@@ -329,7 +329,7 @@ static int sound_started;
 static int sound_volume; // 0-100
 
 /* mix audio buffer */
-static void my_audio_mixer(void *udata, Uint8 *stream, int len)
+static void my_audio_mixer(void *udata, void *stream, int len)
 {
     static short soundbuf[AUDIO_CHUKSIZE * AUDIO_CHANNELS];
     struct dummy_array arr;
@@ -365,8 +365,7 @@ static void my_audio_mixer(void *udata, Uint8 *stream, int len)
 #define CHANNELS 16
 
 struct audio_player_state {
-    SDL_RWops *rw;
-    Mix_Music *music;
+    struct MixerMusic *music;
     int playing;
     int really_playing; // SDL_Mixer can only play 1, marmalade can play many..
 } player_state[CHANNELS];
@@ -378,7 +377,7 @@ static void audioStop(unsigned int channel)
 
     if (player_state[channel].really_playing) {
         player_state[channel].really_playing = 0;
-        Mix_HaltMusic();
+        apkenv_mixer_stop_music(player_state[channel].music);
     }
     if (player_state[channel].playing) {
         player_state[channel].playing = 0;
@@ -405,12 +404,8 @@ static int audioPlay(const char *filename, int repeats, long long file_offset,
 
     player = &player_state[channel];
     if (player->music != NULL) {
-        Mix_FreeMusic(player->music);
+        apkenv_mixer_free_music(player->music);
         player->music = NULL;
-    }
-    if (player->rw != NULL) {
-        SDL_RWclose(player->rw);
-        player->rw = NULL;
     }
 
     ext = strrchr(filename, '.');
@@ -418,22 +413,18 @@ static int audioPlay(const char *filename, int repeats, long long file_offset,
         && marmalade_priv.global->apk_in_mem != NULL)
     {
         mem = (const char *)marmalade_priv.global->apk_in_mem + file_offset;
-        player->rw = SDL_RWFromConstMem(mem, file_size);
-        player->music = Mix_LoadMUS_RW(player->rw);
+        player->music = apkenv_mixer_load_music_buffer(mem, file_size);
     }
     else {
         if (file_offset)
             fprintf(stderr, "TODO: offset %lld for %s\n", file_offset, filename);
-        player->music = Mix_LoadMUS(filename);
-    }
-    if (player->music == NULL) {
-        fprintf(stderr, "failed to play %s: %s\n", filename, Mix_GetError());
-        return -1;
+        player->music = apkenv_mixer_load_music(filename);
     }
 
-    Mix_PlayMusic(player->music, repeats > 0 ? repeats : -1);
-    for (i = 0; i < CHANNELS; i++)
+    apkenv_mixer_play_music(player->music, repeats < 0);
+    for (i = 0; i < CHANNELS; i++) {
         player_state[i].really_playing = 0;
+    }
     player_state[channel].playing = player_state[channel].really_playing = 1;
     return 0;
 }
@@ -456,40 +447,13 @@ static int my_soundInit(void)
 
     // marmalade gives useless values
     int audio_rate = AUDIO_RATE;
-
-    Uint16 audio_format = AUDIO_S16SYS;
     int audio_channels = AUDIO_CHANNELS;
     int audio_buffers = AUDIO_CHUKSIZE;
 
-    int act_audio_rate;
-    int act_audio_channels;
-    Uint16 act_audio_format;
+    apkenv_mixer_open(audio_rate, AudioFormat_S16SYS, audio_channels, audio_buffers);
 
-    Mix_Init(MIX_INIT_OGG | MIX_INIT_MP3);
-
-    if(Mix_OpenAudio(audio_rate, audio_format, audio_channels, audio_buffers) != 0) {
-        MODULE_DEBUG_PRINTF("marmalade: Unable to initialize audio: %s\n", Mix_GetError());
-        exit(1);
-    }
-
-    Mix_AllocateChannels(16);
-
-    if(Mix_QuerySpec(&act_audio_rate, &act_audio_format, &act_audio_channels) != 0)
-    {
-        if(act_audio_rate != audio_rate || act_audio_format != audio_format || act_audio_channels != audio_channels)
-        {
-            MODULE_DEBUG_PRINTF("marmalade actual audio settings differ from set: set/act [rate,format,channels]: [%d/%d,%d/%d,%d/%d]\n",audio_rate,act_audio_rate,audio_format,act_audio_format,audio_channels,act_audio_channels);
-        }
-
-        audio_rate = act_audio_rate;
-    }
-    else
-    {
-        MODULE_DEBUG_PRINTF("Mix_QuerySpec failed.\n");
-    }
-
-    Mix_SetPostMix(my_audio_mixer, NULL);
-    Mix_HookMusicFinished(music_finished);
+    // TODO Mix_SetPostMix(my_audio_mixer, NULL);
+    // TODO Mix_HookMusicFinished(music_finished);
 
     MODULE_DEBUG_PRINTF("marmalade initializing audio done.\n");
     return audio_rate;
@@ -698,10 +662,10 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     }
     else if(method_is(audioSetVolume))
     {
-        jint volume = va_arg(p3, int);
+        float volume = va_arg(p3, int) / 100.f;
         jint which = va_arg(p3, int);
-        MODULE_DEBUG_PRINTF("audioSetVolume(%d, %d) obj=%p\n", volume, which, p1);
-        Mix_VolumeMusic(volume * MIX_MAX_VOLUME / 100);
+        MODULE_DEBUG_PRINTF("audioSetVolume(%.2f, %d) obj=%p\n", volume, which, p1);
+        // TODO apkenv_mixer_volume_music(..., volume)
     }
     else if(method_is(audioStop))
     {

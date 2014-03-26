@@ -16,6 +16,7 @@ SOURCES += $(wildcard debug/*.c)
 SOURCES += $(wildcard debug/wrappers/*.c)
 SOURCES += $(wildcard accelerometer/*.c)
 SOURCES += $(wildcard audio/*.c)
+SOURCES += $(wildcard mixer/*.c)
 
 # Platform-specific targets and configuration
 PLATFORM_INSTALL_TARGETS :=

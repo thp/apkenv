@@ -39,6 +39,7 @@
 
 #include "common/sdl_accelerometer_impl.h"
 #include "common/sdl_audio_impl.h"
+#include "common/sdl_mixer_impl.h"
 
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -235,6 +236,7 @@ pandora_init(int gles_version)
     // XXX: Does Pandora expose the accelerometer via SDL?
     apkenv_accelerometer_register(sdl_accelerometer);
     apkenv_audio_register(sdl_audio);
+    apkenv_mixer_register(sdl_mixer);
 
     return 1;
 }

@@ -47,7 +47,7 @@ apkenv_audio_open(int frequency, enum AudioFormat format, int channels,
         g_audio->config.format = format;
         g_audio->config.channels = channels;
         g_audio->config.buffer = buffer;
-        g_audio->config.callback = (void (*)(void *, Uint8 *, int))callback;
+        g_audio->config.callback = (void (*)(void *, void *, int))callback;
         g_audio->config.user_data = user_data;
         return g_audio->open(g_audio);
     }
