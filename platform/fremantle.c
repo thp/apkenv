@@ -1,6 +1,6 @@
 /**
  * apkenv
- * Copyright (c) 2012, Thomas Perl <m@thp.io>
+ * Copyright (c) 2012, 2014, Thomas Perl <m@thp.io>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,13 +31,7 @@
 #include "../apkenv.h"
 
 #include <SDL/SDL.h>
-#ifdef FREMANTLE
-#    include <SDL/SDL_gles.h>
-#endif
-
-#include <SDL/SDL_syswm.h>
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
+#include <SDL/SDL_gles.h>
 
 struct PlatformPriv {
     SDL_Surface *screen;
@@ -47,51 +41,27 @@ static struct PlatformPriv priv;
 
 
 static int
-maemo_init(int gles_version)
+fremantle_init(int gles_version)
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
         return 0;
     }
 
-#ifdef FREMANTLE
     SDL_GLES_Init(gles_version == 2 ? SDL_GLES_VERSION_2_0 : SDL_GLES_VERSION_1_1);
     SDL_GLES_SetAttribute(SDL_GLES_DEPTH_SIZE, 16);
     priv.screen = SDL_SetVideoMode(0, 0, 0, SDL_FULLSCREEN);
     SDL_GLES_MakeCurrent(SDL_GLES_CreateContext());
-#else /* FREMANTLE */
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gles_version);
-    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
-    priv.screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGLES | SDL_FULLSCREEN);
-#endif /* FREMANTLE */
 
     if (priv.screen == NULL) {
         return 0;
     }
-
-#ifndef FREMANTLE
-    /* Set up swipe lock (left and right) */
-    SDL_SysWMinfo wm;
-    SDL_VERSION(&wm.version);
-    SDL_GetWMInfo(&wm);
-    Display *dpy = wm.info.x11.display;
-    Atom atom = XInternAtom(dpy, "_MEEGOTOUCH_CUSTOM_REGION", False);
-    const int MEEGOTOUCH_BORDER = 16;
-    unsigned int region[] = {
-        0,
-        MEEGOTOUCH_BORDER,
-        priv.screen->w,
-        priv.screen->h - 2*MEEGOTOUCH_BORDER,
-    };
-    XChangeProperty(dpy, wm.info.x11.wmwindow, atom, XA_CARDINAL, 32,
-            PropModeReplace, (unsigned char*)region, 4);
-#endif
 
     SDL_ShowCursor(0);
     return 1;
 }
 
 static const char *
-maemo_get_path(enum PlatformPath which)
+fremantle_get_path(enum PlatformPath which)
 {
     switch (which) {
         case PLATFORM_PATH_INSTALL_DIRECTORY:
@@ -106,7 +76,7 @@ maemo_get_path(enum PlatformPath which)
 }
 
 static void
-maemo_get_size(int *width, int *height)
+fremantle_get_size(int *width, int *height)
 {
     if (width) {
         *width = priv.screen->w;
@@ -118,7 +88,7 @@ maemo_get_size(int *width, int *height)
 }
 
 static int
-maemo_input_update(struct SupportModule *module)
+fremantle_input_update(struct SupportModule *module)
 {
     int width = priv.screen->w;
     int height = priv.screen->h;
@@ -156,25 +126,21 @@ maemo_input_update(struct SupportModule *module)
 }
 
 static void
-maemo_update()
+fremantle_update()
 {
-#ifdef FREMANTLE
     SDL_GLES_SwapBuffers();
-#else
-    SDL_GL_SwapBuffers();
-#endif
 }
 
 static void
-maemo_exit()
+fremantle_exit()
 {
 }
 
 struct PlatformSupport platform_support = {
-    maemo_init,
-    maemo_get_path,
-    maemo_get_size,
-    maemo_input_update,
-    maemo_update,
-    maemo_exit,
+    fremantle_init,
+    fremantle_get_path,
+    fremantle_get_size,
+    fremantle_input_update,
+    fremantle_update,
+    fremantle_exit,
 };

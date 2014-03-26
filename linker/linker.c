@@ -610,21 +610,14 @@ static void dump(soinfo *si)
 
 #define SOPATH_MAX 8
 
-#if defined(PANDORA)
-static const char *sopaths[SOPATH_MAX + 1] = {
-    "./vendor/lib",
-    "./system/lib",
-    "./lib",
-};
-#else
 static const char *sopaths[SOPATH_MAX + 1] = {
     "/vendor/lib",
     "/system/lib",
-    "/opt/apkenv/bionic/",
-    // Also allow local directory during development
-    "./libs/",
-};
+    APKENV_PREFIX "/lib/" APKENV_TARGET "/bionic/",
+#ifdef APKENV_LOCAL_BIONIC_PATH
+    APKENV_LOCAL_BIONIC_PATH,
 #endif
+};
 
 int add_sopath(const char *path)
 {
@@ -1755,7 +1748,7 @@ static int nullify_closed_stdio (void)
 void wrap_function(void *sym_addr, char *sym_name, int is_thumb, soinfo *si)
 {
     void *hook = NULL;
-#ifdef LATEHOOKS
+#ifdef APKENV_LATEHOOKS
     if((hook = get_hooked_symbol(sym_name, 0)) != NULL)
     {
         // if we have a hook redirect the call to that by overwriting
@@ -1788,7 +1781,7 @@ void wrap_function(void *sym_addr, char *sym_name, int is_thumb, soinfo *si)
         }
     }
     else
-#endif /* LATEHOOKS */
+#endif /* APKENV_LATEHOOKS */
     // TODO: this will fail if the first 2 instructions do something pc related
     // (this DOES NOT happen very often)
     if(sym_addr && !is_thumb)
