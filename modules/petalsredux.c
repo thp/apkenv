@@ -35,8 +35,7 @@
  **/
 
 #include "common.h"
-
-#include <SDL/SDL.h>
+#include "../audio/audio.h"
 
 #include <stdio.h>
 #include <stdarg.h>
@@ -104,7 +103,7 @@ petalsredux_try_init(struct SupportModule *self)
     return (self->priv->JNI_OnLoad != NULL && self->priv->is_petalsredux);
 }
 
-static void mix_audio(void *user_data, Uint8 *stream, int len)
+static void mix_audio(void *user_data, void *stream, int len)
 {
     struct SupportModule *self = (struct SupportModule *)user_data;
 
@@ -146,17 +145,10 @@ petalsredux_init(struct SupportModule *self, int width, int height, const char *
     self->priv->native_init(ENV_M, GLOBAL_M);
     self->priv->native_resize(ENV_M, GLOBAL_M, width, height);
 
-    SDL_AudioSpec desired, obtained;
-
-    desired.freq = 44100;
-    desired.channels = 1;
-    desired.format = AUDIO_S16SYS;
-    desired.samples = desired.freq / 8;
-    desired.callback = mix_audio;
-    desired.userdata = self;
-
-    SDL_OpenAudio(&desired, &obtained);
-    SDL_PauseAudio(0);
+    int freq = 44100;
+    enum AudioFormat format = AudioFormat_S16SYS;
+    apkenv_audio_open(freq, 1, format, freq / 8, mix_audio, self);
+    apkenv_audio_play();
 }
 
 static void
@@ -179,18 +171,21 @@ petalsredux_update(struct SupportModule *self)
 static void
 petalsredux_deinit(struct SupportModule *self)
 {
+    apkenv_audio_close();
 }
 
 static void
 petalsredux_pause(struct SupportModule *self)
 {
     self->priv->native_pause(ENV_M, GLOBAL_M);
+    apkenv_audio_pause();
 }
 
 static void
 petalsredux_resume(struct SupportModule *self)
 {
     self->priv->native_resume(ENV_M, GLOBAL_M);
+    apkenv_audio_play();
 }
 
 static int

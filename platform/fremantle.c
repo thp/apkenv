@@ -35,6 +35,8 @@
 #include <SDL/SDL_gles.h>
 #include <stdio.h>
 
+#include "common/sdl_audio_impl.h"
+
 struct PlatformPriv {
     SDL_Surface *screen;
 };
@@ -118,6 +120,7 @@ fremantle_init(int gles_version)
     SDL_ShowCursor(0);
 
     apkenv_accelerometer_register(n900_accelerometer);
+    apkenv_audio_register(sdl_audio);
 
     return 1;
 }

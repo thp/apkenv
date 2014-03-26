@@ -37,6 +37,7 @@
 #include <X11/Xatom.h>
 
 #include "common/sdl_accelerometer_impl.h"
+#include "common/sdl_audio_impl.h"
 
 struct PlatformPriv {
     SDL_Surface *screen;
@@ -79,6 +80,7 @@ harmattan_init(int gles_version)
     SDL_ShowCursor(0);
 
     apkenv_accelerometer_register(sdl_accelerometer);
+    apkenv_audio_register(sdl_audio);
 
     return 1;
 }

@@ -34,10 +34,10 @@
  **/
 
 #include "common.h"
+#include "../audio/audio.h"
 
 #include <string.h>
 #include <limits.h>
-#include "SDL/SDL.h"
 #include <assert.h>
 
 // Typedefs. Got these from classes.dex (http://stackoverflow.com/questions/1249973/decompiling-dex-into-java-sourcecode)
@@ -69,14 +69,13 @@ struct SupportModulePriv {
 static struct SupportModulePriv angrybirds_priv;
 
 /* Audio specs and handle */
-SDL_AudioSpec *desired, *obtained;
 jlong audioHandle;
 
 /* Global application state so we can call this from override thingie */
 struct GlobalState *global;
 
 /* Fill audio buffer */
-void my_audio_callback(void *ud, Uint8 *stream, int len)
+void my_audio_callback(void *ud, void *stream, int len)
 {
     struct dummy_array array;
     array.data = stream;
@@ -94,13 +93,13 @@ angrybirds_jnienv_CallVoidMethodV(JNIEnv* p0, jobject p1, jmethodID p2, va_list 
     if (strcmp(p2->name, "startOutput") == 0)
     {
         MODULE_DEBUG_PRINTF("Start audio Output\n");
-        SDL_PauseAudio(0);
+        apkenv_audio_play();
     }
     if (strcmp(p2->name, "stopOutput") == 0)
     {
         // Stop output :)
         MODULE_DEBUG_PRINTF("Stop audio Output\n");
-        SDL_PauseAudio(1);
+        apkenv_audio_pause();
     }
 }
 
@@ -113,23 +112,15 @@ angrybirds_jnienv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
     if (strcmp(clazz->name, "com/rovio/ka3d/AudioOutput") == 0)
     {
         /* Open the audio device */
-        desired = malloc(sizeof(SDL_AudioSpec));
-        obtained = malloc(sizeof(SDL_AudioSpec));
-
         audioHandle = va_arg(p3, jlong);
 
-        desired->freq = va_arg(p3, int);
-        desired->channels = va_arg(p3, int);
-        desired->format = AUDIO_S16SYS;
+        int freq = va_arg(p3, int);
+        enum AudioFormat format = AudioFormat_S16SYS;
+        int channels = va_arg(p3, int);
         jint bitrate = va_arg(p3, int);
-        desired->samples = va_arg(p3, int) / 8;
-        desired->callback=my_audio_callback;
-        desired->userdata=NULL;
-        MODULE_DEBUG_PRINTF("Module: Handle: %lld, freq: %i, channels: %i, bitrate: %i, samples: %i\n",
-            audioHandle,desired->freq,desired->channels,bitrate,desired->samples);
+        int samples = va_arg(p3, int) / 8;
 
-        assert( SDL_OpenAudio(desired, obtained) == 0 );
-        free(desired);
+        apkenv_audio_open(freq, format, channels, samples, my_audio_callback, NULL);
     }
 
     return GLOBAL_J(env);
@@ -239,7 +230,7 @@ static void
 angrybirds_deinit(struct SupportModule *self)
 {
     self->priv->native_deinit(ENV_M, GLOBAL_M);
-    SDL_CloseAudio();
+    apkenv_audio_close();
 }
 
 static void
