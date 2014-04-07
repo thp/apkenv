@@ -350,7 +350,7 @@ system_init(int gles_version)
 
 int init_dvm(struct GlobalState *global, void *libdvm_handle)
 {
-    int (*CreateJavaVM)(JavaVM *vm, JNIEnv *env, char *apk_filename);
+    int (*CreateJavaVM)(JavaVM *vm, JNIEnv *env, const char *apk_filename);
     CreateJavaVM = android_dlsym(libdvm_handle, "compat_CreateJavaVM");
     if(NULL == CreateJavaVM) {
         return 0; // failed
@@ -370,6 +370,7 @@ int main(int argc, char **argv)
 
     char **tmp;
     void *libdvm_handle = NULL;
+    char android_sopath[PATH_MAX];
 
     const char *main_data_dir = global.platform->get_path(PLATFORM_PATH_DATA_DIRECTORY);
     recursive_mkdir(main_data_dir);
@@ -497,12 +498,15 @@ int main(int argc, char **argv)
     hooks_init();
     
     if(global.use_dvm) {
-        char path[1024];
+        char path[PATH_MAX];
         strcpy(path, global.android_path);
-        strcat(path, "/system/lib/libdvm_compat.so");
+        strcat(path, "/system/lib/");
+        strcpy(android_sopath, path);
+        add_sopath(android_sopath);
+        strcat(path, "libdvm_compat.so");
         libdvm_handle = android_dlopen(path, RTLD_LAZY);
         if(NULL == libdvm_handle) {
-            printf("ERROR: could not load libdvm.so. Falling back to fakevm.\n");
+            printf("ERROR: could not load libdvm_compat.so. Falling back to fakevm.\n");
             libdvm_handle = NULL;
             jnienv_init(&global);
             javavm_init(&global);
