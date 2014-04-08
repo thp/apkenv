@@ -236,6 +236,11 @@ marmalade_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint
     MODULE_DEBUG_PRINTF("marmalade_RegisterNatives()\n");
 
     struct dummy_jclass *clazz = (struct dummy_jclass*)p1;
+    if(NULL == clazz)
+    {
+        MODULE_DEBUG_PRINTF("clazz == NULL\n");
+        return -1;
+    }
     MODULE_DEBUG_PRINTF("\n\tClass: %s\n", clazz->name);
 
     int is_loaderthread = class_is(MARMALADE_LOADERTHREAD) || class_is(AIRPLAY_LOADERTHREAD);
