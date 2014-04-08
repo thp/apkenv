@@ -506,17 +506,15 @@ int main(int argc, char **argv)
         strcat(path, "libdvm_compat.so");
         libdvm_handle = android_dlopen(path, RTLD_LAZY);
         if(NULL == libdvm_handle) {
-            printf("ERROR: could not load libdvm_compat.so. Falling back to fakevm.\n");
+            printf("ERROR: could not load libdvm_compat.so.\n");
             libdvm_handle = NULL;
-            jnienv_init(&global);
-            javavm_init(&global);
+            exit(3);
         }
         else if(!init_dvm(&global, libdvm_handle)) {
-            printf("ERROR: failed to initialize the dalvikvm. Falling back to fakevm.\n");
+            printf("ERROR: failed to initialize the dalvikvm.\n");
             android_dlclose(libdvm_handle);
             libdvm_handle = NULL;
-            jnienv_init(&global);
-            javavm_init(&global);
+            exit(3);
         }
     }
     else {
