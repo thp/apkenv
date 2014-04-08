@@ -1,0 +1,2 @@
+{"strcasecmp", my_strcasecmp},
+
