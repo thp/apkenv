@@ -17,6 +17,7 @@
 {"pthread_cond_broadcast", my_pthread_cond_broadcast},
 {"pthread_cond_signal", my_pthread_cond_signal},
 {"pthread_cond_timedwait", my_pthread_cond_timedwait},
+{"pthread_cond_timedwait_monotonic", my_pthread_cond_timedwait},
 {"pthread_cond_wait", my_pthread_cond_wait},
 {"pthread_cond_timeout_np", my_pthread_cond_timeout_np},
 {"pthread_cond_destroy", my_pthread_cond_destroy},
