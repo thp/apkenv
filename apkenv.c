@@ -498,13 +498,10 @@ int main(int argc, char **argv)
     hooks_init();
     
     if(global.use_dvm) {
-        char path[PATH_MAX];
-        strcpy(path, global.android_path);
-        strcat(path, "/system/lib/");
-        strcpy(android_sopath, path);
+        strcpy(android_sopath, global.android_path);
+        strcat(android_sopath, "/system/lib/");
         add_sopath(android_sopath);
-        strcat(path, "libdvm_compat.so");
-        libdvm_handle = android_dlopen(path, RTLD_LAZY);
+        libdvm_handle = android_dlopen("libdvm_compat.so", RTLD_LAZY);
         if(NULL == libdvm_handle) {
             printf("ERROR: could not load libdvm_compat.so.\n");
             libdvm_handle = NULL;
