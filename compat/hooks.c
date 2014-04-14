@@ -42,6 +42,7 @@
 #include "gles_wrappers.h"
 #include "gles2_wrappers.h"
 #include "pthread_wrappers.h"
+#include "linux_wrappers.h"
 
 #include "../debug/wrappers.h"
 
@@ -56,6 +57,7 @@ static struct _hook hooks[HOOKS_MAX] = {
 #include "liblog_mapping.h"
 #include "egl_mapping.h"
 #include "pthread_mapping.h"
+#include "linux_mapping.h"
 
   {"__sF", my___sF},
 };

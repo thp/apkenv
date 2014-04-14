@@ -203,8 +203,6 @@ double
 my_sqrt(double __x) SOFTFP;
 void
 my_srand48(long int __seedval) SOFTFP;
-int
-my_strcasecmp(__const char *__s1, __const char *__s2) SOFTFP;
 char *
 my_strcat(char *__restrict __dest, __const char *__restrict __src) SOFTFP;
 char *
