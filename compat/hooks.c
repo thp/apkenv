@@ -122,7 +122,7 @@ void *get_hooked_symbol(const char *sym, int die_if_pthread)
 
     if (strstr(sym, "pthread") != NULL) {
         printf("Unimplemented: %s\n", sym);
-        if(die_if_pthread) exit(0);
+        if(die_if_pthread) exit(4);
     }
 
     return NULL;
