@@ -469,6 +469,11 @@ marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 {
     jmethodID method = p2;
 
+    if(NULL == p2)
+    {
+        return -1;
+    }
+
     MODULE_DEBUG_PRINTF("marmalade_CallIntMethodV(%s)\n",p2->name);
 
     if(method_is(getOrientation))
