@@ -97,6 +97,13 @@ enum PlatformPath {
     PLATFORM_PATH_MODULE_DIRECTORY = 3,
 };
 
+/**
+ * Callback for a request_text_input request
+ *   text ........ User-entered text, or NULL if the user canceled text input
+ *   user_data ... The pointer passed to request_text_input() for the request
+ **/
+typedef void (*text_callback_t)(const char *text, void *user_data);
+
 struct PlatformSupport {
     /* Initialize the video mode, return nonzero on success, zero on error */
     int (*init)(int gles_version);
@@ -109,6 +116,18 @@ struct PlatformSupport {
 
     /* Process input events and forward to "module", return nonzero to exit */
     int (*input_update)(struct SupportModule *module);
+
+    /**
+     * Asynchronously request text input from the native platform
+     *   is_password ... If non-zero, text input will be hidden while typing
+     *   text .......... Text to pre-fill into the entry (or NULL for none)
+     *   callback ...... Callback for the result
+     *   user_data ..... Pointer that will be passed to callback
+     * This function returns right away, when the text input is completed,
+     * callback will be called with user_data (see text_callback_t for details).
+     **/
+    void (*request_text_input)(int is_password, const char *text,
+            text_callback_t callback, void *user_data);
 
     /* Called once per rendering frame to swap buffers, etc... */
     void (*update)();

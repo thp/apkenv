@@ -328,6 +328,17 @@ pandora_input_update(struct SupportModule *module)
 }
 
 static void
+pandora_request_text_input(int is_password, const char *text,
+        text_callback_t callback, void *user_data)
+{
+    fprintf(stderr, "XXX: Request text input not implemented!\n");
+
+    // Admit failure right away
+    callback(NULL, user_data);
+}
+
+
+static void
 pandora_update()
 {
     static unsigned int last_time;
@@ -374,6 +385,7 @@ struct PlatformSupport platform_support = {
     pandora_get_path,
     pandora_get_size,
     pandora_input_update,
+    pandora_request_text_input,
     pandora_update,
     pandora_exit,
 };

@@ -153,6 +153,16 @@ harmattan_input_update(struct SupportModule *module)
 }
 
 static void
+harmattan_request_text_input(int is_password, const char *text,
+        text_callback_t callback, void *user_data)
+{
+    fprintf(stderr, "XXX: Request text input not implemented!\n");
+
+    // Admit failure right away
+    callback(NULL, user_data);
+}
+
+static void
 harmattan_update()
 {
     SDL_GL_SwapBuffers();
@@ -168,6 +178,7 @@ struct PlatformSupport platform_support = {
     harmattan_get_path,
     harmattan_get_size,
     harmattan_input_update,
+    harmattan_request_text_input,
     harmattan_update,
     harmattan_exit,
 };

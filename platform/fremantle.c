@@ -193,6 +193,16 @@ fremantle_input_update(struct SupportModule *module)
 }
 
 static void
+fremantle_request_text_input(int is_password, const char *text,
+        text_callback_t callback, void *user_data)
+{
+    fprintf(stderr, "XXX: Request text input not implemented!\n");
+
+    // Admit failure right away
+    callback(NULL, user_data);
+}
+
+static void
 fremantle_update()
 {
     SDL_GLES_SwapBuffers();
@@ -208,6 +218,7 @@ struct PlatformSupport platform_support = {
     fremantle_get_path,
     fremantle_get_size,
     fremantle_input_update,
+    fremantle_request_text_input,
     fremantle_update,
     fremantle_exit,
 };
