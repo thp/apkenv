@@ -184,7 +184,7 @@ openframeworks_jnienv_CallVoidMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_
     else if (strcmp(p2->name, "setVolume") == 0)
     {
         double volume = va_arg(p3, double);
-        MODULE_DEBUG_PRINTF("setVolume %.3f, obj %p\n", arg, obj);
+        MODULE_DEBUG_PRINTF("setVolume %.3f, obj %p\n", volume, obj);
         if (player->chunk != NULL) {
             apkenv_mixer_volume_sound(player->chunk, volume);
         } else if (player->music != NULL && player->music_playing) {

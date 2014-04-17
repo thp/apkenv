@@ -362,6 +362,28 @@ int init_dvm(struct GlobalState *global, void *libdvm_handle)
 /* Provided by one of the support modules in "platform/" */
 extern struct PlatformSupport platform_support;
 
+char *get_config(char *name)
+{
+    int i=0;
+    if(global.config)
+    {
+        while(global.config[i].key)
+        {
+            if(strcmp(global.config[i].key,name)==0)return global.config[i].value;
+            i++;
+        }
+    }
+    return 0;
+}
+
+int get_config_int(char *name, int def)
+{
+    int ret=def;
+    char *value=get_config(name);
+    if(value)ret=atoi(value);
+    return ret;
+}
+
 int main(int argc, char **argv)
 {
     global.platform = &platform_support;
@@ -373,6 +395,36 @@ int main(int argc, char **argv)
 
     const char *main_data_dir = global.platform->get_path(PLATFORM_PATH_DATA_DIRECTORY);
     recursive_mkdir(main_data_dir);
+    char * config_path;
+    asprintf(&config_path, "%s/config", main_data_dir);
+    FILE * config_file;
+    if(config_file=fopen(config_path,"r")) {
+        int i=0, n=0, ret;
+        do
+        {
+            if(i==n)global.config=realloc(global.config,(n+=4)*8);
+            ret=fscanf(config_file,"%m[^=#]=%m[^#\n]\n",&global.config[i].key,&global.config[i].value);
+            i++;
+            if(ret==0)
+            {
+                int c;
+                do
+                {
+                    c=fgetc(config_file);
+                    if(c==EOF)ret=-1;
+                }
+                while(c!='\n'&&ret==0);
+                i--;
+            }
+        }
+        while(ret>=0);
+        n=i;
+#ifdef APKENV_DEBUG
+        for(i=0;i<n;i++)printf("Config option %s=%s\n",global.config[i].key,global.config[i].value);
+#endif
+        global.config[i].key=global.config[i].value=0;
+    }
+
 
     global.apkenv_executable = argv[0];
     global.apkenv_headline = APKENV_HEADLINE;

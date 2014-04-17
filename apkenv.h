@@ -44,6 +44,10 @@ struct GlobalState;
 struct SupportModule;
 struct SupportModulePriv;
 
+struct ConfigOption {
+char *key, *value;
+};
+
 struct ModuleHacks {
     int gles_landscape_to_portrait;
     int gles_downscale_images;
@@ -126,9 +130,8 @@ struct GlobalState {
     const char *apkenv_executable;
     const char *apkenv_headline;
     const char *apkenv_copyright;
-
     struct PlatformSupport *platform;
-
+    struct ConfigOption *config;
     struct JNINativeInterface fake_env;
     JNIEnv env;
     struct JNIInvokeInterface fake_vm;
