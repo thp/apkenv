@@ -38,12 +38,16 @@ Based on pandora sdl module
 #include <SDL/SDL.h>
 #include "common/sdl_audio_impl.h"
 #include "common/sdl_mixer_impl.h"
-
+#include "common/sdl_accelerometer_impl.h"
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/fb.h>
 #include <sys/time.h>
 #include <unistd.h>
+
+#ifdef EVDEV
+#include "../touch/evdev.h"
+#endif
 
 #ifndef FBIO_WAITFORVSYNC
 #define FBIO_WAITFORVSYNC _IOW('F', 0x20, __u32)
@@ -92,7 +96,7 @@ typedef struct
 
 GLES_Data* G_Data = NULL;
 
-
+char evdev=0;
 static const char *
 x11_get_path(enum PlatformPath which)
 {
@@ -126,8 +130,13 @@ x11_init(int gles_version,int width,int height)
         EGL_RENDERABLE_TYPE, gles_version == 2 ? EGL_OPENGL_ES2_BIT : EGL_OPENGL_ES_BIT,
         EGL_NONE
     };
-
-
+#ifdef EVDEV
+    if(get_config_int("evdev_mt", 0))
+    {
+        evdev=1;
+        evdev_touch_init();
+    }
+#endif
     GLES_Data* data = (GLES_Data*)malloc(sizeof(GLES_Data));
     memset(data,0,sizeof(GLES_Data));
     data->width=get_config_int("width", 480);
@@ -168,7 +177,8 @@ x11_init(int gles_version,int width,int height)
     GLES_TestError("eglMakeCurrent");
 
     data->fbdev = open(FRAMEBUFFERDEVICE,O_RDONLY);
-    //apkenv_accelerometer_register(sdl_accelerometer);
+    
+    apkenv_accelerometer_register(sdl_accelerometer);
     apkenv_audio_register(sdl_audio);
     apkenv_mixer_register(sdl_mixer);
                 
@@ -198,18 +208,24 @@ static unsigned int get_time_ms(void)
 static int
 x11_input_update(struct SupportModule *module)
 {
+#ifdef EVDEV
+    if(evdev)evdev_touch_update(module);
+#endif
     XEvent e;
     while(XPending(G_Data->dis))
     {
         XNextEvent(G_Data->dis,&e);
         switch(e.type)
         {
-            //case ConfigureNotify:(*global).window_x=e.xconfigure.x;(*global).window_y=e.xconfigure.y;module->resize(module,e.xconfigure.width,e.xconfigure.height);break;
-#ifndef EVDEV
-            case ButtonPress:module->input(module,ACTION_DOWN, e.xbutton.x, e.xbutton.y , 0);break;
-            case ButtonRelease:module->input(module,ACTION_UP, e.xbutton.x, e.xbutton.y , 0);break;
-            default:module->input(module,ACTION_MOVE, e.xmotion.x, e.xmotion.y , 0);break;
+            case ConfigureNotify:
+#ifdef EVDEV
+            evdev_set_offset(e.xconfigure.x, e.xconfigure.y);
 #endif
+            //module->resize(module,e.xconfigure.width,e.xconfigure.height);
+            break;
+            case ButtonPress: if(!evdev) module->input(module,ACTION_DOWN, e.xbutton.x, e.xbutton.y , 0);break;
+            case ButtonRelease: if(!evdev) module->input(module,ACTION_UP, e.xbutton.x, e.xbutton.y , 0);break;
+            default: if(!evdev) module->input(module,ACTION_MOVE, e.xmotion.x, e.xmotion.y , 0);break;
         }
     }
     return 0;
