@@ -228,7 +228,7 @@ marmalade_ExceptionOccurred(JNIEnv* p0)
 }
 
 #define method_is(met) (0 == strcmp(method->name,#met))
-#define class_is(claxx) (strcmp(clazz->name,claxx) == 0)
+#define class_is(claxx) (clazz?(strcmp(clazz->name,claxx) == 0):0)
 
 jint
 marmalade_RegisterNatives(JNIEnv* p0, jclass p1, const JNINativeMethod* p2, jint p3)
