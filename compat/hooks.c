@@ -115,6 +115,9 @@ void *get_hooked_symbol(const char *sym, int die_if_pthread)
     struct _hook target;
     target.name = sym;
 
+    if (global.be_surfaceflinger && (0 == strncmp(sym, "egl", 3)))
+        return NULL;
+
     struct _hook *result = bsearch(&target, &(hooks[0]),
             hooks_count, HOOK_SIZE, hook_cmp);
 
