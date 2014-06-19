@@ -180,6 +180,9 @@ void *get_builtin_lib_handle(const char *libname)
 {
     size_t i;
 
+    if (global.be_surfaceflinger)
+        return NULL;
+
     if (libname == NULL)
         return NULL;
 
@@ -208,6 +211,7 @@ void *get_builtin_lib_handle(const char *libname)
 int is_builtin_lib_handle(void *handle)
 {
     char *p = handle;
+    if(global.be_surfaceflinger) return 0;
     return ((char *)builtin_libs <= p && p < (char *)builtin_libs + sizeof(builtin_libs));
 }
 

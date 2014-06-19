@@ -244,7 +244,9 @@ usage()
     printf("\t--enable-trace-thumb-injection|-ti\tEnable tracing of unhooked internal THUMB functions. (HIGHLY EXPERIMENTAL)\n");
     printf("\t--trace-function|-tf <function>\t\tTrace the specified function.\n");
     printf("\t--trace-all|-ta\t\t\t\tTrace all functions.\n");
-    printf("\t--use-dvm <path/to/android>\t\tUse the dalvikvm instead of our fake vm.\n");
+    printf("\t--android-path\t\t\t\tspecify android root directory, used by --use-dvm and --surfaceflinger\n");
+    printf("\t--use-dvm\t\t\t\tUse the dalvikvm instead of our fake vm.\n");
+    printf("\t--surfaceflinger|-sf\t\t start surfaceflinger\n");
     printf("\t--help|-h\t\t\t\tPrint this help.\n");
     
     exit(1);
@@ -359,6 +361,28 @@ int init_dvm(struct GlobalState *global, void *libdvm_handle)
     return 1; // success
 }
 
+void run_surfaceflinger()
+{
+    int (*surfaceflinger_main)(int argc, char** argv);
+    void *surfaceflinger_handle;
+
+    surfaceflinger_handle = android_dlopen("libsurfaceflinger_compat.so", RTLD_LAZY);
+
+    if(NULL == surfaceflinger_handle) {
+        printf("failed to load libsurfaceflinger_compat.so\n");
+        return;
+    }
+
+    surfaceflinger_main = android_dlsym(surfaceflinger_handle, "surfaceflinger_main");
+
+    if(NULL == surfaceflinger_main) {
+        printf("failed to lookup surfaceflinger_main in libsurfaceflinger_compat\n");
+        return;
+    }
+
+    surfaceflinger_main(0, NULL);
+}
+
 /* Provided by one of the support modules in "platform/" */
 extern struct PlatformSupport platform_support;
 
@@ -370,7 +394,8 @@ int main(int argc, char **argv)
 
     char **tmp;
     void *libdvm_handle = NULL;
-    char android_sopath[PATH_MAX];
+    char android_sopath_system[PATH_MAX];
+    char android_sopath_vendor[PATH_MAX];
 
     const char *main_data_dir = global.platform->get_path(PLATFORM_PATH_DATA_DIRECTORY);
     recursive_mkdir(main_data_dir);
@@ -390,6 +415,8 @@ int main(int argc, char **argv)
     global.functions_to_trace = NULL;
     
     global.use_dvm = 0;
+
+    global.be_surfaceflinger = 0;
 
     if(argc <= 1) {
         printf("ERROR: too few arguments\n");
@@ -460,15 +487,22 @@ int main(int argc, char **argv)
                     last->next->next = NULL;
                 }
             }
-            else if(0 == strcmp(argv[i], "--use-dvm"))
-            {
+            else if(0 == strcmp(argv[i], "--android-path")
+                 || 0 == strcmp(argv[i], "-ap")) {
                 i++;
                 if(i >= argc) {
-                    printf("ERROR: missing argument to --use-dvm\n");
+                    printf("ERROR: missing argument to --android-path\n");
                     usage();
                 }
-                global.use_dvm = 1;
                 global.android_path = argv[i];
+            }
+            else if(0 == strcmp(argv[i], "--use-dvm"))
+            {
+                global.use_dvm = 1;
+            }
+            else if(0 == strcmp(argv[i], "--surfaceflinger")
+                 || 0 == strcmp(argv[i], "-sf")) {
+                global.be_surfaceflinger = 1;
             }
         }
     }
@@ -496,11 +530,27 @@ int main(int argc, char **argv)
     global.apk_filename = strdup(argv[argc-1]);
     
     hooks_init();
+
+    if((global.be_surfaceflinger || global.use_dvm)
+    && NULL == global.android_path) {
+        printf("you need to specify a the android root directory via --android-path\n");
+        exit(4);
+    }
+    else if(global.be_surfaceflinger || global.use_dvm) {
+        strcpy(android_sopath_system, global.android_path);
+        strcat(android_sopath_system, "/system/lib/");
+        add_sopath(android_sopath_system);
+        strcpy(android_sopath_vendor, global.android_path);
+        strcat(android_sopath_vendor, "/vendor/lib/");
+        add_sopath(android_sopath_vendor);
+    }
+
+    if(global.be_surfaceflinger) {
+        run_surfaceflinger();
+        goto finish_surfaceflinger;
+    }
     
     if(global.use_dvm) {
-        strcpy(android_sopath, global.android_path);
-        strcat(android_sopath, "/system/lib/");
-        add_sopath(android_sopath);
         libdvm_handle = android_dlopen("libdvm_compat.so", RTLD_LAZY);
         if(NULL == libdvm_handle) {
             printf("ERROR: could not load libdvm_compat.so.\n");
@@ -710,6 +760,7 @@ finish:
     apk_close(global.apklib_handle);
     global.platform->exit();
 
+finish_surfaceflinger:
     if(NULL != libdvm_handle) {
         android_dlclose(libdvm_handle);
         libdvm_handle = NULL;
