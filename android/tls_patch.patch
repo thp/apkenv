@@ -1,0 +1,114 @@
+diff --git a/include/private/opengles/gl_context.h b/include/private/opengles/gl_context.h
+index 6b1fa77..930cc9d 100644
+--- a/include/private/opengles/gl_context.h
++++ b/include/private/opengles/gl_context.h
+@@ -21,9 +21,10 @@
+ #include <stddef.h>
+ #include <sys/types.h>
+ #include <pthread.h>
+-#ifdef HAVE_ANDROID_OS
+-#include <bionic_tls.h>
+-#endif
++// krnlyng hack
++//#ifdef HAVE_ANDROID_OS
++//#include <bionic_tls.h>
++//#endif
+ 
+ #include <private/pixelflinger/ggl_context.h>
+ #include <hardware/gralloc.h>
+@@ -574,16 +575,16 @@ private:
+ // ----------------------------------------------------------------------------
+ // state
+ // ----------------------------------------------------------------------------
+-
+-#ifdef HAVE_ANDROID_OS
+-    // We have a dedicated TLS slot in bionic
+-    inline void setGlThreadSpecific(ogles_context_t *value) {
+-        ((uint32_t *)__get_tls())[TLS_SLOT_OPENGL] = (uint32_t)value;
+-    }
+-    inline ogles_context_t* getGlThreadSpecific() {
+-        return (ogles_context_t *)(((unsigned *)__get_tls())[TLS_SLOT_OPENGL]);
+-    }
+-#else
++// krnlyng hack
++//#ifdef HAVE_ANDROID_OS
++//    // We have a dedicated TLS slot in bionic
++//    inline void setGlThreadSpecific(ogles_context_t *value) {
++//        ((uint32_t *)__get_tls())[TLS_SLOT_OPENGL] = (uint32_t)value;
++//    }
++//    inline ogles_context_t* getGlThreadSpecific() {
++//        return (ogles_context_t *)(((unsigned *)__get_tls())[TLS_SLOT_OPENGL]);
++//    }
++//#else
+     extern pthread_key_t gGLKey;
+     inline void setGlThreadSpecific(ogles_context_t *value) {
+         pthread_setspecific(gGLKey, value);
+@@ -591,7 +592,7 @@ private:
+     inline ogles_context_t* getGlThreadSpecific() {
+         return static_cast<ogles_context_t*>(pthread_getspecific(gGLKey));
+     }
+-#endif
++//#endif
+ 
+ 
+ struct prims_t {
+diff --git a/opengl/libagl/egl.cpp b/opengl/libagl/egl.cpp
+index 6d4098c..3610c44 100644
+--- a/opengl/libagl/egl.cpp
++++ b/opengl/libagl/egl.cpp
+@@ -63,11 +63,12 @@ const unsigned int NUM_DISPLAYS = 1;
+ static pthread_mutex_t gInitMutex = PTHREAD_MUTEX_INITIALIZER;
+ static pthread_mutex_t gErrorKeyMutex = PTHREAD_MUTEX_INITIALIZER;
+ static pthread_key_t gEGLErrorKey = -1;
+-#ifndef HAVE_ANDROID_OS
++// krnlyng hack
++//#ifndef HAVE_ANDROID_OS
+ namespace gl {
+ pthread_key_t gGLKey = -1;
+ }; // namespace gl
+-#endif
++//#endif
+ 
+ template<typename T>
+ static T setError(GLint error, T returnValue) {
+@@ -1357,7 +1358,8 @@ using namespace android;
+ 
+ EGLDisplay eglGetDisplay(NativeDisplayType display)
+ {
+-#ifndef HAVE_ANDROID_OS
++// krnlyng hack
++//#ifndef HAVE_ANDROID_OS
+     // this just needs to be done once
+     if (gGLKey == -1) {
+         pthread_mutex_lock(&gInitMutex);
+@@ -1365,7 +1367,7 @@ EGLDisplay eglGetDisplay(NativeDisplayType display)
+             pthread_key_create(&gGLKey, NULL);
+         pthread_mutex_unlock(&gInitMutex);
+     }
+-#endif
++//#endif
+     if (display == EGL_DEFAULT_DISPLAY) {
+         EGLDisplay dpy = (EGLDisplay)1;
+         egl_display_t& d = egl_display_t::get_display(dpy);
+diff --git a/opengl/libs/hooks.h b/opengl/libs/hooks.h
+index 7ac88cd..0861295 100644
+--- a/opengl/libs/hooks.h
++++ b/opengl/libs/hooks.h
+@@ -39,12 +39,12 @@
+ #define NELEM(x)                    (sizeof(x)/sizeof(*(x)))
+ #define MAX_NUMBER_OF_GL_EXTENSIONS 64
+ 
+-
+-#if defined(HAVE_ANDROID_OS) && !USE_SLOW_BINDING && __OPTIMIZE__
+-#define USE_FAST_TLS_KEY            1
+-#else
++//krnlyng hack
++//#if defined(HAVE_ANDROID_OS) && !USE_SLOW_BINDING && __OPTIMIZE__
++//#define USE_FAST_TLS_KEY            1
++//#else
+ #define USE_FAST_TLS_KEY            0
+-#endif
++//#endif
+ 
+ #if USE_FAST_TLS_KEY
+ #   include <bionic_tls.h>  /* special private C library header */
