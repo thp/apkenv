@@ -361,10 +361,49 @@ int init_dvm(struct GlobalState *global, void *libdvm_handle)
     return 1; // success
 }
 
+char android_driver_tag[256];
+
+int parse_eglcfg()
+{
+    char eglcfg_path[4096];
+    char line[256];
+    char tag[256];
+
+    strcpy(eglcfg_path, global.android_path);
+    strcat(eglcfg_path, "/system/lib/egl/egl.cfg");
+
+    FILE *fp = fopen(eglcfg_path, "r");
+
+    if(NULL == fp) {
+        printf("failed to open %s\n", eglcfg_path);
+        return 0; // failed
+    }
+
+    while(fgets(line, 256, fp)) {
+        int dpy;
+        int impl;
+        if(sscanf(line, "%u %u %s", &dpy, &impl, tag) == 3) {
+            if(1 == impl) {
+                strcpy(android_driver_tag, tag);
+                fclose(fp);
+                return 1; // success
+            }
+        }
+    }
+
+    fclose(fp);
+    return 0; // failed
+}
+
 void run_surfaceflinger()
 {
     int (*surfaceflinger_main)(int argc, char** argv);
     void *surfaceflinger_handle;
+
+    if(!parse_eglcfg()) {
+        printf("failed to parse egl.cfg\n");
+        return;
+    }
 
     surfaceflinger_handle = android_dlopen("libsurfaceflinger_compat.so", RTLD_LAZY);
 
