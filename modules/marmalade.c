@@ -187,6 +187,8 @@ struct SupportModulePriv {
     dummy_jobject *theview;
     jintArray *pixels;
 
+    int accel_started;
+
     int orientation;
     int width, height;
 
@@ -628,6 +630,20 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
             // FIXME: do something to make runNative return (shutdownNative crashes)
             exit(1);
         }
+
+        if(marmalade_priv.accel_started) {
+            float x, y, z;
+            apkenv_accelerometer_get(&x,&y,&z);
+            if(marmalade_priv.global->module_hacks->gles_landscape_to_portrait)
+            {
+                marmalade_priv.loaderthread.onAccelNative(ENV(marmalade_priv.global),marmalade_priv.theloaderthread,y,x,z);
+            }
+            else
+            {
+                marmalade_priv.loaderthread.onAccelNative(ENV(marmalade_priv.global),marmalade_priv.theloaderthread,x,y,z);
+            }
+        }
+
         marmalade_priv.global->platform->update();
     }
     else if(method_is(videoStop))
@@ -707,6 +723,11 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
         glDeleteTextures(1,&doDraw_tex);
         */
         marmalade_priv.global->platform->update();
+    }
+    else if(method_is(accelStart))
+    {
+        marmalade_priv.accel_started = 1;
+        apkenv_accelerometer_init();
     }
     else
     {
@@ -857,6 +878,8 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
     self->priv->global = GLOBAL_M;
     self->priv->module = self;
     self->priv->home = strdup(home);
+
+    self->priv->accel_started = 0;
 
     self->priv->width = width;
     self->priv->height = height;
