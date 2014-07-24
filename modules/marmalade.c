@@ -187,6 +187,11 @@ struct SupportModulePriv {
     dummy_jobject *theview;
     jintArray *pixels;
 
+    int accel_started;
+
+    int orientation;
+    int width, height;
+
     int marmalade_found;
 };
 
@@ -478,7 +483,7 @@ marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 
     if(method_is(getOrientation))
     {
-        return ORIENTATION_LANDSCAPE;
+        return marmalade_priv.orientation;
     }
     else if(method_is(getNetworkType))
     {
@@ -625,6 +630,20 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
             // FIXME: do something to make runNative return (shutdownNative crashes)
             exit(1);
         }
+
+        if(marmalade_priv.accel_started) {
+            float x, y, z;
+            apkenv_accelerometer_get(&x,&y,&z);
+            if(marmalade_priv.global->module_hacks->gles_landscape_to_portrait)
+            {
+                marmalade_priv.loaderthread.onAccelNative(ENV(marmalade_priv.global),marmalade_priv.theloaderthread,y,x,z);
+            }
+            else
+            {
+                marmalade_priv.loaderthread.onAccelNative(ENV(marmalade_priv.global),marmalade_priv.theloaderthread,x,y,z);
+            }
+        }
+
         marmalade_priv.global->platform->update();
     }
     else if(method_is(videoStop))
@@ -643,16 +662,16 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     else if(method_is(fixOrientation))
     {
         int orientation = va_arg(p3,int);
-        switch(orientation)
+        marmalade_priv.orientation = orientation;
+        if(3 == orientation || ORIENTATION_PORTRAIT == orientation)
         {
-            case ORIENTATION_LANDSCAPE:
-               MODULE_DEBUG_PRINTF("TODO: fixOrientation: LANDSCAPE\n");
-               break;
-           case ORIENTATION_PORTRAIT:
-               MODULE_DEBUG_PRINTF("TODO: fixOrientation: PORTRAIT\n");
-               break;
-           default:
-               MODULE_DEBUG_PRINTF("TODO: fixOrientation, unknown orientation: %d\n", orientation);
+            marmalade_priv.global->module_hacks->gles_landscape_to_portrait = 1;
+            marmalade_priv.loaderview.setPixelsNative(ENV(marmalade_priv.global),marmalade_priv.theview,marmalade_priv.height,marmalade_priv.width,marmalade_priv.pixels, 0);
+        }
+        else
+        {
+            marmalade_priv.global->module_hacks->gles_landscape_to_portrait = 0;
+            marmalade_priv.loaderview.setPixelsNative(ENV(marmalade_priv.global),marmalade_priv.theview,marmalade_priv.width,marmalade_priv.height,marmalade_priv.pixels, 0);
         }
     }
     else if(method_is(soundStart))
@@ -704,6 +723,11 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
         glDeleteTextures(1,&doDraw_tex);
         */
         marmalade_priv.global->platform->update();
+    }
+    else if(method_is(accelStart))
+    {
+        marmalade_priv.accel_started = 1;
+        apkenv_accelerometer_init();
     }
     else
     {
@@ -855,6 +879,12 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
     self->priv->module = self;
     self->priv->home = strdup(home);
 
+    self->priv->accel_started = 0;
+
+    self->priv->width = width;
+    self->priv->height = height;
+    self->priv->orientation = ORIENTATION_LANDSCAPE;
+
     MODULE_DEBUG_PRINTF("JNI_OnLoad\n");
     self->priv->JNI_OnLoad(VM_M, NULL);
     MODULE_DEBUG_PRINTF("JNI_OnLoad done.\n");
@@ -926,7 +956,15 @@ marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
            MODULE_DEBUG_PRINTF("onMotionEvent: move\n");
        }
 
-       self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,action, x,y);
+       if(self->global->module_hacks->gles_landscape_to_portrait)
+       {
+           self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,action, self->priv->height-y,x);
+       }
+       else
+       {
+           self->priv->loaderthread.onMotionEvent(ENV_M,self->priv->theloaderthread,finger,action, x,y);
+       }
+
        MODULE_DEBUG_PRINTF("onMotionEvent done.\n");
    }
 }

@@ -20,6 +20,8 @@
 
 extern struct ModuleHacks global_module_hacks;
 
+static GLenum matrix_mode = 0;
+
 struct gles_extensions {
     /* GL_OES_framebuffer_object */
     PFNGLISRENDERBUFFEROESPROC                      glIsRenderbufferOES;
@@ -206,7 +208,14 @@ void
 my_glLoadMatrixf(const GLfloat *m)
 {
     WRAPPERS_DEBUG_PRINTF("glLoadMatrixf()\n", m);
-    glLoadMatrixf(m);
+    if (0 != global_module_hacks.gles_landscape_to_portrait && GL_PROJECTION == matrix_mode) {
+        glLoadIdentity();
+        glRotatef(90, 0, 0, 1);
+        glMultMatrixf(m);
+    }
+    else {
+        glLoadMatrixf(m);
+    }
 }
 void
 my_glMaterialf(GLenum face, GLenum pname, GLfloat param)
@@ -707,7 +716,14 @@ void
 my_glLoadMatrixx(const GLfixed *m)
 {
     WRAPPERS_DEBUG_PRINTF("glLoadMatrixx()\n", m);
-    glLoadMatrixx(m);
+    if (0 != global_module_hacks.gles_landscape_to_portrait && GL_PROJECTION == matrix_mode) {
+        glLoadIdentity();
+        glRotatex(90<<16, 0, 0, 1<<16);
+        glMultMatrixx(m);
+    }
+    else {
+        glLoadMatrixx(m);
+    }
 }
 void
 my_glLogicOp(GLenum opcode)
@@ -731,6 +747,7 @@ void
 my_glMatrixMode(GLenum mode)
 {
     WRAPPERS_DEBUG_PRINTF("glMatrixMode()\n", mode);
+    matrix_mode = mode;
     glMatrixMode(mode);
 }
 void
