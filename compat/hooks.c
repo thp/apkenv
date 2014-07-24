@@ -55,7 +55,6 @@ char my___sF[SIZEOF_SF * 3];
 static struct _hook hooks[HOOKS_MAX] = {
 #include "libc_mapping.h"
 #include "liblog_mapping.h"
-#include "egl_mapping.h"
 #include "pthread_mapping.h"
 #include "linux_mapping.h"
 
@@ -76,6 +75,11 @@ static struct _hook hooks_gles2[] = {
 };
 #define HOOKS_GLES2_COUNT (sizeof(hooks_gles2) / (HOOK_SIZE))
 #endif
+
+static struct _hook hooks_egl[] = {
+#include "egl_mapping.h"
+};
+#define HOOKS_EGL_COUNT (sizeof(hooks_egl) / (HOOK_SIZE))
 
 /* fully wrapped or harmful libs that should not be loaded
  * even if provided by user (like 3D driver libs) */
@@ -115,6 +119,9 @@ void *get_hooked_symbol(const char *sym, int die_if_pthread)
     struct _hook target;
     target.name = sym;
 
+    if (global.be_surfaceflinger && (0 == strncmp(sym, "egl", 3)) || (0 == strncmp(sym, "gl", 2)))
+        return NULL;
+
     struct _hook *result = bsearch(&target, &(hooks[0]),
             hooks_count, HOOK_SIZE, hook_cmp);
 
@@ -130,11 +137,43 @@ void *get_hooked_symbol(const char *sym, int die_if_pthread)
     return NULL;
 }
 
+extern void *libGLES_magic;
+extern void *libGLESv2_magic;
+extern void *libEGL_magic;
+
 void *get_hooked_symbol_dlfcn(void *handle, const char *sym)
 {
     struct _hook *result;
     struct _hook target;
     target.name = sym;
+
+    if (global.be_surfaceflinger) {
+#ifdef APKENV_GLES
+        if (handle == libGLES_magic) {
+            result = bsearch(&target, hooks_gles1, HOOKS_GLES1_COUNT,
+                HOOK_SIZE, hook_cmp);
+            if (result != NULL)
+                return result->func;
+            return NULL;
+        }
+#endif
+#ifdef APKENV_GLES2
+        if (handle == libGLESv2_magic) {
+            result = bsearch(&target, hooks_gles2, HOOKS_GLES2_COUNT,
+                HOOK_SIZE, hook_cmp);
+            if (result != NULL)
+                return result->func;
+            return NULL;
+        }
+#endif
+        if (handle == libEGL_magic) {
+            result = bsearch(&target, hooks_egl, HOOKS_EGL_COUNT,
+                HOOK_SIZE, hook_cmp);
+            if (result != NULL)
+                return result->func;
+            return NULL;
+        }
+    }
 
     if (is_builtin_lib_handle(handle)) {
         enum builtin_library_id builtin_lib_id = (const char **)handle - builtin_libs;
@@ -156,6 +195,13 @@ void *get_hooked_symbol_dlfcn(void *handle, const char *sym)
             return NULL;
         }
 #endif
+        if (builtin_lib_id == BUILTIN_LIB_EGL) {
+            result = bsearch(&target, hooks_egl, HOOKS_EGL_COUNT,
+                HOOK_SIZE, hook_cmp);
+            if (result != NULL)
+                return result->func;
+            return NULL;
+        }
     }
 
     return get_hooked_symbol(sym, 1);
@@ -180,6 +226,9 @@ void *get_builtin_lib_handle(const char *libname)
 {
     size_t i;
 
+    if (global.be_surfaceflinger)
+        return NULL;
+
     if (libname == NULL)
         return NULL;
 
@@ -198,6 +247,8 @@ void *get_builtin_lib_handle(const char *libname)
         global.loader_seen_glesv2 = 1;
     }
 
+    register_hooks(hooks_egl, HOOKS_EGL_COUNT);
+
     for (i = 0; i < sizeof(builtin_libs) / sizeof(builtin_libs[0]); i++)
         if (strcmp(libname, builtin_libs[i]) == 0)
             return &builtin_libs[i];
@@ -208,6 +259,7 @@ void *get_builtin_lib_handle(const char *libname)
 int is_builtin_lib_handle(void *handle)
 {
     char *p = handle;
+    if(global.be_surfaceflinger) return 0;
     return ((char *)builtin_libs <= p && p < (char *)builtin_libs + sizeof(builtin_libs));
 }
 
@@ -239,6 +291,8 @@ void hooks_init(void)
 #ifdef APKENV_GLES2
     qsort(hooks_gles2, HOOKS_GLES2_COUNT, HOOK_SIZE, hook_cmp);
 #endif
+
+    qsort(hooks_egl, HOOKS_EGL_COUNT, HOOK_SIZE, hook_cmp);
 
     libc_wrappers_init();
 }

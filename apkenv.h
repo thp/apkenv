@@ -167,6 +167,8 @@ struct GlobalState {
 
     struct ResourceStrings resource_strings;
 
+    int be_surfaceflinger;
+
     /* tracing/debugging */
     int trace_latehooked;
     int trace_unhooked;

@@ -22,6 +22,9 @@
 #include "linker.h"
 #include "linker_format.h"
 
+/* for GlobalState global */
+#include "../apkenv.h"
+
 /* for get_hooked_symbol */
 #include "../compat/hooks.h"
 
@@ -67,9 +70,33 @@ static void set_dlerror(int err)
     dl_err_str = (const char *)&dl_err_buf[0];
 };
 
+extern struct GlobalState global;
+
+extern char android_driver_tag[256];
+
+void *libGLES_magic = (void*)0xFFFF0001;
+void *libGLESv2_magic = (void*)0xFFFF0002;
+void *libEGL_magic = (void*)0xFFFF0003;
+
 void *android_dlopen(const char *filename, int flag)
 {
     soinfo *ret;
+
+    if(global.be_surfaceflinger) {
+        char libname[4096];
+        sprintf(libname, "libGLESv1_CM_%s.so", android_driver_tag);
+        if(NULL != strstr(filename, libname)) {
+            return libGLES_magic;
+        }
+        sprintf(libname, "libGLESv2_%s.so", android_driver_tag);
+        if(NULL != strstr(filename, libname)) {
+            return libGLESv2_magic;
+        }
+        sprintf(libname, "libEGL_%s.so", android_driver_tag);
+        if(NULL != strstr(filename, libname)) {
+            return libEGL_magic;
+        }
+    }
 
     pthread_mutex_lock(&dl_lock);
     ret = find_library(filename);
