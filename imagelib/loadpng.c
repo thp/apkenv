@@ -4,7 +4,11 @@
 #include "imagelib_priv.h"
 
 #include <stdio.h>
+#ifdef IMAGELIB_LEGACY
 #include <libpng12/png.h>
+#else
+#include <png.h>
+#endif
 #include <stdlib.h>
 
 typedef struct
@@ -17,6 +21,7 @@ typedef struct
 
 static void png_read_data(png_structp png_ptr, png_bytep outbuffer, png_size_t bytes_to_read)
 {
+#ifdef IMAGELIB_LEGACY
    if(png_ptr->io_ptr==NULL)
       return;
 
@@ -28,6 +33,7 @@ static void png_read_data(png_structp png_ptr, png_bytep outbuffer, png_size_t b
     memcpy(outbuffer,readbuffer->data+readbuffer->offset,bytes_to_read);
 
     readbuffer->offset += bytes_to_read;
+#endif
 }
 
 

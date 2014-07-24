@@ -1,8 +1,7 @@
-SOURCES += platform/harmattan.c
-CFLAGS += -DIMAGELIB_LEGACY
+SOURCES += platform/x11.c
 LDFLAGS += -lSDL -lSDL_mixer
 CFLAGS += -DAPKENV_GLES -DAPKENV_GLES2
-LDFLAGS += -lGLES_CM -lGLESv2 -lEGL
+LDFLAGS += -lGLESv1_CM -lGLESv2 -lEGL
 
 BIONIC_LIBS := $(wildcard libs/harmattan/*.so)
 

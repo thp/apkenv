@@ -18,6 +18,10 @@ SOURCES += $(wildcard accelerometer/*.c)
 SOURCES += $(wildcard audio/*.c)
 SOURCES += $(wildcard mixer/*.c)
 
+ifeq ($(EVDEV),1)
+SOURCES += touch/evdev.c
+CFLAGS += -DEVDEV
+endif
 # Platform-specific targets and configuration
 PLATFORM_INSTALL_TARGETS :=
 include platform/$(PLATFORM).mk
