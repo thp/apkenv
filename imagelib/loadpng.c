@@ -4,7 +4,7 @@
 #include "imagelib_priv.h"
 
 #include <stdio.h>
-#include <libpng12/png.h>
+#include <libpng15/png.h>
 #include <stdlib.h>
 
 typedef struct
@@ -17,10 +17,10 @@ typedef struct
 
 static void png_read_data(png_structp png_ptr, png_bytep outbuffer, png_size_t bytes_to_read)
 {
-   if(png_ptr->io_ptr==NULL)
+   if(png_get_io_ptr(png_ptr)==NULL)
       return;
 
-    png_memory_buffer* readbuffer = (png_memory_buffer*)png_ptr->io_ptr;
+    png_memory_buffer* readbuffer = (png_memory_buffer*)png_get_io_ptr(png_ptr);
 
     if (readbuffer->offset+bytes_to_read>readbuffer->size)
         return;

@@ -30,6 +30,9 @@ static void skip_input_data (j_decompress_ptr cinfo, long num_bytes)
     }
 }
 static void term_source (j_decompress_ptr cinfo) {}
+
+// The new version of libjpeg has its own jpeg_mem_src; commenting this one
+#if 0
 static void jpeg_mem_src (j_decompress_ptr cinfo, void* buffer, long nbytes)
 {
     struct jpeg_source_mgr* src;
@@ -39,7 +42,13 @@ static void jpeg_mem_src (j_decompress_ptr cinfo, void* buffer, long nbytes)
             (*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_PERMANENT,
             sizeof(struct jpeg_source_mgr));
     }
+#endif
 
+void jpeg_mem_src (j_decompress_ptr cinfo,
+			      unsigned char * inbuffer,
+			      unsigned long insize)
+
+{
     src = (struct jpeg_source_mgr*) cinfo->src;
     src->init_source = init_source;
     src->fill_input_buffer = fill_input_buffer;
@@ -49,6 +58,7 @@ static void jpeg_mem_src (j_decompress_ptr cinfo, void* buffer, long nbytes)
     src->bytes_in_buffer = nbytes;
     src->next_input_byte = (JOCTET*)buffer;
 }
+
 
 image_t* imagelib_load_jpeg_from_mem(char* buf, size_t size, const imageloadersettings_t settings)
 {

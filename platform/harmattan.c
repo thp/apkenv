@@ -30,21 +30,24 @@
 
 #include "../apkenv.h"
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
-#include <SDL/SDL_syswm.h>
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
+#include <SDL2/SDL_syswm.h>
+//#include <X11/Xlib.h>
+//#include <X11/Xatom.h>
 
 #include "common/sdl_accelerometer_impl.h"
 #include "common/sdl_audio_impl.h"
 #include "common/sdl_mixer_impl.h"
+#include "sdl12compat.h"
 
-struct PlatformPriv {
-    SDL_Surface *screen;
-};
+//struct PlatformPriv {
+//    SDL_Window *screen;
+//};
 
-static struct PlatformPriv priv;
+static SDL_Window * window = NULL;
+
+//static struct PlatformPriv priv;
 
 
 static int
@@ -56,8 +59,13 @@ harmattan_init(int gles_version)
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gles_version);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
-    priv.screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGLES | SDL_FULLSCREEN);
+    window = SDL_CreateWindow("SDL12Compat",
+                          SDL_WINDOWPOS_UNDEFINED,
+                          SDL_WINDOWPOS_UNDEFINED,
+			  0, 0, 
+			  SDL_WINDOW_OPENGL | SDL_WINDOW_FULLSCREEN);
 
+#if 0
     if (priv.screen == NULL) {
         return 0;
     }
@@ -79,7 +87,7 @@ harmattan_init(int gles_version)
             PropModeReplace, (unsigned char*)region, 4);
 
     SDL_ShowCursor(0);
-
+#endif
     apkenv_accelerometer_register(sdl_accelerometer);
     apkenv_audio_register(sdl_audio);
     apkenv_mixer_register(sdl_mixer);
@@ -87,30 +95,31 @@ harmattan_init(int gles_version)
     return 1;
 }
 
+
 static const char *
 harmattan_get_path(enum PlatformPath which)
 {
     switch (which) {
         case PLATFORM_PATH_INSTALL_DIRECTORY:
-            return  "/home/user/.local/share/applications/";
+            return  "/home/nemo/.local/share/applications/";
         case PLATFORM_PATH_DATA_DIRECTORY:
-            return "/home/user/.apkenv/";
+            return "/home/nemo/.apkenv/";
         case PLATFORM_PATH_MODULE_DIRECTORY:
             return "/opt/apkenv/modules/";
         default:
             return NULL;
     }
 }
-
+#if 0
 static void
 harmattan_get_size(int *width, int *height)
 {
     if (width) {
-        *width = priv.screen->w;
+        *width = screen->w;
     }
 
     if (height) {
-        *height = priv.screen->h;
+        *height = screen->h;
     }
 }
 
@@ -151,6 +160,7 @@ harmattan_input_update(struct SupportModule *module)
 
     return 0;
 }
+#endif
 
 static void
 harmattan_request_text_input(int is_password, const char *text,
@@ -165,7 +175,7 @@ harmattan_request_text_input(int is_password, const char *text,
 static void
 harmattan_update()
 {
-    SDL_GL_SwapBuffers();
+    SDL_GL_SwapWindow(window);
 }
 
 static void
@@ -176,8 +186,8 @@ harmattan_exit()
 struct PlatformSupport platform_support = {
     harmattan_init,
     harmattan_get_path,
-    harmattan_get_size,
-    harmattan_input_update,
+    //harmattan_get_size,
+    //harmattan_input_update,
     harmattan_request_text_input,
     harmattan_update,
     harmattan_exit,
