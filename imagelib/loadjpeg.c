@@ -42,7 +42,6 @@ static void jpeg_mem_src (j_decompress_ptr cinfo, void* buffer, long nbytes)
             (*cinfo->mem->alloc_small) ((j_common_ptr) cinfo, JPOOL_PERMANENT,
             sizeof(struct jpeg_source_mgr));
     }
-#endif
 
 void jpeg_mem_src (j_decompress_ptr cinfo,
 			      unsigned char * inbuffer,
@@ -58,6 +57,7 @@ void jpeg_mem_src (j_decompress_ptr cinfo,
     src->bytes_in_buffer = nbytes;
     src->next_input_byte = (JOCTET*)buffer;
 }
+#endif
 
 
 image_t* imagelib_load_jpeg_from_mem(char* buf, size_t size, const imageloadersettings_t settings)
