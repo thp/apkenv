@@ -18,6 +18,7 @@ SOURCES += $(wildcard accelerometer/*.c)
 SOURCES += $(wildcard audio/*.c)
 SOURCES += $(wildcard mixer/*.c)
 
+LDFLAGS += -lm -lrt
 # Platform-specific targets and configuration
 PLATFORM_INSTALL_TARGETS :=
 include platform/$(PLATFORM).mk

@@ -27,7 +27,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  **/
 
-#include <SDL/SDL.h>
+#include <SDL2/SDL.h>
 
 #include "../../accelerometer/accelerometer.h"
 
