@@ -38,8 +38,8 @@ struct _hook {
   void *func;
 };
 
-void *get_hooked_symbol(const char *sym, int die_if_pthread);
-void *get_hooked_symbol_dlfcn(void *handle, const char *sym);
+void *apkenv_get_hooked_symbol(const char *sym, int die_if_pthread);
+void *apkenv_get_hooked_symbol_dlfcn(void *handle, const char *sym);
 void *get_builtin_lib_handle(const char *libname);
 int is_builtin_lib_handle(void *handle);
 int register_hooks(const struct _hook *hooks, size_t count);

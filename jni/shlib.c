@@ -111,7 +111,7 @@ jni_shlib_resolve(struct GlobalState *global, const char *method)
             if (strstr(*method_table, method) != NULL) {
                 JNISHLIB_DEBUG_PRINTF("[shlib] Found symbol: %s\n",
                         *method_table);
-                return android_dlsym(lib->lib, *method_table);
+                return apkenv_android_dlsym(lib->lib, *method_table);
             }
             method_table++;
         }
@@ -135,7 +135,7 @@ jni_shlib_lib_resolve(struct GlobalState *global, const char* libname, const cha
                 if (strstr(*method_table, method) != NULL) {
                     JNISHLIB_DEBUG_PRINTF("[shlib] Found symbol: %s in %s\n",
                             *method_table,lib->name);
-                    return android_dlsym(lib->lib, *method_table);
+                    return apkenv_android_dlsym(lib->lib, *method_table);
                 }
                 method_table++;
             }

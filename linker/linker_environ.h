@@ -32,23 +32,23 @@
  * to the environment block in the ELF data block. The function returns
  * the start of the aux vectors after the env block.
  */
-extern unsigned*   linker_env_init(unsigned* vecs);
+extern unsigned*   apkenv_linker_env_init(unsigned* vecs);
 
 /* Unset a given environment variable. In case the variable is defined
  * multiple times, unset all instances. This modifies the environment
  * block, so any pointer returned by linker_env_get() after this call
  * might become invalid */
-extern void        linker_env_unset(const char* name);
+extern void        apkenv_linker_env_unset(const char* name);
 
 
 /* Returns the value of environment variable 'name' if defined and not
  * empty, or NULL otherwise. Note that the returned pointer may become
  * invalid if linker_env_unset() or linker_env_secure() are called
  * after this function. */
-extern const char* linker_env_get(const char* name);
+extern const char* apkenv_linker_env_get(const char* name);
 
 /* Remove unsecure environment variables. This should be used when
  * running setuid programs. */
-extern void        linker_env_secure(void);
+extern void        apkenv_linker_env_secure(void);
 
 #endif /* LINKER_ENVIRON_H */

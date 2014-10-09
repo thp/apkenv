@@ -220,8 +220,8 @@ struct GlobalState {
 #endif
 
 /* Forward-declarations for the Bionic linker */
-void *android_dlopen(const char *filename, int flag);
-void *android_dlsym(void *handle, const char *symbol);
+void *apkenv_android_dlopen(const char *filename, int flag);
+void *apkenv_android_dlsym(void *handle, const char *symbol);
 
 /* Module support */
 typedef int (*apkenv_module_init_t)(int version, struct SupportModule *module);

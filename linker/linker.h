@@ -41,8 +41,7 @@
 #define PAGE_SIZE 4096
 #define PAGE_MASK 4095
 
-void debugger_init();
-const char *addr_to_name(unsigned addr);
+void apkenv_debugger_init();
 
 /* magic shared structures that GDB knows about */
 
@@ -207,23 +206,23 @@ extern soinfo libdl_info;
 #define DT_PREINIT_ARRAYSZ 33
 #endif
 
-soinfo *find_library(const char *name);
-unsigned unload_library(soinfo *si);
-Elf32_Sym *lookup_in_library(soinfo *si, const char *name);
-Elf32_Sym *lookup(const char *name, soinfo **found, soinfo *start);
-soinfo *find_containing_library(const void *addr);
-Elf32_Sym *find_containing_symbol(const void *addr, soinfo *si);
-const char *linker_get_error(void);
-void call_constructors_recursive(soinfo *si);
+soinfo *apkenv_find_library(const char *name);
+unsigned apkenv_unload_library(soinfo *si);
+Elf32_Sym *apkenv_lookup_in_library(soinfo *si, const char *name);
+Elf32_Sym *apkenv_lookup(const char *name, soinfo **found, soinfo *start);
+soinfo *apkenv_find_containing_library(const void *addr);
+Elf32_Sym *apkenv_find_containing_symbol(const void *addr, soinfo *si);
+const char *apkenv_linker_get_error(void);
+void apkenv_call_constructors_recursive(soinfo *si);
 
 #ifdef ANDROID_ARM_LINKER
 typedef long unsigned int *_Unwind_Ptr;
-_Unwind_Ptr dl_unwind_find_exidx(_Unwind_Ptr pc, int *pcount);
+_Unwind_Ptr apkenv_dl_unwind_find_exidx(_Unwind_Ptr pc, int *pcount);
 #elif defined(ANDROID_X86_LINKER)
-int dl_iterate_phdr(int (*cb)(struct dl_phdr_info *, size_t, void *), void *);
+int apkenv_dl_iterate_phdr(int (*cb)(struct dl_phdr_info *, size_t, void *), void *);
 #endif
 
-void notify_gdb_of_libraries(void);
-int add_sopath(const char *path);
+void apkenv_notify_gdb_of_libraries(void);
+int apkenv_add_sopath(const char *path);
 
 #endif

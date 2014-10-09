@@ -53,7 +53,7 @@
 
 #include "strlcpy.h"
 
-/* for get_hooked_symbol */
+/* for apkenv_get_hooked_symbol */
 #include "../compat/hooks.h"
 /* for create_wrapper */
 #include "../debug/wrappers.h"
@@ -94,7 +94,7 @@
 */
 
 
-static int link_image(soinfo *si, unsigned wr_offset);
+static int apkenv_link_image(soinfo *si, unsigned wr_offset);
 
 static int socount = 0;
 static soinfo sopool[SO_MAX];
@@ -106,7 +106,7 @@ static soinfo *somain; /* main process, always the one after libdl_info */
 #endif
 
 
-static inline int validate_soinfo(soinfo *si)
+static inline int apkenv_validate_soinfo(soinfo *si)
 {
     return (si >= sopool && si < sopool + SO_MAX) ||
         si == &libdl_info;
@@ -150,7 +150,7 @@ static char __linker_dl_err_buf[768];
         ERROR(fmt "\n", ##x);                                                      \
     } while(0)
 
-const char *linker_get_error(void)
+const char *apkenv_linker_get_error(void)
 {
     return (const char *)&__linker_dl_err_buf[0];
 }
@@ -170,7 +170,7 @@ static struct link_map *r_debug_head, *r_debug_tail;
 
 static pthread_mutex_t _r_debug_lock = PTHREAD_MUTEX_INITIALIZER;
 
-static void insert_soinfo_into_debug_map(soinfo * info)
+static void apkenv_insert_soinfo_into_debug_map(soinfo * info)
 {
     struct link_map * map;
 
@@ -199,7 +199,7 @@ static void insert_soinfo_into_debug_map(soinfo * info)
     r_debug_tail = map;
 }
 
-static void remove_soinfo_from_debug_map(soinfo * info)
+static void apkenv_remove_soinfo_from_debug_map(soinfo * info)
 {
     struct link_map * map = &(info->linkmap);
 
@@ -210,7 +210,9 @@ static void remove_soinfo_from_debug_map(soinfo * info)
     if (map->l_next) map->l_next->l_prev = map->l_prev;
 }
 
-void notify_gdb_of_load(soinfo * info)
+void apkenv_notify_gdb_of_libraries(void);
+
+static void apkenv_notify_gdb_of_load(soinfo * info)
 {
     if (info->flags & FLAG_EXE) {
         // GDB already knows about the main executable
@@ -222,16 +224,16 @@ void notify_gdb_of_load(soinfo * info)
     _r_debug.r_state = RT_ADD;
     rtld_db_dlactivity();
 
-    insert_soinfo_into_debug_map(info);
+    apkenv_insert_soinfo_into_debug_map(info);
 
     _r_debug.r_state = RT_CONSISTENT;
     rtld_db_dlactivity();
 
-    notify_gdb_of_libraries();
+    apkenv_notify_gdb_of_libraries();
     pthread_mutex_unlock(&_r_debug_lock);
 }
 
-void notify_gdb_of_unload(soinfo * info)
+static void apkenv_notify_gdb_of_unload(soinfo * info)
 {
     if (info->flags & FLAG_EXE) {
         // GDB already knows about the main executable
@@ -243,16 +245,16 @@ void notify_gdb_of_unload(soinfo * info)
     _r_debug.r_state = RT_DELETE;
     rtld_db_dlactivity();
 
-    remove_soinfo_from_debug_map(info);
+    apkenv_remove_soinfo_from_debug_map(info);
 
     _r_debug.r_state = RT_CONSISTENT;
     rtld_db_dlactivity();
 
-    notify_gdb_of_libraries();
+    apkenv_notify_gdb_of_libraries();
     pthread_mutex_unlock(&_r_debug_lock);
 }
 
-void notify_gdb_of_libraries(void)
+void apkenv_notify_gdb_of_libraries(void)
 {
     struct link_map *tmap = _r_debug.r_map;
     while (tmap->l_next != NULL)
@@ -272,7 +274,7 @@ void notify_gdb_of_libraries(void)
     tmap->l_next = NULL;
 }
 
-static soinfo *alloc_info(const char *name)
+static soinfo *apkenv_alloc_info(const char *name)
 {
     soinfo *si;
 
@@ -281,7 +283,7 @@ static soinfo *alloc_info(const char *name)
         return NULL;
     }
 
-    /* The freelist is populated when we call free_info(), which in turn is
+    /* The freelist is populated when we call apkenv_free_info(), which in turn is
        done only by dlclose(), which is not likely to be used.
     */
     if (!freelist) {
@@ -298,7 +300,7 @@ static soinfo *alloc_info(const char *name)
 
     /* Make sure we get a clean block of soinfo */
     memset(si, 0, sizeof(soinfo));
-    strlcpy((char*) si->name, name, sizeof(si->name));
+    apkenv_strlcpy((char*) si->name, name, sizeof(si->name));
     sonext->next = si;
     si->next = NULL;
     si->refcount = 0;
@@ -308,7 +310,7 @@ static soinfo *alloc_info(const char *name)
     return si;
 }
 
-static void free_info(soinfo *si)
+static void apkenv_free_info(soinfo *si)
 {
     soinfo *prev = NULL, *trav;
 
@@ -334,7 +336,7 @@ static void free_info(soinfo *si)
     freelist = si;
 }
 
-const char *addr_to_name(unsigned addr)
+static const char *apkenv_addr_to_name(unsigned addr)
 {
     soinfo *si;
 
@@ -357,7 +359,7 @@ const char *addr_to_name(unsigned addr)
  * This function is exposed via dlfcn.c and libdl.so.
  */
 #ifdef ANDROID_ARM_LINKER
-_Unwind_Ptr android_dl_unwind_find_exidx(_Unwind_Ptr pc, int *pcount)
+_Unwind_Ptr apkenv_android_dl_unwind_find_exidx(_Unwind_Ptr pc, int *pcount)
 {
     soinfo *si;
     unsigned addr = (unsigned)pc;
@@ -374,8 +376,8 @@ _Unwind_Ptr android_dl_unwind_find_exidx(_Unwind_Ptr pc, int *pcount)
 #elif defined(ANDROID_X86_LINKER)
 /* Here, we only have to provide a callback to iterate across all the
  * loaded libraries. gcc_eh does the rest. */
-int
-android_dl_iterate_phdr(int (*cb)(struct dl_phdr_info *info, size_t size, void *data),
+static int
+apkenv_android_dl_iterate_phdr(int (*cb)(struct dl_phdr_info *info, size_t size, void *data),
                 void *data)
 {
     soinfo *si;
@@ -395,7 +397,7 @@ android_dl_iterate_phdr(int (*cb)(struct dl_phdr_info *info, size_t size, void *
 }
 #endif
 
-static Elf32_Sym *_elf_lookup(soinfo *si, unsigned hash, const char *name)
+static Elf32_Sym *apkenv__elf_lookup(soinfo *si, unsigned hash, const char *name)
 {
     Elf32_Sym *s;
     Elf32_Sym *symtab = si->symtab;
@@ -429,7 +431,7 @@ static Elf32_Sym *_elf_lookup(soinfo *si, unsigned hash, const char *name)
     return NULL;
 }
 
-static unsigned elfhash(const char *_name)
+static unsigned apkenv_elfhash(const char *_name)
 {
     const unsigned char *name = (const unsigned char *) _name;
     unsigned h = 0, g;
@@ -446,9 +448,9 @@ static unsigned elfhash(const char *_name)
 const char *last_library_used = NULL;
 
 static Elf32_Sym *
-_do_lookup(soinfo *si, const char *name, unsigned *base)
+apkenv__do_lookup(soinfo *si, const char *name, unsigned *base)
 {
-    unsigned elf_hash = elfhash(name);
+    unsigned elf_hash = apkenv_elfhash(name);
     Elf32_Sym *s;
     unsigned *d;
     soinfo *lsi = si;
@@ -464,14 +466,14 @@ _do_lookup(soinfo *si, const char *name, unsigned *base)
      * and some the first non-weak definition.   This is system dependent.
      * Here we return the first definition found for simplicity.  */
 
-    s = _elf_lookup(si, elf_hash, name);
+    s = apkenv__elf_lookup(si, elf_hash, name);
     if(s != NULL)
         goto done;
 
     /* Next, look for it in the preloads list */
     for(i = 0; preloads[i] != NULL; i++) {
         lsi = preloads[i];
-        s = _elf_lookup(lsi, elf_hash, name);
+        s = apkenv__elf_lookup(lsi, elf_hash, name);
         if(s != NULL)
             goto done;
     }
@@ -479,7 +481,7 @@ _do_lookup(soinfo *si, const char *name, unsigned *base)
     for(d = si->dynamic; *d; d += 2) {
         if(d[0] == DT_NEEDED){
             lsi = (soinfo *)d[1];
-            if (!validate_soinfo(lsi)) {
+            if (!apkenv_validate_soinfo(lsi)) {
                 DL_ERR("%5d bad DT_NEEDED pointer in %s",
                        pid, si->name);
                 return NULL;
@@ -487,7 +489,7 @@ _do_lookup(soinfo *si, const char *name, unsigned *base)
 
             DEBUG("%5d %s: looking up %s in %s\n",
                   pid, si->name, name, lsi->name);
-            s = _elf_lookup(lsi, elf_hash, name);
+            s = apkenv__elf_lookup(lsi, elf_hash, name);
             if ((s != NULL) && (s->st_shndx != SHN_UNDEF))
                 goto done;
         }
@@ -502,7 +504,7 @@ _do_lookup(soinfo *si, const char *name, unsigned *base)
         lsi = somain;
         DEBUG("%5d %s: looking up %s in executable %s\n",
               pid, si->name, name, lsi->name);
-        s = _elf_lookup(lsi, elf_hash, name);
+        s = apkenv__elf_lookup(lsi, elf_hash, name);
     }
 #endif
 
@@ -522,16 +524,16 @@ done:
 /* This is used by dl_sym().  It performs symbol lookup only within the
    specified soinfo object and not in any of its dependencies.
  */
-Elf32_Sym *lookup_in_library(soinfo *si, const char *name)
+Elf32_Sym *apkenv_lookup_in_library(soinfo *si, const char *name)
 {
-    return _elf_lookup(si, elfhash(name), name);
+    return apkenv__elf_lookup(si, apkenv_elfhash(name), name);
 }
 
 /* This is used by dl_sym().  It performs a global symbol lookup.
  */
-Elf32_Sym *lookup(const char *name, soinfo **found, soinfo *start)
+Elf32_Sym *apkenv_lookup(const char *name, soinfo **found, soinfo *start)
 {
-    unsigned elf_hash = elfhash(name);
+    unsigned elf_hash = apkenv_elfhash(name);
     Elf32_Sym *s = NULL;
     soinfo *si;
 
@@ -543,7 +545,7 @@ Elf32_Sym *lookup(const char *name, soinfo **found, soinfo *start)
     {
         if(si->flags & FLAG_ERROR)
             continue;
-        s = _elf_lookup(si, elf_hash, name);
+        s = apkenv__elf_lookup(si, elf_hash, name);
         if (s != NULL) {
             *found = si;
             break;
@@ -559,7 +561,7 @@ Elf32_Sym *lookup(const char *name, soinfo **found, soinfo *start)
     return NULL;
 }
 
-soinfo *find_containing_library(const void *addr)
+soinfo *apkenv_find_containing_library(const void *addr)
 {
     soinfo *si;
 
@@ -573,7 +575,7 @@ soinfo *find_containing_library(const void *addr)
     return NULL;
 }
 
-Elf32_Sym *find_containing_symbol(const void *addr, soinfo *si)
+Elf32_Sym *apkenv_find_containing_symbol(const void *addr, soinfo *si)
 {
     unsigned int i;
     unsigned soaddr = (unsigned)addr - si->base;
@@ -619,7 +621,7 @@ static const char *sopaths[SOPATH_MAX + 1] = {
 #endif
 };
 
-int add_sopath(const char *path)
+int apkenv_add_sopath(const char *path)
 {
     int i;
     for (i = 0; i < SOPATH_MAX; i++) {
@@ -636,7 +638,7 @@ int add_sopath(const char *path)
     return -1;
 }
 
-static int _open_lib(const char *name)
+static int apkenv__open_lib(const char *name)
 {
     int fd;
     struct stat filestat;
@@ -649,7 +651,7 @@ static int _open_lib(const char *name)
     return -1;
 }
 
-static int open_library(const char *name, char *fullpath)
+static int apkenv_open_library(const char *name, char *fullpath)
 {
     int fd;
     char buf[512];
@@ -663,10 +665,10 @@ static int open_library(const char *name, char *fullpath)
 
     strcpy(fullpath, name);
 
-    if ((name[0] == '/') && ((fd = _open_lib(name)) >= 0))
+    if ((name[0] == '/') && ((fd = apkenv__open_lib(name)) >= 0))
         return fd;
 
-    if (((fd = _open_lib(name)) >= 0))
+    if (((fd = apkenv__open_lib(name)) >= 0))
         return fd;
 
     for (path = ldpaths; *path; path++) {
@@ -675,7 +677,7 @@ static int open_library(const char *name, char *fullpath)
             WARN("Ignoring very long library path: %s/%s\n", *path, name);
             continue;
         }
-        if ((fd = _open_lib(buf)) >= 0) {
+        if ((fd = apkenv__open_lib(buf)) >= 0) {
             strcpy(fullpath, buf);
             return fd;
         }
@@ -686,7 +688,7 @@ static int open_library(const char *name, char *fullpath)
             WARN("Ignoring very long library path: %s/%s\n", *path, name);
             continue;
         }
-        if ((fd = _open_lib(buf)) >= 0) {
+        if ((fd = apkenv__open_lib(buf)) >= 0) {
             strcpy(fullpath, buf);
             return fd;
         }
@@ -707,7 +709,7 @@ typedef struct {
 /* Returns the requested base address if the library is prelinked,
  * and 0 otherwise.  */
 static unsigned long
-is_prelinked(int fd, const char *name)
+apkenv_is_prelinked(int fd, const char *name)
 {
     off_t sz;
     prelink_info_t info;
@@ -731,7 +733,7 @@ is_prelinked(int fd, const char *name)
     return (unsigned long)info.mmap_addr;
 }
 
-/* verify_elf_object
+/* apkenv_verify_elf_object
  *      Verifies if the object @ base is a valid ELF object
  *
  * Args:
@@ -741,7 +743,7 @@ is_prelinked(int fd, const char *name)
  *      -1 if no valid ELF object is found @ base.
  */
 static int
-verify_elf_object(void *base, const char *name)
+apkenv_verify_elf_object(void *base, const char *name)
 {
     Elf32_Ehdr *hdr = (Elf32_Ehdr *) base;
 
@@ -760,7 +762,7 @@ verify_elf_object(void *base, const char *name)
 }
 
 
-/* get_lib_extents
+/* apkenv_get_lib_extents
  *      Retrieves the base (*base) address where the ELF object should be
  *      mapped and its overall memory size (*total_sz).
  *
@@ -782,7 +784,7 @@ verify_elf_object(void *base, const char *name)
  *         This indicates a pre-linked library.
  */
 static unsigned
-get_lib_extents(int fd, const char *name, void *__hdr, unsigned *total_sz)
+apkenv_get_lib_extents(int fd, const char *name, void *__hdr, unsigned *total_sz)
 {
     unsigned req_base;
     unsigned min_vaddr = 0xffffffff;
@@ -793,12 +795,12 @@ get_lib_extents(int fd, const char *name, void *__hdr, unsigned *total_sz)
     int cnt;
 
     TRACE("[ %5d Computing extents for '%s'. ]\n", pid, name);
-    if (verify_elf_object(_hdr, name) < 0) {
+    if (apkenv_verify_elf_object(_hdr, name) < 0) {
         DL_ERR("%5d - %s is not a valid ELF object", pid, name);
         return (unsigned)-1;
     }
 
-    req_base = (unsigned) is_prelinked(fd, name);
+    req_base = (unsigned) apkenv_is_prelinked(fd, name);
     if (req_base == (unsigned)-1)
         return -1;
     else if (req_base != 0) {
@@ -836,7 +838,7 @@ get_lib_extents(int fd, const char *name, void *__hdr, unsigned *total_sz)
     return (unsigned)req_base;
 }
 
-/* reserve_mem_region
+/* apkenv_reserve_mem_region
  *
  *     This function reserves a chunk of memory to be used for mapping in
  *     a prelinked shared library. We reserve the entire memory region here, and
@@ -852,7 +854,7 @@ get_lib_extents(int fd, const char *name, void *__hdr, unsigned *total_sz)
  *     the virtual address at which the library will be mapped.
  */
 
-static int reserve_mem_region(soinfo *si)
+static int apkenv_reserve_mem_region(soinfo *si)
 {
     void *base = mmap((void *)si->base, si->size, PROT_NONE,
                       MAP_FIXED | MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
@@ -872,11 +874,11 @@ static int reserve_mem_region(soinfo *si)
     return 0;
 }
 
-static int alloc_mem_region(soinfo *si)
+static int apkenv_alloc_mem_region(soinfo *si)
 {
     if (si->base) {
         /* Attempt to mmap a prelinked library. */
-        return reserve_mem_region(si);
+        return apkenv_reserve_mem_region(si);
     }
 
     /* This is not a prelinked library, so we use the kernel's default
@@ -906,7 +908,7 @@ err:
 #define PFLAGS_TO_PROT(x)            (MAYBE_MAP_FLAG((x), PF_X, PROT_EXEC) | \
                                       MAYBE_MAP_FLAG((x), PF_R, PROT_READ) | \
                                       MAYBE_MAP_FLAG((x), PF_W, PROT_WRITE))
-/* load_segments
+/* apkenv_load_segments
  *
  *     This function loads all the loadable (PT_LOAD) segments into memory
  *     at their appropriate memory offsets off the base address.
@@ -921,7 +923,7 @@ err:
  *     0 on success, -1 on failure.
  */
 static int
-load_segments(int fd, void *header, soinfo *si)
+apkenv_load_segments(int fd, void *header, soinfo *si)
 {
     Elf32_Ehdr *ehdr = (Elf32_Ehdr *)header;
     Elf32_Phdr *phdr = (Elf32_Phdr *)((unsigned char *)header + ehdr->e_phoff);
@@ -1134,10 +1136,10 @@ get_wr_offset(int fd, const char *name, Elf32_Ehdr *ehdr)
 #endif
 
 static soinfo *
-load_library(const char *name)
+apkenv_load_library(const char *name)
 {
     char fullpath[512];
-    int fd = open_library(name, fullpath);
+    int fd = apkenv_open_library(name, fullpath);
     int cnt;
     unsigned ext_sz;
     unsigned req_base;
@@ -1167,7 +1169,7 @@ load_library(const char *name)
 
     /* Parse the ELF header and get the size of the memory footprint for
      * the library */
-    req_base = get_lib_extents(fd, name, &__header[0], &ext_sz);
+    req_base = apkenv_get_lib_extents(fd, name, &__header[0], &ext_sz);
     if (req_base == (unsigned)-1)
         goto fail;
     TRACE("[ %5d - '%s' (%s) wants base=0x%08x sz=0x%08x ]\n", pid, name,
@@ -1179,7 +1181,7 @@ load_library(const char *name)
      * soinfo struct here is a lot more convenient.
      */
     bname = strrchr(name, '/');
-    si = alloc_info(bname ? bname + 1 : name);
+    si = apkenv_alloc_info(bname ? bname + 1 : name);
     if (si == NULL)
         goto fail;
 
@@ -1194,19 +1196,19 @@ load_library(const char *name)
     si->flags = 0;
     si->entry = 0;
     si->dynamic = (unsigned *)-1;
-    if (alloc_mem_region(si) < 0)
+    if (apkenv_alloc_mem_region(si) < 0)
         goto fail;
 
     TRACE("[ %5d allocated memory for %s @ %p (0x%08x) ]\n",
           pid, name, (void *)si->base, (unsigned) ext_sz);
 
     /* Now actually load the library's segments into right places in memory */
-    if (load_segments(fd, &__header[0], si) < 0) {
+    if (apkenv_load_segments(fd, &__header[0], si) < 0) {
         goto fail;
     }
 
     /* this might not be right. Technically, we don't even need this info
-     * once we go through 'load_segments'. */
+     * once we go through 'apkenv_load_segments'. */
     hdr = (Elf32_Ehdr *)si->base;
     si->phdr = (Elf32_Phdr *)((unsigned char *)si->base + hdr->e_phoff);
     si->phnum = hdr->e_phnum;
@@ -1216,22 +1218,22 @@ load_library(const char *name)
     return si;
 
 fail:
-    if (si) free_info(si);
+    if (si) apkenv_free_info(si);
     close(fd);
     return NULL;
 }
 
 static soinfo *
-init_library(soinfo *si)
+apkenv_init_library(soinfo *si)
 {
     unsigned wr_offset = 0xffffffff;
 
     /* At this point we know that whatever is loaded @ base is a valid ELF
      * shared library whose segments are properly mapped in. */
-    TRACE("[ %5d init_library base=0x%08x sz=0x%08x name='%s') ]\n",
+    TRACE("[ %5d apkenv_init_library base=0x%08x sz=0x%08x name='%s') ]\n",
           pid, si->base, si->size, si->name);
 
-    if(link_image(si, wr_offset)) {
+    if(apkenv_link_image(si, wr_offset)) {
             /* We failed to link.  However, we can only restore libbase
             ** if no additional libraries have moved it since we updated it.
             */
@@ -1242,7 +1244,7 @@ init_library(soinfo *si)
     return si;
 }
 
-soinfo *find_library(const char *name)
+soinfo *apkenv_find_library(const char *name)
 {
     soinfo *si;
     const char *bname;
@@ -1271,27 +1273,27 @@ soinfo *find_library(const char *name)
     }
 
     TRACE("[ %5d '%s' has not been loaded yet.  Locating...]\n", pid, name);
-    si = load_library(name);
+    si = apkenv_load_library(name);
     if(si == NULL)
         return NULL;
-    return init_library(si);
+    return apkenv_init_library(si);
 }
 
 /* TODO:
  *   notify gdb of unload
  *   for non-prelinked libraries, find a way to decrement libbase
  */
-static void call_destructors(soinfo *si);
-unsigned unload_library(soinfo *si)
+static void apkenv_call_destructors(soinfo *si);
+unsigned apkenv_unload_library(soinfo *si)
 {
     unsigned *d;
     if (si->refcount == 1) {
         TRACE("%5d unloading '%s'\n", pid, si->name);
-        call_destructors(si);
+        apkenv_call_destructors(si);
 
         /*
          * Make sure that we undo the PT_GNU_RELRO protections we added
-         * in link_image. This is needed to undo the DT_NEEDED hack below.
+         * in apkenv_link_image. This is needed to undo the DT_NEEDED hack below.
          */
         if ((si->gnu_relro_start != 0) && (si->gnu_relro_len != 0)) {
             Elf32_Addr start = (si->gnu_relro_start & ~PAGE_MASK);
@@ -1309,13 +1311,13 @@ unsigned unload_library(soinfo *si)
 
                 // The next line will segfault if the we don't undo the
                 // PT_GNU_RELRO protections (see comments above and in
-                // link_image().
+                // apkenv_link_image().
                 d[1] = 0;
 
-                if (validate_soinfo(lsi)) {
+                if (apkenv_validate_soinfo(lsi)) {
                     TRACE("%5d %s needs to unload %s\n", pid,
                           si->name, lsi->name);
-                    unload_library(lsi);
+                    apkenv_unload_library(lsi);
                 }
                 else
                     DL_ERR("%5d %s: could not unload dependent library",
@@ -1324,8 +1326,8 @@ unsigned unload_library(soinfo *si)
         }
 
         munmap((char *)si->base, si->size);
-        notify_gdb_of_unload(si);
-        free_info(si);
+        apkenv_notify_gdb_of_unload(si);
+        apkenv_free_info(si);
         si->refcount = 0;
     }
     else {
@@ -1340,7 +1342,7 @@ unsigned unload_library(soinfo *si)
  * ideal. They should probably be either uint32_t, Elf32_Addr, or unsigned
  * long.
  */
-static int reloc_library(soinfo *si, Elf32_Rel *rel, unsigned count)
+static int apkenv_reloc_library(soinfo *si, Elf32_Rel *rel, unsigned count)
 {
     Elf32_Sym *symtab = si->symtab;
     const char *strtab = si->strtab;
@@ -1361,12 +1363,12 @@ static int reloc_library(soinfo *si, Elf32_Rel *rel, unsigned count)
         if(sym != 0) {
             sym_name = (char *)(strtab + symtab[sym].st_name);
             sym_addr = 0;
-            if ((sym_addr = (unsigned)get_hooked_symbol(sym_name, 1)) != 0) {
+            if ((sym_addr = (unsigned)apkenv_get_hooked_symbol(sym_name, 1)) != 0) {
                LINKER_DEBUG_PRINTF("%s hooked symbol %s to %x\n", si->name, sym_name, sym_addr);
             }
             else
             {
-               s = _do_lookup(si, sym_name, &base);
+               s = apkenv__do_lookup(si, sym_name, &base);
             }
             if(sym_addr != 0)
             {
@@ -1573,7 +1575,7 @@ static int reloc_library(soinfo *si, Elf32_Rel *rel, unsigned count)
  *   DT_FINI_ARRAY must be parsed in reverse order.
  */
 
-static void call_array(unsigned *ctor, int count, int reverse)
+static void apkenv_call_array(unsigned *ctor, int count, int reverse)
 {
     int n, inc = 1;
 
@@ -1594,7 +1596,7 @@ static void call_array(unsigned *ctor, int count, int reverse)
     }
 }
 
-void call_constructors_recursive(soinfo *si)
+void apkenv_call_constructors_recursive(soinfo *si)
 {
     if (si->constructors_called)
         return;
@@ -1606,9 +1608,9 @@ void call_constructors_recursive(soinfo *si)
     // libc_malloc_debug_leak.so:
     // 1. The program depends on libc, so libc's constructor is called here.
     // 2. The libc constructor calls dlopen() to load libc_malloc_debug_leak.so.
-    // 3. dlopen() calls call_constructors_recursive() with the newly created
+    // 3. dlopen() calls apkenv_call_constructors_recursive() with the newly created
     //    soinfo for libc_malloc_debug_leak.so.
-    // 4. The debug so depends on libc, so call_constructors_recursive() is
+    // 4. The debug so depends on libc, so apkenv_call_constructors_recursive() is
     //    called again with the libc soinfo. If it doesn't trigger the early-
     //    out above, the libc constructor will be called again (recursively!).
     si->constructors_called = 1;
@@ -1617,7 +1619,7 @@ void call_constructors_recursive(soinfo *si)
         TRACE("[ %5d Calling preinit_array @ 0x%08x [%d] for '%s' ]\n",
               pid, (unsigned)si->preinit_array, si->preinit_array_count,
               si->name);
-        call_array(si->preinit_array, si->preinit_array_count, 0);
+        apkenv_call_array(si->preinit_array, si->preinit_array_count, 0);
         TRACE("[ %5d Done calling preinit_array for '%s' ]\n", pid, si->name);
     } else {
         if (si->preinit_array) {
@@ -1632,11 +1634,11 @@ void call_constructors_recursive(soinfo *si)
         for(d = si->dynamic; *d; d += 2) {
             if(d[0] == DT_NEEDED){
                 soinfo* lsi = (soinfo *)d[1];
-                if (!validate_soinfo(lsi)) {
+                if (!apkenv_validate_soinfo(lsi)) {
                     DL_ERR("%5d bad DT_NEEDED pointer in %s",
                            pid, si->name);
                 } else {
-                    call_constructors_recursive(lsi);
+                    apkenv_call_constructors_recursive(lsi);
                 }
             }
         }
@@ -1652,18 +1654,18 @@ void call_constructors_recursive(soinfo *si)
     if (si->init_array) {
         TRACE("[ %5d Calling init_array @ 0x%08x [%d] for '%s' ]\n", pid,
               (unsigned)si->init_array, si->init_array_count, si->name);
-        call_array(si->init_array, si->init_array_count, 0);
+        apkenv_call_array(si->init_array, si->init_array_count, 0);
         TRACE("[ %5d Done calling init_array for '%s' ]\n", pid, si->name);
     }
 
 }
 
-static void call_destructors(soinfo *si)
+static void apkenv_call_destructors(soinfo *si)
 {
     if (si->fini_array) {
         TRACE("[ %5d Calling fini_array @ 0x%08x [%d] for '%s' ]\n", pid,
               (unsigned)si->fini_array, si->fini_array_count, si->name);
-        call_array(si->fini_array, si->fini_array_count, 1);
+        apkenv_call_array(si->fini_array, si->fini_array_count, 1);
         TRACE("[ %5d Done calling fini_array for '%s' ]\n", pid, si->name);
     }
 
@@ -1677,7 +1679,7 @@ static void call_destructors(soinfo *si)
 
 /* Force any of the closed stdin, stdout and stderr to be associated with
    /dev/null. */
-static int nullify_closed_stdio (void)
+static int apkenv_nullify_closed_stdio (void)
 {
     int dev_null, i, status;
     int return_value = 0;
@@ -1745,11 +1747,11 @@ static int nullify_closed_stdio (void)
     return return_value;
 }
 
-void wrap_function(void *sym_addr, char *sym_name, int is_thumb, soinfo *si)
+static void apkenv_wrap_function(void *sym_addr, char *sym_name, int is_thumb, soinfo *si)
 {
     void *hook = NULL;
 #ifdef APKENV_LATEHOOKS
-    if((hook = get_hooked_symbol(sym_name, 0)) != NULL)
+    if((hook = apkenv_get_hooked_symbol(sym_name, 0)) != NULL)
     {
         // if we have a hook redirect the call to that by overwriting
         // the first 2 instruction of the function
@@ -1801,8 +1803,8 @@ void wrap_function(void *sym_addr, char *sym_name, int is_thumb, soinfo *si)
 }
 
 
-/* Franz-Josef Haider create_latehook_wrappers */
-void create_latehook_wrappers(soinfo *si)
+/* Franz-Josef Haider apkenv_create_latehook_wrappers */
+static void apkenv_create_latehook_wrappers(soinfo *si)
 {
     Elf32_Sym *s;
     
@@ -1823,14 +1825,14 @@ void create_latehook_wrappers(soinfo *si)
 
                     int is_thumb = ((int32_t)sym_addr) & 0x00000001;
                     
-                    wrap_function(sym_addr,sym_name,is_thumb,si);
+                    apkenv_wrap_function(sym_addr,sym_name,is_thumb,si);
                }
         }
     }
 }
 
 
-static int link_image(soinfo *si, unsigned wr_offset)
+static int apkenv_link_image(soinfo *si, unsigned wr_offset)
 {
     unsigned *d;
     Elf32_Phdr *phdr = si->phdr;
@@ -1846,7 +1848,7 @@ static int link_image(soinfo *si, unsigned wr_offset)
          * If this was a dynamic lib, that would have been done at load time.
          *
          * TODO: It's unfortunate that small pieces of this are
-         * repeated from the load_library routine. Refactor this just
+         * repeated from the apkenv_load_library routine. Refactor this just
          * slightly to reuse these bits.
          */
         si->size = 0;
@@ -2033,9 +2035,9 @@ static int link_image(soinfo *si, unsigned wr_offset)
         int i;
         memset(preloads, 0, sizeof(preloads));
         for(i = 0; ldpreload_names[i] != NULL; i++) {
-            soinfo *lsi = find_library(ldpreload_names[i]);
+            soinfo *lsi = apkenv_find_library(ldpreload_names[i]);
             if(lsi == 0) {
-                strlcpy(tmp_err_buf, linker_get_error(), sizeof(tmp_err_buf));
+                apkenv_strlcpy(tmp_err_buf, apkenv_linker_get_error(), sizeof(tmp_err_buf));
                 DL_ERR("%5d could not load needed library '%s' for '%s' (%s)",
                        pid, ldpreload_names[i], si->name, tmp_err_buf);
                 goto fail;
@@ -2050,7 +2052,7 @@ static int link_image(soinfo *si, unsigned wr_offset)
             DEBUG("%5d %s needs %s\n", pid, si->name, si->strtab + d[1]);
             soinfo *lsi = NULL;
             if (get_builtin_lib_handle(si->strtab + d[1]) == NULL)
-                lsi = find_library(si->strtab + d[1]);
+                lsi = apkenv_find_library(si->strtab + d[1]);
             if(lsi == 0) {
                 /**
                  * XXX Dirty Hack Alarm --thp XXX
@@ -2060,7 +2062,7 @@ static int link_image(soinfo *si, unsigned wr_offset)
                  * still allowing the application to start up.
                  **/
                 lsi = &libdl_info;
-                //strlcpy(tmp_err_buf, linker_get_error(), sizeof(tmp_err_buf));
+                //apkenv_strlcpy(tmp_err_buf, apkenv_linker_get_error(), sizeof(tmp_err_buf));
                 //DL_ERR("%5d could not load needed library '%s' for '%s' (%s)",
                 //       pid, si->strtab + d[1], si->name, tmp_err_buf);
 		//continue;
@@ -2080,16 +2082,16 @@ static int link_image(soinfo *si, unsigned wr_offset)
 
     if(si->plt_rel) {
         DEBUG("[ %5d relocating %s plt ]\n", pid, si->name );
-        if(reloc_library(si, si->plt_rel, si->plt_rel_count))
+        if(apkenv_reloc_library(si, si->plt_rel, si->plt_rel_count))
             goto fail;
     }
     if(si->rel) {
         DEBUG("[ %5d relocating %s ]\n", pid, si->name );
-        if(reloc_library(si, si->rel, si->rel_count))
+        if(apkenv_reloc_library(si, si->rel, si->rel_count))
             goto fail;
     }
 
-    create_latehook_wrappers(si);
+    apkenv_create_latehook_wrappers(si);
     
     si->flags |= FLAG_LINKED;
     DEBUG("[ %5d finished linking %s ]\n", pid, si->name);
@@ -2137,8 +2139,8 @@ static int link_image(soinfo *si, unsigned wr_offset)
 
      */
     if (program_is_setuid)
-        nullify_closed_stdio ();
-    notify_gdb_of_load(si);
+        apkenv_nullify_closed_stdio ();
+    apkenv_notify_gdb_of_load(si);
     return 0;
 
 fail:
@@ -2147,13 +2149,13 @@ fail:
     return -1;
 }
 
-static void parse_library_path(const char *path, char *delim)
+static void apkenv_parse_library_path(const char *path, char *delim)
 {
     size_t len;
     char *ldpaths_bufp = ldpaths_buf;
     int i = 0;
 
-    len = strlcpy(ldpaths_buf, path, sizeof(ldpaths_buf));
+    len = apkenv_strlcpy(ldpaths_buf, path, sizeof(ldpaths_buf));
 
     while (i < LDPATH_MAX && (ldpaths[i] = strsep(&ldpaths_bufp, delim))) {
         if (*ldpaths[i] != '\0')
@@ -2170,13 +2172,13 @@ static void parse_library_path(const char *path, char *delim)
     }
 }
 
-static void parse_preloads(const char *path, char *delim)
+static void apkenv_parse_preloads(const char *path, char *delim)
 {
     size_t len;
     char *ldpreloads_bufp = ldpreloads_buf;
     int i = 0;
 
-    len = strlcpy(ldpreloads_buf, path, sizeof(ldpreloads_buf));
+    len = apkenv_strlcpy(ldpreloads_buf, path, sizeof(ldpreloads_buf));
 
     while (i < LDPRELOAD_MAX && (ldpreload_names[i] = strsep(&ldpreloads_bufp, delim))) {
         if (*ldpreload_names[i] != '\0') {
@@ -2199,7 +2201,7 @@ static void parse_preloads(const char *path, char *delim)
  * fixed it's own GOT. It is safe to make references to externs
  * and other non-local data at this point.
  */
-static unsigned __linker_init_post_relocation(unsigned **elfdata)
+static unsigned apkenv___linker_init_post_relocation(unsigned **elfdata)
 {
     static soinfo linker_soinfo;
 
@@ -2232,7 +2234,7 @@ static unsigned __linker_init_post_relocation(unsigned **elfdata)
 #endif
 
     /* Initialize environment functions, and get to the ELF aux vectors table */
-    vecs = linker_env_init(vecs);
+    vecs = apkenv_linker_env_init(vecs);
 
     /* Check auxv for AT_SECURE first to see if program is setuid, setgid,
        has file caps, or caused a SELinux/AppArmor domain transition. */
@@ -2250,17 +2252,17 @@ static unsigned __linker_init_post_relocation(unsigned **elfdata)
 sanitize:
     /* Sanitize environment if we're loading a setuid program */
     if (program_is_setuid)
-        linker_env_secure();
+        apkenv_linker_env_secure();
 
 #if 0
-    debugger_init();
+    apkenv_debugger_init();
 #endif
 
     /* Get a few environment variables */
     {
 #if LINKER_DEBUG
         const char* env;
-        env = linker_env_get("DEBUG"); /* XXX: TODO: Change to LD_DEBUG */
+        env = apkenv_linker_env_get("DEBUG"); /* XXX: TODO: Change to LD_DEBUG */
         if (env)
             debug_verbosity = atoi(env);
 #endif
@@ -2276,7 +2278,7 @@ sanitize:
     INFO("[ android linker & debugger ]\n");
     DEBUG("%5d elfdata @ 0x%08x\n", pid, (unsigned)elfdata);
 
-    si = alloc_info(argv[0]);
+    si = apkenv_alloc_info(argv[0]);
     if(si == 0) {
         exit(-1);
     }
@@ -2296,13 +2298,13 @@ sanitize:
         /* gdb expects the linker to be in the debug shared object list,
          * and we need to make sure that the reported load address is zero.
          * Without this, gdb gets the wrong idea of where rtld_db_dlactivity()
-         * is.  Don't use alloc_info(), because the linker shouldn't
+         * is.  Don't use apkenv_alloc_info(), because the linker shouldn't
          * be on the soinfo list.
          */
-    strlcpy((char*) linker_soinfo.name, "/system/bin/linker", sizeof linker_soinfo.name);
+    apkenv_strlcpy((char*) linker_soinfo.name, "/system/bin/linker", sizeof linker_soinfo.name);
     linker_soinfo.flags = 0;
     linker_soinfo.base = 0;     // This is the important part; must be zero.
-    insert_soinfo_into_debug_map(&linker_soinfo);
+    apkenv_insert_soinfo_into_debug_map(&linker_soinfo);
 
         /* extract information passed from the kernel */
     while(vecs[0] != 0){
@@ -2341,20 +2343,20 @@ sanitize:
 
         /* Use LD_LIBRARY_PATH if we aren't setuid/setgid */
     if (ldpath_env)
-        parse_library_path(ldpath_env, ":");
+        apkenv_parse_library_path(ldpath_env, ":");
 
     if (ldpreload_env) {
-        parse_preloads(ldpreload_env, " :");
+        apkenv_parse_preloads(ldpreload_env, " :");
     }
 
-    if(link_image(si, 0)) {
+    if(apkenv_link_image(si, 0)) {
         char errmsg[] = "CANNOT LINK EXECUTABLE\n";
         write(2, __linker_dl_err_buf, strlen(__linker_dl_err_buf));
         write(2, errmsg, sizeof(errmsg));
         exit(-1);
     }
 
-    call_constructors_recursive(si);
+    apkenv_call_constructors_recursive(si);
 
 #if ALLOW_SYMBOLS_FROM_MAIN
     /* Set somain after we've loaded all the libraries in order to prevent
@@ -2409,7 +2411,7 @@ sanitize:
  * Find the value of AT_BASE passed to us by the kernel. This is the load
  * location of the linker.
  */
-static unsigned find_linker_base(unsigned **elfdata) {
+static unsigned apkenv_find_linker_base(unsigned **elfdata) {
     int argc = (int) *elfdata;
     char **argv = (char**) (elfdata + 1);
     unsigned *vecs = (unsigned*) (argv + argc + 1);
@@ -2433,14 +2435,14 @@ static unsigned find_linker_base(unsigned **elfdata) {
 /*
  * This is the entry point for the linker, called from begin.S. This
  * method is responsible for fixing the linker's own relocations, and
- * then calling __linker_init_post_relocation().
+ * then calling apkenv___linker_init_post_relocation().
  *
  * Because this method is called before the linker has fixed it's own
  * relocations, any attempt to reference an extern variable, extern
  * function, or other GOT reference will generate a segfault.
  */
-unsigned __linker_init(unsigned **elfdata) {
-    unsigned linker_addr = find_linker_base(elfdata);
+unsigned apkenv___linker_init(unsigned **elfdata) {
+    unsigned linker_addr = apkenv_find_linker_base(elfdata);
     Elf32_Ehdr *elf_hdr = (Elf32_Ehdr *) linker_addr;
     Elf32_Phdr *phdr =
         (Elf32_Phdr *)((unsigned char *) linker_addr + elf_hdr->e_phoff);
@@ -2458,7 +2460,7 @@ unsigned __linker_init(unsigned **elfdata) {
     linker_so.gnu_relro_start = 0;
     linker_so.gnu_relro_len = 0;
 
-    if (link_image(&linker_so, 0)) {
+    if (apkenv_link_image(&linker_so, 0)) {
         // It would be nice to print an error message, but if the linker
         // can't link itself, there's no guarantee that we'll be able to
         // call write() (because it involves a GOT reference).
@@ -2470,5 +2472,5 @@ unsigned __linker_init(unsigned **elfdata) {
 
     // We have successfully fixed our own relocations. It's safe to run
     // the main part of the linker now.
-    return __linker_init_post_relocation(elfdata);
+    return apkenv___linker_init_post_relocation(elfdata);
 }
