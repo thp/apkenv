@@ -44,6 +44,11 @@ struct GlobalState;
 struct SupportModule;
 struct SupportModulePriv;
 
+struct ConfigOption {
+    char *key;
+    char *value;
+};
+
 struct ModuleHacks {
     int gles_landscape_to_portrait;
     int gles_downscale_images;
@@ -153,6 +158,10 @@ struct GlobalState {
     struct JNIInvokeInterface fake_vm;
     JavaVM vm;
 
+    struct ConfigOption *config;
+    int config_count;
+    int config_size;
+
     const char *apk_filename;
     AndroidApk *apklib_handle;
     const void *apk_in_mem; /* can be NULL if APK is too large */
@@ -222,6 +231,10 @@ struct GlobalState {
 /* Forward-declarations for the Bionic linker */
 void *apkenv_android_dlopen(const char *filename, int flag);
 void *apkenv_android_dlsym(void *handle, const char *symbol);
+
+/* apkenv configuration helper */
+char *get_config(char *name);
+int get_config_int(char *name, int fallback);
 
 /* Module support */
 typedef int (*apkenv_module_init_t)(int version, struct SupportModule *module);

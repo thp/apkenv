@@ -39,6 +39,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <ctype.h>
 
 #include "jni/jnienv.h"
 #include "jni/shlib.h"
@@ -362,6 +363,97 @@ int init_dvm(struct GlobalState *global, void *libdvm_handle)
 /* Provided by one of the support modules in "platform/" */
 extern struct PlatformSupport platform_support;
 
+static void
+parse_config_line(char *line)
+{
+    if (line[0] == '#') {
+        // Comment line
+        return;
+    }
+
+    char *eq = strchr(line, '=');
+    if (eq) {
+        *eq = '\0';
+
+        char *key = line;
+        char *value = eq + 1;
+
+        if (strlen(key) == 0 || strlen(value) == 0) {
+            // Empty key or value
+            return;
+        }
+
+        if (global.config_count == global.config_size) {
+            global.config_size += 4;
+            size_t size = global.config_size * sizeof(struct ConfigOption);
+            global.config = realloc(global.config, size);
+        }
+
+        global.config[global.config_count].key = strdup(key);
+        global.config[global.config_count].value = strdup(value);
+        global.config_count++;
+
+        *eq = '=';
+    }
+}
+
+static void
+read_config(const char *filename)
+{
+    FILE *config_file = fopen(filename, "r");
+    if (!config_file) {
+        return;
+    }
+
+    char tmp[1024];
+    while (!feof(config_file)) {
+        if (fgets(tmp, sizeof(tmp), config_file) != NULL) {
+            size_t end = strlen(tmp) - 1;
+            while (isspace(tmp[end])) {
+                tmp[end--] = '\0';
+            }
+            parse_config_line(tmp);
+        }
+    }
+
+#ifdef APKENV_DEBUG
+    for (i=0; i < global.config_count; i++) {
+        printf("Config option %s=%s\n",
+                global.config[i].key,
+                global.config[i].value);
+    }
+#endif
+}
+
+char *
+get_config(char *name)
+{
+    if (!global.config) {
+        return NULL;
+    }
+
+    for (int i=0; i<global.config_count; i++) {
+        if (strcmp(global.config[i].key, name) == 0) {
+            return global.config[i].value;
+        }
+    }
+
+    return 0;
+}
+
+int
+get_config_int(char *name, int fallback)
+{
+    int result = fallback;
+    char *value = get_config(name);
+
+    if (value != NULL) {
+        result = atoi(value);
+    }
+
+    return result;
+}
+
 int main(int argc, char **argv)
 {
     global.platform = &platform_support;
@@ -374,6 +466,11 @@ int main(int argc, char **argv)
 
     const char *main_data_dir = global.platform->get_path(PLATFORM_PATH_DATA_DIRECTORY);
     recursive_mkdir(main_data_dir);
+
+    char *config_path;
+    asprintf(&config_path, "%s/config", main_data_dir);
+    read_config(config_path);
+    free(config_path);
 
     global.apkenv_executable = argv[0];
     global.apkenv_headline = APKENV_HEADLINE;
