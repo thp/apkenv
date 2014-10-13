@@ -22,7 +22,7 @@
 #include "linker.h"
 #include "linker_format.h"
 
-/* for get_hooked_symbol */
+/* for apkenv_get_hooked_symbol */
 #include "../compat/hooks.h"
 
 /* for create_wrapper */
@@ -63,44 +63,44 @@ pthread_mutex_t dl_lock = PTHREAD_MUTEX_INITIALIZER;
 static void set_dlerror(int err)
 {
     format_buffer(dl_err_buf, sizeof(dl_err_buf), "%s: %s", dl_errors[err],
-             linker_get_error());
+             apkenv_linker_get_error());
     dl_err_str = (const char *)&dl_err_buf[0];
 };
 
-void *android_dlopen(const char *filename, int flag)
+void *apkenv_android_dlopen(const char *filename, int flag)
 {
     soinfo *ret;
 
     pthread_mutex_lock(&dl_lock);
-    ret = find_library(filename);
+    ret = apkenv_find_library(filename);
 
     if (unlikely(ret == NULL)) {
         set_dlerror(DL_ERR_CANNOT_LOAD_LIBRARY);
     } else {
-        call_constructors_recursive(ret);
+        apkenv_call_constructors_recursive(ret);
         ret->refcount++;
     }
     pthread_mutex_unlock(&dl_lock);
     return ret;
 }
 
-static void *android_dlopen_wrap(const char *filename, int flag)
+static void *apkenv_android_dlopen_wrap(const char *filename, int flag)
 {
     void *ret = get_builtin_lib_handle(filename);
     if (ret)
         return ret;
 
-    return android_dlopen(filename, flag);
+    return apkenv_android_dlopen(filename, flag);
 }
 
-const char *android_dlerror(void)
+const char *apkenv_android_dlerror(void)
 {
     const char *tmp = dl_err_str;
     dl_err_str = NULL;
     return (const char *)tmp;
 }
 
-void *android_dlsym(void *handle, const char *symbol)
+void *apkenv_android_dlsym(void *handle, const char *symbol)
 {
     soinfo *found;
     Elf32_Sym *sym;
@@ -118,7 +118,7 @@ void *android_dlsym(void *handle, const char *symbol)
     }
 
     void *sym_addr;
-    if(0 != (sym_addr = get_hooked_symbol_dlfcn(handle, symbol)))
+    if(0 != (sym_addr = apkenv_get_hooked_symbol_dlfcn(handle, symbol)))
     {
         LINKER_DEBUG_PRINTF("symbol %s hooked to %x\n",symbol,sym_addr);
         pthread_mutex_unlock(&dl_lock);
@@ -131,18 +131,18 @@ void *android_dlsym(void *handle, const char *symbol)
     }
 
     if(handle == RTLD_DEFAULT) {
-        sym = lookup(symbol, &found, NULL);
+        sym = apkenv_lookup(symbol, &found, NULL);
     } else if(handle == RTLD_NEXT) {
         void *ret_addr = __builtin_return_address(0);
-        soinfo *si = find_containing_library(ret_addr);
+        soinfo *si = apkenv_find_containing_library(ret_addr);
 
         sym = NULL;
         if(si && si->next) {
-            sym = lookup(symbol, &found, si->next);
+            sym = apkenv_lookup(symbol, &found, si->next);
         }
     } else {
         found = (soinfo*)handle;
-        sym = lookup_in_library(found, symbol);
+        sym = apkenv_lookup_in_library(found, symbol);
     }
 
     if(likely(sym != 0)) {
@@ -165,14 +165,14 @@ err:
     return 0;
 }
 
-int android_dladdr(const void *addr, Dl_info *info)
+int apkenv_android_dladdr(const void *addr, Dl_info *info)
 {
     int ret = 0;
 
     pthread_mutex_lock(&dl_lock);
 
     /* Determine if this address can be found in any library currently mapped */
-    soinfo *si = find_containing_library(addr);
+    soinfo *si = apkenv_find_containing_library(addr);
 
     if(si) {
         memset(info, 0, sizeof(Dl_info));
@@ -181,7 +181,7 @@ int android_dladdr(const void *addr, Dl_info *info)
         info->dli_fbase = (void*)si->base;
 
         /* Determine if any symbol in the library contains the specified address */
-        Elf32_Sym *sym = find_containing_symbol(addr, si);
+        Elf32_Sym *sym = apkenv_find_containing_symbol(addr, si);
 
         if(sym != NULL) {
             info->dli_sname = si->strtab + sym->st_name;
@@ -196,13 +196,13 @@ int android_dladdr(const void *addr, Dl_info *info)
     return ret;
 }
 
-int android_dlclose(void *handle)
+int apkenv_android_dlclose(void *handle)
 {
     if (is_builtin_lib_handle(handle))
         return 0;
 
     pthread_mutex_lock(&dl_lock);
-    (void)unload_library((soinfo*)handle);
+    (void)apkenv_unload_library((soinfo*)handle);
     pthread_mutex_unlock(&dl_lock);
     return 0;
 }
@@ -214,7 +214,7 @@ int android_dlclose(void *handle)
 #define ANDROID_LIBDL_STRTAB \
                       "dlopen\0dlclose\0dlsym\0dlerror\0dladdr\0dl_unwind_find_exidx\0"
 
-_Unwind_Ptr android_dl_unwind_find_exidx(_Unwind_Ptr pc, int *pcount);
+_Unwind_Ptr apkenv_android_dl_unwind_find_exidx(_Unwind_Ptr pc, int *pcount);
 
 #elif defined(ANDROID_X86_LINKER)
 //                     0000000 00011111 111112 22222222 2333333 3333444444444455
@@ -222,7 +222,7 @@ _Unwind_Ptr android_dl_unwind_find_exidx(_Unwind_Ptr pc, int *pcount);
 #define ANDROID_LIBDL_STRTAB \
                       "dlopen\0dlclose\0dlsym\0dlerror\0dladdr\0dl_iterate_phdr\0"
 int
-android_dl_iterate_phdr(int (*cb)(struct dl_phdr_info *info, size_t size, void *data),
+apkenv_android_dl_iterate_phdr(int (*cb)(struct dl_phdr_info *info, size_t size, void *data),
                 void *data);
 
 #else
@@ -238,39 +238,39 @@ static Elf32_Sym libdl_symtab[] = {
     { st_name: sizeof(ANDROID_LIBDL_STRTAB) - 1,
     },
     { st_name: 0,   // starting index of the name in libdl_info.strtab
-      st_value: (Elf32_Addr) &android_dlopen_wrap,
+      st_value: (Elf32_Addr) &apkenv_android_dlopen_wrap,
       st_info: STB_GLOBAL << 4,
       st_shndx: 1,
     },
     { st_name: 7,
-      st_value: (Elf32_Addr) &android_dlclose,
+      st_value: (Elf32_Addr) &apkenv_android_dlclose,
       st_info: STB_GLOBAL << 4,
       st_shndx: 1,
     },
     { st_name: 15,
-      st_value: (Elf32_Addr) &android_dlsym,
+      st_value: (Elf32_Addr) &apkenv_android_dlsym,
       st_info: STB_GLOBAL << 4,
       st_shndx: 1,
     },
     { st_name: 21,
-      st_value: (Elf32_Addr) &android_dlerror,
+      st_value: (Elf32_Addr) &apkenv_android_dlerror,
       st_info: STB_GLOBAL << 4,
       st_shndx: 1,
     },
     { st_name: 29,
-      st_value: (Elf32_Addr) &android_dladdr,
+      st_value: (Elf32_Addr) &apkenv_android_dladdr,
       st_info: STB_GLOBAL << 4,
       st_shndx: 1,
     },
 #ifdef ANDROID_ARM_LINKER
     { st_name: 36,
-      st_value: (Elf32_Addr) &android_dl_unwind_find_exidx,
+      st_value: (Elf32_Addr) &apkenv_android_dl_unwind_find_exidx,
       st_info: STB_GLOBAL << 4,
       st_shndx: 1,
     },
 #elif defined(ANDROID_X86_LINKER)
     { st_name: 36,
-      st_value: (Elf32_Addr) &android_dl_iterate_phdr,
+      st_value: (Elf32_Addr) &apkenv_android_dl_iterate_phdr,
       st_info: STB_GLOBAL << 4,
       st_shndx: 1,
     },

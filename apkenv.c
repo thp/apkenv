@@ -53,8 +53,8 @@
 
 #include "apkenv.h"
 
-extern void *android_dlopen(const char *filename, int flag);
-extern int android_dlclose(void *handle);
+extern void *apkenv_android_dlopen(const char *filename, int flag);
+extern int apkenv_android_dlclose(void *handle);
 /* Global application state */
 struct GlobalState global;
 struct ModuleHacks global_module_hacks;
@@ -343,7 +343,7 @@ system_init(int gles_version)
     gles2_init();
 
     /* SDL loads some libs.. */
-    notify_gdb_of_libraries();
+    apkenv_notify_gdb_of_libraries();
 
     return 1;
 }
@@ -351,7 +351,7 @@ system_init(int gles_version)
 int init_dvm(struct GlobalState *global, void *libdvm_handle)
 {
     int (*CreateJavaVM)(JavaVM *vm, JNIEnv *env, const char *apk_filename);
-    CreateJavaVM = android_dlsym(libdvm_handle, "compat_CreateJavaVM");
+    CreateJavaVM = apkenv_android_dlsym(libdvm_handle, "compat_CreateJavaVM");
     if(NULL == CreateJavaVM) {
         return 0; // failed
     }
@@ -500,8 +500,8 @@ int main(int argc, char **argv)
     if(global.use_dvm) {
         strcpy(android_sopath, global.android_path);
         strcat(android_sopath, "/system/lib/");
-        add_sopath(android_sopath);
-        libdvm_handle = android_dlopen("libdvm_compat.so", RTLD_LAZY);
+        apkenv_add_sopath(android_sopath);
+        libdvm_handle = apkenv_android_dlopen("libdvm_compat.so", RTLD_LAZY);
         if(NULL == libdvm_handle) {
             printf("ERROR: could not load libdvm_compat.so.\n");
             libdvm_handle = NULL;
@@ -509,7 +509,7 @@ int main(int argc, char **argv)
         }
         else if(!init_dvm(&global, libdvm_handle)) {
             printf("ERROR: failed to initialize the dalvikvm.\n");
-            android_dlclose(libdvm_handle);
+            apkenv_android_dlclose(libdvm_handle);
             libdvm_handle = NULL;
             exit(3);
         }
@@ -568,8 +568,8 @@ int main(int argc, char **argv)
             shlib = shlib->next;
             continue;
         }
-        add_sopath(shlib->dirname);
-        lib->lib = android_dlopen(shlib->filename,RTLD_LAZY);
+        apkenv_add_sopath(shlib->dirname);
+        lib->lib = apkenv_android_dlopen(shlib->filename,RTLD_LAZY);
         if (!(lib->lib)) {
             printf("Missing library dependencies.\n");
             return 0;
@@ -589,7 +589,7 @@ int main(int argc, char **argv)
 
     load_modules(".");
     load_modules(global.platform->get_path(PLATFORM_PATH_MODULE_DIRECTORY));
-    notify_gdb_of_libraries();
+    apkenv_notify_gdb_of_libraries();
 
     if (global.support_modules == NULL) {
         printf("No support modules found.\n");
@@ -672,7 +672,7 @@ int main(int argc, char **argv)
     global.platform->get_size(&width, &height);
     module->init(module, width, height, data_directory);
 
-    notify_gdb_of_libraries();
+    apkenv_notify_gdb_of_libraries();
 
     while (1) {
 
@@ -711,7 +711,7 @@ finish:
     global.platform->exit();
 
     if(NULL != libdvm_handle) {
-        android_dlclose(libdvm_handle);
+        apkenv_android_dlclose(libdvm_handle);
         libdvm_handle = NULL;
     }
     

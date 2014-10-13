@@ -110,7 +110,7 @@ hook_cmp(const void *p1, const void *p2)
 
 #define HOOK_SIZE (sizeof(struct _hook))
 
-void *get_hooked_symbol(const char *sym, int die_if_pthread)
+void *apkenv_get_hooked_symbol(const char *sym, int die_if_pthread)
 {
     struct _hook target;
     target.name = sym;
@@ -130,7 +130,7 @@ void *get_hooked_symbol(const char *sym, int die_if_pthread)
     return NULL;
 }
 
-void *get_hooked_symbol_dlfcn(void *handle, const char *sym)
+void *apkenv_get_hooked_symbol_dlfcn(void *handle, const char *sym)
 {
     struct _hook *result;
     struct _hook target;
@@ -158,7 +158,7 @@ void *get_hooked_symbol_dlfcn(void *handle, const char *sym)
 #endif
     }
 
-    return get_hooked_symbol(sym, 1);
+    return apkenv_get_hooked_symbol(sym, 1);
 }
 
 int register_hooks(const struct _hook *new_hooks, size_t count)
@@ -231,7 +231,7 @@ void hooks_init(void)
             break;
     hooks_count = i;
 
-    /* Sort hooks so we can use binary search in get_hooked_symbol() */
+    /* Sort hooks so we can use binary search in apkenv_get_hooked_symbol() */
     qsort(&(hooks[0]), hooks_count, HOOK_SIZE, hook_cmp);
 #ifdef APKENV_GLES
     qsort(hooks_gles1, HOOKS_GLES1_COUNT, HOOK_SIZE, hook_cmp);

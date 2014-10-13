@@ -36,7 +36,7 @@ static char** _envp;
  *  - It contains at least one equal sign that is not the first character
  */
 static int
-_is_valid_definition(const char*  str)
+apkenv__is_valid_definition(const char*  str)
 {
     int   pos = 0;
     int   first_equal_pos = -1;
@@ -68,7 +68,7 @@ _is_valid_definition(const char*  str)
 }
 
 unsigned*
-linker_env_init(unsigned* vecs)
+apkenv_linker_env_init(unsigned* vecs)
 {
     /* Store environment pointer - can't be NULL */
     _envp = (char**) vecs;
@@ -86,7 +86,7 @@ linker_env_init(unsigned* vecs)
         char** readp  = _envp;
         char** writep = _envp;
         for ( ; readp[0] != NULL; readp++ ) {
-            if (!_is_valid_definition(readp[0]))
+            if (!apkenv__is_valid_definition(readp[0]))
                 continue;
             writep[0] = readp[0];
             writep++;
@@ -103,7 +103,7 @@ linker_env_init(unsigned* vecs)
  * first character after the equal sign. Otherwise return NULL.
  */
 static char*
-env_match(char* envstr, const char* name)
+apkenv_env_match(char* envstr, const char* name)
 {
     size_t  cnt = 0;
 
@@ -119,7 +119,7 @@ env_match(char* envstr, const char* name)
 #define MAX_ENV_LEN  (16*4096)
 
 const char*
-linker_env_get(const char* name)
+apkenv_linker_env_get(const char* name)
 {
     char** readp = _envp;
 
@@ -127,7 +127,7 @@ linker_env_get(const char* name)
         return NULL;
 
     for ( ; readp[0] != NULL; readp++ ) {
-        char* val = env_match(readp[0], name);
+        char* val = apkenv_env_match(readp[0], name);
         if (val != NULL) {
             /* Return NULL for empty strings, or if it is too large */
             if (val[0] == '\0')
@@ -140,7 +140,7 @@ linker_env_get(const char* name)
 
 
 void
-linker_env_unset(const char* name)
+apkenv_linker_env_unset(const char* name)
 {
     char**  readp = _envp;
     char**  writep = readp;
@@ -149,7 +149,7 @@ linker_env_unset(const char* name)
         return;
 
     for ( ; readp[0] != NULL; readp++ ) {
-        if (env_match(readp[0], name))
+        if (apkenv_env_match(readp[0], name))
             continue;
         writep[0] = readp[0];
         writep++;
@@ -163,7 +163,7 @@ linker_env_unset(const char* name)
 /* Remove unsafe environment variables. This should be used when
  * running setuid programs. */
 void
-linker_env_secure(void)
+apkenv_linker_env_secure(void)
 {
     /* The same list than GLibc at this point */
     static const char* const unsec_vars[] = {
@@ -198,7 +198,7 @@ linker_env_secure(void)
     const char* const* endp = cp + sizeof(unsec_vars)/sizeof(unsec_vars[0]);
 
     while (cp < endp) {
-        linker_env_unset(*cp);
+        apkenv_linker_env_unset(*cp);
         cp++;
     }
 }
