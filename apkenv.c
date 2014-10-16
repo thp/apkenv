@@ -432,7 +432,8 @@ get_config(char *name)
         return NULL;
     }
 
-    for (int i=0; i<global.config_count; i++) {
+    int i;
+    for (i=0; i<global.config_count; i++) {
         if (strcmp(global.config[i].key, name) == 0) {
             return global.config[i].value;
         }
