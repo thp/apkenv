@@ -28,6 +28,8 @@ OBJS := $(patsubst %.c,%.o,$(SOURCES))
 MODULES_SOURCES := $(wildcard modules/*.c)
 MODULES := $(patsubst modules/%.c,%.apkenv.so,$(MODULES_SOURCES))
 
+DEPS := $(patsubst %.c,%.d,$(SOURCES)) $(patsubst %.c,%.d,$(MODULES_SOURCES))
+
 modules: $(MODULES)
 
 $(TARGET): $(OBJS)
@@ -42,9 +44,15 @@ debug/wrappers/%_arm.o: debug/wrappers/%_arm.c
 	$(SILENTMSG) -e "\tCC\t$@"
 	$(SILENTCMD)$(CC) -marm -O0 -c -o $@ $<
 
-%.o: %.c
+%.o: %.c %.d
 	$(SILENTMSG) -e "\tCC\t$@"
 	$(SILENTCMD)$(CC) $(CFLAGS) -c -o $@ $<
+
+%.d: %.c
+	$(SILENTMSG) -e "\tDEP\t$@"
+	$(SILENTCMD)$(CC) $(CFLAGS) -MF $@.tmp -MM $<
+	$(SILENTCMD)sed -e 's|.*:|$*.o:|' < $@.tmp > $@
+	$(SILENTCMD)rm -rf $*.d.tmp
 
 %.apkenv.so: modules/%.c
 	$(SILENTMSG) -e "\tMOD\t$@"
@@ -60,7 +68,11 @@ install: $(TARGET) $(MODULES) $(PLATFORM_INSTALL_TARGETS)
 
 clean:
 	$(SILENTMSG) -e "\tCLEAN"
-	$(SILENTCMD)rm -rf $(TARGET) $(OBJS) $(MODULES)
+	$(SILENTCMD)rm -rf $(TARGET) $(OBJS) $(MODULES) $(DEPS)
+
+ifneq ($(MAKECMDGOALS),clean)
+    -include $(DEPS)
+endif
 
 .DEFAULT: all
 .PHONY: all modules install clean
