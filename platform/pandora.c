@@ -34,8 +34,8 @@
 #include <GLES/gl.h>
 #include <EGL/egl.h>
 
-#include <SDL/SDL_syswm.h>
-#include <SDL/SDL_video.h>
+#include <SDL_syswm.h>
+#include <SDL_video.h>
 
 #include "common/sdl_accelerometer_impl.h"
 #include "common/sdl_audio_impl.h"

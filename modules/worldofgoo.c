@@ -34,8 +34,8 @@
 #include <unistd.h>
 #include <zlib.h>
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_mixer.h>
+#include <SDL.h>
+#include <SDL_mixer.h>
 #include <EGL/egl.h>
 
 #include "common.h"
@@ -190,7 +190,11 @@ load_sound(const char *filename)
     mem = (const char *)worldofgoo_priv.apk_in_mem + zip_index->offset;
     sound->rw = SDL_RWFromMem((void *)mem, zip_index->length);
     if (strstr(filename, "music/") != NULL) {
+#if SDL_VERSION_ATLEAST(2,0,0)
+        sound->music = Mix_LoadMUS_RW(sound->rw, 0);
+#else
         sound->music = Mix_LoadMUS_RW(sound->rw);
+#endif
         loaded = (sound->music != NULL);
     } else {
         sound->chunk = Mix_LoadWAV_RW(sound->rw, 0);

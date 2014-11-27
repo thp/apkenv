@@ -29,8 +29,8 @@
 
 #include "../../mixer/mixer.h"
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_mixer.h>
+#include <SDL.h>
+#include <SDL_mixer.h>
 #include <assert.h>
 
 /* older SDL_mixer compatibility */
@@ -91,7 +91,11 @@ sdl_mixer_load_music_buffer(struct Mixer *mixer, const char *buffer, size_t size
 {
     struct MixerMusic *music = calloc(1, sizeof(struct MixerMusic));
     SDL_RWops *rw = SDL_RWFromConstMem(buffer, size);
+#if SDL_VERSION_ATLEAST(2,0,0)
+    music->music = Mix_LoadMUS_RW(rw, 0);
+#else
     music->music = Mix_LoadMUS_RW(rw);
+#endif
     SDL_RWclose(rw);
     return music;
 

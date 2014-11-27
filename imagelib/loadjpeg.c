@@ -30,6 +30,8 @@ static void skip_input_data (j_decompress_ptr cinfo, long num_bytes)
     }
 }
 static void term_source (j_decompress_ptr cinfo) {}
+
+#ifndef NO_IMGLIB_JPEG_MEM_SRC
 static void jpeg_mem_src (j_decompress_ptr cinfo, void* buffer, long nbytes)
 {
     struct jpeg_source_mgr* src;
@@ -49,6 +51,7 @@ static void jpeg_mem_src (j_decompress_ptr cinfo, void* buffer, long nbytes)
     src->bytes_in_buffer = nbytes;
     src->next_input_byte = (JOCTET*)buffer;
 }
+#endif
 
 image_t* imagelib_load_jpeg_from_mem(char* buf, size_t size, const imageloadersettings_t settings)
 {
