@@ -146,6 +146,22 @@ apkenv_mixer_stop_sound(struct MixerSound *sound)
     }
 }
 
+int
+apkenv_mixer_get_sound_channel(struct MixerSound *sound)
+{
+    if (g_mixer) {
+        return g_mixer->get_sound_channel(g_mixer, sound);
+    }
+}
+
+void
+apkenv_mixer_set_sound_channel(struct MixerSound *sound, int channel)
+{
+    if (g_mixer) {
+        g_mixer->set_sound_channel(g_mixer, sound, channel);
+    }
+}
+
 void
 apkenv_mixer_volume_music(struct MixerMusic *music, float volume)
 {
@@ -161,3 +177,10 @@ apkenv_mixer_volume_sound(struct MixerSound *sound, float volume)
         g_mixer->volume_sound(g_mixer, sound, volume);
     }
 }
+
+void apkenv_mixer_sound_lame_resample_44100_32000(struct MixerSound *sound) {
+    if (g_mixer) {
+        g_mixer->lame_resample_44100_32000(g_mixer, sound);
+    }
+}
+

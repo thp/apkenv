@@ -34,11 +34,10 @@
 #include <unistd.h>
 #include <zlib.h>
 
-#include <SDL.h>
-#include <SDL_mixer.h>
 #include <EGL/egl.h>
 
 #include "common.h"
+#include "../mixer/mixer.h"
 
 typedef void (*worldofgoo_init_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*worldofgoo_oncreate_t)(JNIEnv *env, jobject obj, jboolean a, jboolean is_demo, jboolean c) SOFTFP;
@@ -115,29 +114,10 @@ build_apk_index(const char *filename)
     printf("Built APK index: %d entries\n", apk_index_pos);
 }
 
-static void lame_resample_44100_32000(Mix_Chunk *chunk)
-{
-    short *smp = (short *)chunk->abuf;
-    int d, s, counter = 0;
-
-    for (s = d = 0; s < chunk->alen / sizeof(*smp); d++) {
-        smp[d] = smp[s];
-
-        counter += 44100;
-        while (counter >= 32000) {
-            counter -= 32000;
-            s++;
-        }
-    }
-    chunk->alen = d * sizeof(*smp);
-}
-
 struct player_sound {
     char *filename;
-    SDL_RWops *rw;
-    Mix_Music *music;
-    Mix_Chunk *chunk;
-    int chunk_channel;
+    struct MixerMusic *music;
+    struct MixerSound *chunk;
     struct player_sound *next;
 };
 
@@ -145,7 +125,7 @@ static struct player_sound *sounds[512];
 
 /* as SDL_mixer can only play 1 music at a time, and WOG does crossfades,
  * we must track currectly active music.. */
-static Mix_Music *active_music;
+static struct MixerMusic *active_music;
 
 static void
 load_sound(const char *filename)
@@ -186,23 +166,18 @@ load_sound(const char *filename)
         return;
 
     sound->filename = strdup(filename);
-    sound->chunk_channel = -1;
+    apkenv_mixer_set_sound_channel(sound->chunk, -1);
     mem = (const char *)worldofgoo_priv.apk_in_mem + zip_index->offset;
-    sound->rw = SDL_RWFromMem((void *)mem, zip_index->length);
     if (strstr(filename, "music/") != NULL) {
-#if SDL_VERSION_ATLEAST(2,0,0)
-        sound->music = Mix_LoadMUS_RW(sound->rw, 0);
-#else
-        sound->music = Mix_LoadMUS_RW(sound->rw);
-#endif
+        sound->music = apkenv_mixer_load_music_buffer((void*)mem, zip_index->length);
         loaded = (sound->music != NULL);
     } else {
-        sound->chunk = Mix_LoadWAV_RW(sound->rw, 0);
+        sound->chunk = apkenv_mixer_load_sound_buffer((void*)mem, zip_index->length);
         if (sound->chunk != NULL) {
             loaded = 1;
             /* SDL_mixer can't resample 44100 to 32000 Hz :( */
             if (strncmp(mem, "OggS", 4) == 0 && *(unsigned short *)(mem + 0x28) == 44100)
-                lame_resample_44100_32000(sound->chunk);
+                apkenv_mixer_sound_lame_resample_44100_32000(sound->chunk);
         }
     }
     if (loaded) {
@@ -221,7 +196,6 @@ play_sound(const char *filename, int loop, double volume)
 {
     struct player_sound *sound;
     unsigned long hash;
-    int sdl_volume = (int)(volume * MIX_MAX_VOLUME);
 
     hash = crc32(0, (void *)filename, strlen(filename));
     hash %= sizeof(sounds) / sizeof(sounds[0]);
@@ -236,13 +210,13 @@ play_sound(const char *filename, int loop, double volume)
     }
 
     if (sound->chunk != NULL) {
-        Mix_VolumeChunk(sound->chunk, sdl_volume);
-        sound->chunk_channel = Mix_PlayChannel(-1, sound->chunk, loop ? -1 : 0);
+        apkenv_mixer_volume_sound(sound->chunk, volume);
+        apkenv_mixer_play_sound(sound->chunk, loop);
     } else if (sound->music != NULL) {
-        Mix_HaltMusic();
+        apkenv_mixer_stop_music(sound->music);
         active_music = sound->music;
-        Mix_VolumeMusic(sdl_volume);
-        Mix_PlayMusic(sound->music, loop ? -1 : 1);
+        apkenv_mixer_volume_music(sound->music, volume);
+        apkenv_mixer_play_music(sound->music, loop);
     }
     return sound;
 }
@@ -306,22 +280,20 @@ worldofgoo_CallVoidMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
     } else if (strcmp(p2->name, "setSoundVolume") == 0) {
         struct player_sound *sound = va_arg(p3, struct player_sound *);
         double volume = va_arg(p3, double);
-        int sdl_volume = (int)(volume * MIX_MAX_VOLUME);
         MODULE_DEBUG_PRINTF("setSoundVolume %p %.3f\n", sound, volume);
         if (sound->chunk != NULL)
-            Mix_VolumeChunk(sound->chunk, sdl_volume);
+            apkenv_mixer_volume_sound(sound->chunk, volume);
         else if (sound->music != NULL && sound->music == active_music)
-            Mix_VolumeMusic(sdl_volume);
+            apkenv_mixer_volume_music(sound->music, volume);
     } else if (strcmp(p2->name, "stopSound") == 0) {
         struct player_sound *sound = va_arg(p3, struct player_sound *);
         MODULE_DEBUG_PRINTF("stopSound %p\n", sound);
         if (sound->chunk != NULL) {
-            if (sound->chunk_channel >= 0) {
-                Mix_HaltChannel(sound->chunk_channel);
-                sound->chunk_channel = -1;
+            if (apkenv_mixer_get_sound_channel(sound->chunk) >= 0) {
+                apkenv_mixer_stop_sound(sound->chunk);
             }
         } else if (sound->music != NULL && sound->music == active_music) {
-            Mix_HaltMusic();
+            apkenv_mixer_stop_music(sound->music);
             active_music = NULL;
         }
     } else {
@@ -421,13 +393,11 @@ worldofgoo_init(struct SupportModule *self, int width, int height, const char *h
     self->priv->apk_in_mem = GLOBAL_M->apk_in_mem;
     build_apk_index(GLOBAL_M->apk_filename);
 
-    //Mix_Init(MIX_INIT_OGG);
-
     /* init sound, must use 32000Hz because music is at that rate,
      * and SDL_mixer doesn't resample to/from 32000 */
-    if (Mix_OpenAudio(32000, AUDIO_S16SYS, 2, 1024) < 0)
+    if (apkenv_mixer_open(32000, AudioFormat_S16SYS, 2, 1024) < 0)
     {
-        fprintf(stderr, "Mix_OpenAudio failed: %s.\n", Mix_GetError());
+        fprintf(stderr, "Mix_OpenAudio failed.\n");
         exit(1);
     }
 
