@@ -1,6 +1,6 @@
 SOURCES += platform/pandora.c
 CFLAGS += -DPANDORA
-LDFLAGS += -lSDL -lSDL_mixer -lrt
+LDFLAGS += -lSDL_mixer -lrt
 CFLAGS += -DAPKENV_GLES -DAPKENV_GLES2
 LDFLAGS += -lGLES_CM -lGLESv2 -lEGL
 

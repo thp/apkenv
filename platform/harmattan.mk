@@ -1,5 +1,5 @@
 SOURCES += platform/harmattan.c
-LDFLAGS += -lSDL -lSDL_mixer
+LDFLAGS += -lSDL_mixer
 CFLAGS += -DAPKENV_GLES -DAPKENV_GLES2
 LDFLAGS += -lGLES_CM -lGLESv2 -lEGL
 

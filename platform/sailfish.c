@@ -1,6 +1,7 @@
 /**
  * apkenv
  * Copyright (c) 2012, 2014, Thomas Perl <m@thp.io>
+ * Copyright (c) 2014 Franz-Josef Anton Friedrich Haider <f_haider@gmx.at>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,25 +31,22 @@
 
 #include "../apkenv.h"
 
-#include <SDL.h>
-
-#include <SDL_syswm.h>
-#include <X11/Xlib.h>
-#include <X11/Xatom.h>
+#include <SDL2/SDL.h>
 
 #include "common/sdl_accelerometer_impl.h"
 #include "common/sdl_audio_impl.h"
 #include "common/sdl_mixer_impl.h"
 
 struct PlatformPriv {
-    SDL_Surface *screen;
+    SDL_Window *window;
+    SDL_GLContext glcontext;
 };
 
 static struct PlatformPriv priv;
 
 
 static int
-harmattan_init(int gles_version)
+sailfish_init(int gles_version)
 {
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK) < 0) {
         return 0;
@@ -56,27 +54,18 @@ harmattan_init(int gles_version)
 
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gles_version);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
-    priv.screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGLES | SDL_FULLSCREEN);
 
-    if (priv.screen == NULL) {
-        return 0;
-    }
+    priv.window = SDL_CreateWindow(
+                                    "apkenv",
+                                    SDL_WINDOWPOS_UNDEFINED,
+                                    SDL_WINDOWPOS_UNDEFINED,
+                                    0, 0,
+                                    SDL_WINDOW_OPENGL|SDL_WINDOW_FULLSCREEN
+                                  );
 
-    /* Set up swipe lock (left and right) */
-    SDL_SysWMinfo wm;
-    SDL_VERSION(&wm.version);
-    SDL_GetWMInfo(&wm);
-    Display *dpy = wm.info.x11.display;
-    Atom atom = XInternAtom(dpy, "_MEEGOTOUCH_CUSTOM_REGION", False);
-    const int MEEGOTOUCH_BORDER = 16;
-    unsigned int region[] = {
-        0,
-        MEEGOTOUCH_BORDER,
-        priv.screen->w,
-        priv.screen->h - 2*MEEGOTOUCH_BORDER,
-    };
-    XChangeProperty(dpy, wm.info.x11.wmwindow, atom, XA_CARDINAL, 32,
-            PropModeReplace, (unsigned char*)region, 4);
+    priv.glcontext = SDL_GL_CreateContext(priv.window);
+
+    /* TODO: swipe lock? */
 
     SDL_ShowCursor(0);
 
@@ -88,13 +77,13 @@ harmattan_init(int gles_version)
 }
 
 static const char *
-harmattan_get_path(enum PlatformPath which)
+sailfish_get_path(enum PlatformPath which)
 {
     switch (which) {
         case PLATFORM_PATH_INSTALL_DIRECTORY:
-            return  "/home/user/.local/share/applications/";
+            return  "/home/nemo/.local/share/applications/";
         case PLATFORM_PATH_DATA_DIRECTORY:
-            return "/home/user/.apkenv/";
+            return "/home/nemo/.apkenv/";
         case PLATFORM_PATH_MODULE_DIRECTORY:
             return "/opt/apkenv/modules/";
         default:
@@ -103,23 +92,14 @@ harmattan_get_path(enum PlatformPath which)
 }
 
 static void
-harmattan_get_size(int *width, int *height)
+sailfish_get_size(int *width, int *height)
 {
-    if (width) {
-        *width = priv.screen->w;
-    }
-
-    if (height) {
-        *height = priv.screen->h;
-    }
+    SDL_GetWindowSize(priv.window, width, height);
 }
 
 static int
-harmattan_input_update(struct SupportModule *module)
+sailfish_input_update(struct SupportModule *module)
 {
-    int width = priv.screen->w;
-    int height = priv.screen->h;
-
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_MOUSEBUTTONDOWN) {
@@ -130,21 +110,21 @@ harmattan_input_update(struct SupportModule *module)
             module->input(module, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
         } else if (e.type == SDL_QUIT) {
             return 1;
-        } else if (e.type == SDL_ACTIVEEVENT) {
-            if (e.active.state == SDL_APPACTIVE && e.active.gain == 0) {
-                module->pause(module);
-                while (1) {
-                    SDL_WaitEvent(&e);
-                    if (e.type == SDL_ACTIVEEVENT) {
-                        if (e.active.state == SDL_APPACTIVE &&
-                                e.active.gain == 1) {
-                            break;
+        } else if (e.type == SDL_WINDOWEVENT) {
+            switch(e.window.event) {
+                case SDL_WINDOWEVENT_FOCUS_LOST:
+                    module->pause(module);
+                    while (1) {
+                        SDL_WaitEvent(&e);
+                        if (e.type == SDL_WINDOWEVENT) {
+                            if(e.window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
+                                break;
+                        } else if (e.type == SDL_QUIT) {
+                            return 1;
                         }
-                    } else if (e.type == SDL_QUIT) {
-                        return 1;
                     }
-                }
-                module->resume(module);
+                    module->resume(module);
+                    break;
             }
         }
     }
@@ -153,7 +133,7 @@ harmattan_input_update(struct SupportModule *module)
 }
 
 static void
-harmattan_request_text_input(int is_password, const char *text,
+sailfish_request_text_input(int is_password, const char *text,
         text_callback_t callback, void *user_data)
 {
     fprintf(stderr, "XXX: Request text input not implemented!\n");
@@ -163,22 +143,25 @@ harmattan_request_text_input(int is_password, const char *text,
 }
 
 static void
-harmattan_update()
+sailfish_update()
 {
-    SDL_GL_SwapBuffers();
+    SDL_GL_SwapWindow(priv.window);
 }
 
 static void
-harmattan_exit()
+sailfish_exit()
 {
+    SDL_GL_DeleteContext(priv.glcontext);
+    SDL_DestroyWindow(priv.window);
+    SDL_Quit();
 }
 
 struct PlatformSupport platform_support = {
-    harmattan_init,
-    harmattan_get_path,
-    harmattan_get_size,
-    harmattan_input_update,
-    harmattan_request_text_input,
-    harmattan_update,
-    harmattan_exit,
+    sailfish_init,
+    sailfish_get_path,
+    sailfish_get_size,
+    sailfish_input_update,
+    sailfish_request_text_input,
+    sailfish_update,
+    sailfish_exit,
 };

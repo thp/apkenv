@@ -65,12 +65,16 @@ struct Mixer {
             int do_loop);
     void (*stop_music)(struct Mixer *mixer, struct MixerMusic *music);
     void (*stop_sound)(struct Mixer *mixer, struct MixerSound *sound);
+    int (*get_sound_channel)(struct Mixer *mixer, struct MixerSound *sound);
+    void (*set_sound_channel)(struct Mixer *mixer, struct MixerSound *sound, int channel);
 
     // Volume control
     void (*volume_music)(struct Mixer *mixer, struct MixerMusic *music,
             float volume);
     void (*volume_sound)(struct Mixer *mixer, struct MixerSound *sound,
             float volume);
+
+    void (*lame_resample_44100_32000)(struct Mixer *mixer, struct MixerSound *sound);
 
     // Internal structure to store the config from init
     struct AudioConfig config;
@@ -91,7 +95,10 @@ void apkenv_mixer_play_music(struct MixerMusic *music, int do_loop);
 void apkenv_mixer_play_sound(struct MixerSound *sound, int do_loop);
 void apkenv_mixer_stop_music(struct MixerMusic *music);
 void apkenv_mixer_stop_sound(struct MixerSound *sound);
+int apkenv_mixer_get_sound_channel(struct MixerSound *sound);
+void apkenv_mixer_set_sound_channel(struct MixerSound *sound, int channel);
 void apkenv_mixer_volume_music(struct MixerMusic *music, float volume);
 void apkenv_mixer_volume_sound(struct MixerSound *sound, float volume);
+void apkenv_mixer_sound_lame_resample_44100_3200(struct MixerSound *sound);
 
 #endif /* APKENV_MIXER_H */

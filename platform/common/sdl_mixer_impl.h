@@ -29,8 +29,8 @@
 
 #include "../../mixer/mixer.h"
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_mixer.h>
+#include <SDL.h>
+#include <SDL_mixer.h>
 #include <assert.h>
 
 /* older SDL_mixer compatibility */
@@ -91,7 +91,11 @@ sdl_mixer_load_music_buffer(struct Mixer *mixer, const char *buffer, size_t size
 {
     struct MixerMusic *music = calloc(1, sizeof(struct MixerMusic));
     SDL_RWops *rw = SDL_RWFromConstMem(buffer, size);
+#if SDL_VERSION_ATLEAST(2,0,0)
+    music->music = Mix_LoadMUS_RW(rw, 0);
+#else
     music->music = Mix_LoadMUS_RW(rw);
+#endif
     SDL_RWclose(rw);
     return music;
 
@@ -151,6 +155,19 @@ void
 sdl_mixer_stop_sound(struct Mixer *mixer, struct MixerSound *sound)
 {
     Mix_HaltChannel(sound->channel);
+    sound->channel = -1; // world of goo module needs this
+}
+
+int
+sdl_mixer_get_sound_channel(struct Mixer *mixer, struct MixerSound *sound)
+{
+    return sound->channel;
+}
+
+void
+sdl_mixer_set_sound_channel(struct Mixer *mixer, struct MixerSound *sound, int channel)
+{
+    sound->channel = channel;
 }
 
 void
@@ -164,6 +181,26 @@ sdl_mixer_volume_sound(struct Mixer *mixer, struct MixerSound *sound, float volu
 {
     Mix_VolumeChunk(sound->chunk, volume * MIX_MAX_VOLUME);
 }
+
+void
+sdl_mixer_sound_lame_resample_44100_32000(struct Mixer *mixer, struct MixerSound *sound)
+{
+    Mix_Chunk *chunk = sound->chunk;
+    short *smp = (short *)chunk->abuf;
+    int d, s, counter = 0;
+
+    for (s = d = 0; s < chunk->alen / sizeof(*smp); d++) {
+        smp[d] = smp[s];
+
+        counter += 44100;
+        while (counter >= 32000) {
+            counter -= 32000;
+            s++;
+        }
+    }
+    chunk->alen = d * sizeof(*smp);
+}
+
 
 
 static struct Mixer
@@ -180,8 +217,11 @@ g_sdl_mixer = {
     sdl_mixer_play_sound,
     sdl_mixer_stop_music,
     sdl_mixer_stop_sound,
+    sdl_mixer_get_sound_channel,
+    sdl_mixer_set_sound_channel,
     sdl_mixer_volume_music,
     sdl_mixer_volume_sound,
+    sdl_mixer_sound_lame_resample_44100_32000,
     { 0 },
 };
 

@@ -31,8 +31,8 @@
 #include "../apkenv.h"
 #include "../accelerometer/accelerometer.h"
 
-#include <SDL/SDL.h>
-#include <SDL/SDL_gles.h>
+#include <SDL.h>
+#include <SDL_gles.h>
 #include <stdio.h>
 
 #include "common/sdl_audio_impl.h"

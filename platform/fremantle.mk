@@ -1,6 +1,6 @@
 SOURCES += platform/fremantle.c
 CFLAGS += -DFREMANTLE
-LDFLAGS += -lSDL -lSDL_mixer -lSDL_gles
+LDFLAGS += -lSDL_mixer -lSDL_gles
 CFLAGS += -DAPKENV_GLES -DAPKENV_GLES2
 LDFLAGS += -lGLES_CM -lGLESv2 -lEGL
 
