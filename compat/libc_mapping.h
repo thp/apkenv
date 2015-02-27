@@ -249,6 +249,9 @@
 {"gzclose", gzclose},
 {"gzgets", gzgets},
 
+/* grp.h */
+{"__cxa_atexit", __cxa_atexit},
+
 /*
  * bionic libc's __isthreaded
  *
