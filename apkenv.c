@@ -417,6 +417,7 @@ read_config(const char *filename)
     }
 
 #ifdef APKENV_DEBUG
+    int i;
     for (i=0; i < global.config_count; i++) {
         printf("Config option %s=%s\n",
                 global.config[i].key,
