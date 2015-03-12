@@ -280,6 +280,7 @@ int my_stat(const char *path, void *buf);
 int my_fstat(int fd, void *buf);
 int my_lstat(const char *path, void *buf);
 int my_fstatat(int dirfd, const char *pathname, void *buf, int flags);
+int __cxa_atexit(void (*)(void*), void*, void*);
 
 struct a_dirent;
 
