@@ -4,7 +4,6 @@ void
 wrapper_code_arm()
 {
     asm volatile(
-        // don't use any labels within the code because our *.o to code converter will stop at the first label
         // preserve the registers
         "push {r0-r11, lr}\n"
         

@@ -1770,16 +1770,20 @@ static void apkenv_wrap_function(void *sym_addr, char *sym_name, int is_thumb, s
             DEBUG("HOOKING INTERNAL (THUMB) FUNCTION %s@%x (in %s) TO: %x\n",sym_name,sym_addr,si->name,hook);
             sym_addr = (void*)((char*)sym_addr - 1); // get actual sym_addr
             
-            ((int16_t*)sym_addr)[0] = 0xf8df;
-            ((int16_t*)sym_addr)[1] = 0xf000; // ldr pc, [pc] (load the hooks address into pc)
+            ((int16_t*)sym_addr)[0] = 0xB401; /* push {r0} */
+            ((int16_t*)sym_addr)[1] = 0xF8DF; /* ldr r0, [pc, #8] */
+            ((int16_t*)sym_addr)[2] = 0x0008; /* continuation of last instruction */
+            ((int16_t*)sym_addr)[3] = 0x4684; /* mov ip, r0 */
+            ((int16_t*)sym_addr)[4] = 0xBC01; /* pop {r0} */
+            ((int16_t*)sym_addr)[5] = 0x4760; /* bx ip */
             
             void *wrp = create_wrapper(sym_name, hook, WRAPPER_LATEHOOK);
             
             // store the hooks address
-            ((int16_t*)sym_addr)[2] = (uint32_t)wrp & 0x0000FFFF;
-            ((int16_t*)sym_addr)[3] = (uint32_t)wrp >> 16;
+            ((int16_t*)sym_addr)[6] = (uint32_t)wrp & 0x0000FFFF;
+            ((int16_t*)sym_addr)[7] = (uint32_t)wrp >> 16;
             
-            __clear_cache((int16_t*)sym_addr, (int16_t*)sym_addr + 4);
+            __clear_cache((int16_t*)sym_addr, (int16_t*)sym_addr + 8);
         }
     }
     else
