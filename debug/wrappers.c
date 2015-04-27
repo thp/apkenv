@@ -206,7 +206,7 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
     }
     
     // this variable is used to determine how many operations we need to copy from the thumb code
-    int thumb_fifth_nop = 0;
+    int thumb_extra_instruction = 0;
     
     memcpy(wrapper_addr, wrapper_code, wrapper_size);
 
@@ -251,47 +251,67 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
             function = (void*)((char*)function - 1);
             // fix wrapper addr (tell the processor this is THUMB code)
             wrapper_addr = (void*)((char*)wrapper_addr + 1);
-            thumb_fifth_nop = IS_T32(*((int16_t*)function + 4)) && (
-                        (!IS_T32(*((int16_t*)function)) && !IS_T32(*((int16_t*)function + 1)) && !IS_T32(*((int16_t*)function + 3))) ||
-                        (!IS_T32(*((int16_t*)function)) &&  IS_T32(*((int16_t*)function + 1))                                      ) ||
-                        ( IS_T32(*((int16_t*)function))                                       && !IS_T32(*((int16_t*)function + 3)))
-                                             );
+
             // relocate code. This is very EXPERIMENTAL and will FAIL in most
             // cases due to the layout of THUMB functions in ASM.
             // adjust these indexes if you change the wrapper code
-            if(!thumb_fifth_nop)
+            int index;
+            for(index = 0;index < 8;index++)
             {
-                ((int16_t*)wrapper_addr)[helper-6] = ((uint16_t*)function)[0];
-                ((int16_t*)wrapper_addr)[helper-5] = ((uint16_t*)function)[1];
-                ((int16_t*)wrapper_addr)[helper-4] = ((uint16_t*)function)[2];
-                ((int16_t*)wrapper_addr)[helper-3] = ((uint16_t*)function)[3];
+                if(IS_T32(*((uint16_t*)function + index)))
+                {
+                    /* if last instruction goes out of bounds */
+                    if(index == 7) thumb_extra_instruction = 1;
+                    /* skip over the low 16 bit of the instruction */
+                    index++;
+                }
             }
-            else
+
+            // relocate code. This is very EXPERIMENTAL and will FAIL in most
+            // cases due to the layout of THUMB functions in ASM.
+            // adjust these indexes if you change the wrapper code
+            ((int16_t*)wrapper_addr)[helper-14] = ((uint16_t*)function)[0];
+            ((int16_t*)wrapper_addr)[helper-13] = ((uint16_t*)function)[1];
+            ((int16_t*)wrapper_addr)[helper-12] = ((uint16_t*)function)[2];
+            ((int16_t*)wrapper_addr)[helper-11] = ((uint16_t*)function)[3];
+            ((int16_t*)wrapper_addr)[helper-10] = ((uint16_t*)function)[4];
+            ((int16_t*)wrapper_addr)[helper-9] = ((uint16_t*)function)[5];
+            ((int16_t*)wrapper_addr)[helper-8] = ((uint16_t*)function)[6];
+            ((int16_t*)wrapper_addr)[helper-7] = ((uint16_t*)function)[7];
+            if(thumb_extra_instruction)
             {
-                ((int16_t*)wrapper_addr)[helper-6] = ((uint16_t*)function)[0];
-                ((int16_t*)wrapper_addr)[helper-5] = ((uint16_t*)function)[1];
-                ((int16_t*)wrapper_addr)[helper-4] = ((uint16_t*)function)[2];
-                ((int16_t*)wrapper_addr)[helper-3] = ((uint16_t*)function)[3];
-                ((int16_t*)wrapper_addr)[helper-2] = ((uint16_t*)function)[4];
+                ((int16_t*)wrapper_addr)[helper-6] = ((uint16_t*)function)[8];
             }
             
             // patch code
-            ((int16_t*)function)[0] = 0xf8df; // ldr pc, [pc] (load wrapper_addr into pc)
-            ((int16_t*)function)[1] = 0xf000;
+            ((int16_t*)function)[0] = 0xB401; /* push {r0} */
+            ((int16_t*)function)[1] = 0xF8DF; /* ldr r0, [pc, #8] */
+            ((int16_t*)function)[2] = 0x0008; /* continuation of last instruction */
+            ((int16_t*)function)[3] = 0x4684; /* mov ip, r0 */
+            ((int16_t*)function)[4] = 0xBC01; /* pop {r0} */
+            ((int16_t*)function)[5] = 0x4760; /* bx ip */
             // store wrapper address so the modified code
             // will jump into it via the instruction above
-            ((int16_t*)function)[2] = (uint32_t)wrapper_addr & 0x0000FFFF;
-            ((int16_t*)function)[3] = (uint32_t)wrapper_addr >> 16;
-            __clear_cache((int16_t*)function, (int16_t*)function + 4);
+            ((int16_t*)function)[6] = (uint32_t)wrapper_addr & 0x0000FFFF;
+            ((int16_t*)function)[7] = (uint32_t)wrapper_addr >> 16;
+            __clear_cache((int16_t*)function, (int16_t*)function + 8);
             
             // store name of the wrapped function
-            // store the pointer to the 3rd instruction of the wrapped function
+            // store the pointer to the first uncopied instruction of the wrapped function
             // store the pointer to trace_callback, so that the wrapper can call it
             // store a pointer to the message which trace_callback should display
             ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)symbol) & 0x0000FFFF;
             ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)symbol) >> 16;
-            ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)((int32_t*)function + 2)) & 0x0000FFFF;
-            ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)((int32_t*)function + 2)) >> 16;
+            if(thumb_extra_instruction)
+            {
+                ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)((int32_t*)function + 9)) & 0x0000FFFF;
+                ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)((int32_t*)function + 9)) >> 16;
+            }
+            else
+            {
+                ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)((int32_t*)function + 8)) & 0x0000FFFF;
+                ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)((int32_t*)function + 8)) >> 16;
+            }
             ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)trace_callback) & 0x0000FFFF;
             ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)trace_callback) >> 16;
             ((int16_t*)wrapper_addr)[helper++] = ((uint32_t)msg) & 0x0000FFFF;
