@@ -65,17 +65,17 @@
  */
 #if LINKER_DEBUG
 #include "linker_format.h"
-extern int debug_verbosity;
+extern int apkenv_debug_verbosity;
 #if LINKER_DEBUG_TO_LOG
-extern int format_log(int, const char *, const char *, ...);
+extern int apkenv_format_log(int, const char *, const char *, ...);
 #define _PRINTVF(v,f,x...)                                        \
     do {                                                          \
-        if (debug_verbosity > (v)) format_log(5-(v),"linker",x);  \
+        if (apkenv_debug_verbosity > (v)) apkenv_format_log(5-(v),"linker",x);  \
     } while (0)
 #else /* !LINKER_DEBUG_TO_LOG */
 #define _PRINTVF(v,f,x...)                           \
     do {                                             \
-        if (debug_verbosity > (v)) printf(x);        \
+        if (apkenv_debug_verbosity > (v)) printf(x);        \
     } while (0)
 #endif /* !LINKER_DEBUG_TO_LOG */
 #else /* !LINKER_DEBUG */
@@ -113,11 +113,11 @@ extern int format_log(int, const char *, const char *, ...);
 struct _link_stats {
     int reloc[NUM_RELOC_STATS];
 };
-extern struct _link_stats linker_stats;
+extern struct _link_stats apkenv_linker_stats;
 
 #define COUNT_RELOC(type)                                 \
         do { if (type >= 0 && type < NUM_RELOC_STATS) {   \
-                linker_stats.reloc[type] += 1;            \
+                apkenv_linker_stats.reloc[type] += 1;            \
              } else  {                                    \
                 PRINT("Unknown reloc stat requested\n");  \
              }                                            \
@@ -132,9 +132,9 @@ extern struct _link_stats linker_stats;
 #endif /* TIMING */
 
 #if COUNT_PAGES
-extern unsigned bitmask[];
+extern unsigned apkenv_bitmask[];
 #define MARK(offset)         do {                                        \
-        bitmask[((offset) >> 12) >> 3] |= (1 << (((offset) >> 12) & 7)); \
+        apkenv_bitmask[((offset) >> 12) >> 3] |= (1 << (((offset) >> 12) & 7)); \
     } while(0)
 #else
 #define MARK(x)              do {} while (0)

@@ -20,21 +20,21 @@
 
 #include <stddef.h>
 
-typedef unsigned int hybris_shm_pointer_t;
+typedef unsigned int apkenv_shm_pointer_t;
 
 /* 
  * Allocate a space in the shared memory region of hybris
  */
-hybris_shm_pointer_t hybris_shm_alloc(size_t size);
+apkenv_shm_pointer_t apkenv_shm_alloc(size_t size);
 /* 
  * Test if the pointers points to the shm region
  */
-int hybris_is_pointer_in_shm(void *ptr);
+int apkenv_is_pointer_in_shm(void *ptr);
 /* 
  * Convert an offset pointer to the shared memory to an absolute pointer that can be used in user space 
  * This function will return a NULL pointer if the handle does not actually point to the shm region
  */
-void *hybris_get_shmpointer(hybris_shm_pointer_t handle);
+void *apkenv_get_shmpointer(apkenv_shm_pointer_t handle);
 
 #endif
 

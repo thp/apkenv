@@ -28,7 +28,7 @@
 #include "linker_environ.h"
 #include <stddef.h>
 
-static char** _envp;
+static char** apkenv__envp;
 
 /* Returns 1 if 'str' points to a valid environment variable definition.
  * For now, we check that:
@@ -71,7 +71,7 @@ unsigned*
 apkenv_linker_env_init(unsigned* vecs)
 {
     /* Store environment pointer - can't be NULL */
-    _envp = (char**) vecs;
+    apkenv__envp = (char**) vecs;
 
     /* Skip over all definitions */
     while (vecs[0] != 0)
@@ -83,8 +83,8 @@ apkenv_linker_env_init(unsigned* vecs)
      * definitions from the environment array.
      */
     {
-        char** readp  = _envp;
-        char** writep = _envp;
+        char** readp  = apkenv__envp;
+        char** writep = apkenv__envp;
         for ( ; readp[0] != NULL; readp++ ) {
             if (!apkenv__is_valid_definition(readp[0]))
                 continue;
@@ -121,7 +121,7 @@ apkenv_env_match(char* envstr, const char* name)
 const char*
 apkenv_linker_env_get(const char* name)
 {
-    char** readp = _envp;
+    char** readp = apkenv__envp;
 
     if (name == NULL || name[0] == '\0')
         return NULL;
@@ -142,7 +142,7 @@ apkenv_linker_env_get(const char* name)
 void
 apkenv_linker_env_unset(const char* name)
 {
-    char**  readp = _envp;
+    char**  readp = apkenv__envp;
     char**  writep = readp;
 
     if (name == NULL || name[0] == '\0')
