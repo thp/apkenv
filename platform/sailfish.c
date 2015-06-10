@@ -102,12 +102,12 @@ sailfish_input_update(struct SupportModule *module)
 {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
-        if (e.type == SDL_MOUSEBUTTONDOWN) {
-            module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
-        } else if (e.type == SDL_MOUSEBUTTONUP) {
-            module->input(module, ACTION_UP, e.button.x, e.button.y, e.button.which);
-        } else if (e.type == SDL_MOUSEMOTION) {
-            module->input(module, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
+        if (e.type == SDL_FINGERDOWN) {
+            module->input(module, ACTION_DOWN, e.tfinger.x, e.tfinger.y, e.tfinger.fingerId);
+        } else if (e.type == SDL_FINGERUP) {
+            module->input(module, ACTION_UP, e.tfinger.x, e.tfinger.y, e.tfinger.fingerId);
+        } else if (e.type == SDL_FINGERMOTION) {
+            module->input(module, ACTION_MOVE, e.tfinger.x, e.tfinger.y, e.tfinger.fingerId);
         } else if (e.type == SDL_QUIT) {
             return 1;
         } else if (e.type == SDL_WINDOWEVENT) {
