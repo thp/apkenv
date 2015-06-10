@@ -37,6 +37,17 @@
 #include "common/sdl_audio_impl.h"
 #include "common/sdl_mixer_impl.h"
 
+#include <audioresource.h>
+#include <glib.h>
+static audioresource_t *l_audioresource = NULL;
+static int l_audioresource_acquired = 0;
+
+void on_audioresource_acquired(audioresource_t *audioresource, bool acquired, void *user_data)
+{
+    printf("audioresource acquired: %d\n", acquired);
+    l_audioresource_acquired = acquired;
+}
+
 struct PlatformPriv {
     SDL_Window *window;
     SDL_GLContext glcontext;
@@ -70,6 +81,17 @@ sailfish_init(int gles_version)
     SDL_ShowCursor(0);
 
     apkenv_accelerometer_register(sdl_accelerometer);
+
+    l_audioresource = audioresource_init(AUDIO_RESOURCE_MEDIA, on_audioresource_acquired, NULL);
+
+    audioresource_acquire(l_audioresource);
+
+    printf("Waiting for audioresource...\n");
+    while(!l_audioresource_acquired)
+    {
+        g_main_context_iteration(NULL, false);
+    }
+
     apkenv_audio_register(sdl_audio);
     apkenv_mixer_register(sdl_mixer);
 
@@ -151,6 +173,8 @@ sailfish_update()
 static void
 sailfish_exit()
 {
+    audioresource_release(l_audioresource);
+    audioresource_free(l_audioresource);
     SDL_GL_DeleteContext(priv.glcontext);
     SDL_DestroyWindow(priv.window);
     SDL_Quit();
