@@ -61,7 +61,7 @@
 #include "hooks_shm.h"
 
 /* Helpers */
-int hybris_check_android_shared_mutex(unsigned int mutex_addr)
+int apkenv_check_android_shared_mutex(unsigned int mutex_addr)
 {
     /* If not initialized or initialized by Android, it should contain a low
      * address, which is basically just the int values for Android's own
@@ -73,7 +73,7 @@ int hybris_check_android_shared_mutex(unsigned int mutex_addr)
     return 0;
 }
 
-int hybris_check_android_shared_cond(unsigned int cond_addr)
+int apkenv_check_android_shared_cond(unsigned int cond_addr)
 {
     /* If not initialized or initialized by Android, it should contain a low
      * address, which is basically just the int values for Android's own
@@ -85,7 +85,7 @@ int hybris_check_android_shared_cond(unsigned int cond_addr)
     return 0;
 }
 
-void hybris_set_mutex_attr(unsigned int android_value, pthread_mutexattr_t *attr)
+void apkenv_set_mutex_attr(unsigned int android_value, pthread_mutexattr_t *attr)
 {
     /* Init already sets as PTHREAD_MUTEX_NORMAL */
     pthread_mutexattr_init(attr);
@@ -97,16 +97,16 @@ void hybris_set_mutex_attr(unsigned int android_value, pthread_mutexattr_t *attr
     }
 }
 
-pthread_mutex_t* hybris_alloc_init_mutex(unsigned int android_mutex)
+pthread_mutex_t* apkenv_alloc_init_mutex(unsigned int android_mutex)
 {
     pthread_mutex_t *realmutex = malloc(sizeof(pthread_mutex_t));
     pthread_mutexattr_t attr;
-    hybris_set_mutex_attr(android_mutex, &attr);
+    apkenv_set_mutex_attr(android_mutex, &attr);
     pthread_mutex_init(realmutex, &attr);
     return realmutex;
 }
 
-pthread_cond_t* hybris_alloc_init_cond(void)
+pthread_cond_t* apkenv_alloc_init_cond(void)
 {
     pthread_cond_t *realcond = malloc(sizeof(pthread_cond_t));
     pthread_condattr_t attr;
@@ -115,7 +115,7 @@ pthread_cond_t* hybris_alloc_init_cond(void)
     return realcond;
 }
 
-pthread_rwlock_t* hybris_alloc_init_rwlock(void)
+pthread_rwlock_t* apkenv_alloc_init_rwlock(void)
 {
     pthread_rwlock_t *realrwlock = malloc(sizeof(pthread_rwlock_t));
     pthread_rwlockattr_t attr;
@@ -132,7 +132,7 @@ pthread_rwlock_t* hybris_alloc_init_rwlock(void)
  *
  * */
 
-int my_pthread_create(pthread_t *thread, const pthread_attr_t *__attr,
+int apkenv_my_pthread_create(pthread_t *thread, const pthread_attr_t *__attr,
                              void *(*start_routine)(void*), void *arg)
 {
     pthread_attr_t *realattr = NULL;
@@ -151,7 +151,7 @@ int my_pthread_create(pthread_t *thread, const pthread_attr_t *__attr,
  *
  * */
 
-int my_pthread_attr_init(pthread_attr_t *__attr)
+int apkenv_my_pthread_attr_init(pthread_attr_t *__attr)
 {
     pthread_attr_t *realattr;
 
@@ -161,110 +161,110 @@ int my_pthread_attr_init(pthread_attr_t *__attr)
     return pthread_attr_init(realattr);
 }
 
-int my_pthread_attr_destroy(pthread_attr_t *__attr)
+int apkenv_my_pthread_attr_destroy(pthread_attr_t *__attr)
 {
     int ret;
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
 
     ret = pthread_attr_destroy(realattr);
-    /* We need to release the memory allocated at my_pthread_attr_init
+    /* We need to release the memory allocated at apkenv_my_pthread_attr_init
      * Possible side effects if destroy is called without our init */
     free(realattr);
 
     return ret;
 }
 
-int my_pthread_attr_setdetachstate(pthread_attr_t *__attr, int state)
+int apkenv_my_pthread_attr_setdetachstate(pthread_attr_t *__attr, int state)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_setdetachstate(realattr, state);
 }
 
-int my_pthread_attr_getdetachstate(pthread_attr_t const *__attr, int *state)
+int apkenv_my_pthread_attr_getdetachstate(pthread_attr_t const *__attr, int *state)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_getdetachstate(realattr, state);
 }
 
-int my_pthread_attr_setschedpolicy(pthread_attr_t *__attr, int policy)
+int apkenv_my_pthread_attr_setschedpolicy(pthread_attr_t *__attr, int policy)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_setschedpolicy(realattr, policy);
 }
 
-int my_pthread_attr_getschedpolicy(pthread_attr_t const *__attr, int *policy)
+int apkenv_my_pthread_attr_getschedpolicy(pthread_attr_t const *__attr, int *policy)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_getschedpolicy(realattr, policy);
 }
 
-int my_pthread_attr_setschedparam(pthread_attr_t *__attr, struct sched_param const *param)
+int apkenv_my_pthread_attr_setschedparam(pthread_attr_t *__attr, struct sched_param const *param)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_setschedparam(realattr, param);
 }
 
-int my_pthread_attr_getschedparam(pthread_attr_t const *__attr, struct sched_param *param)
+int apkenv_my_pthread_attr_getschedparam(pthread_attr_t const *__attr, struct sched_param *param)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_getschedparam(realattr, param);
 }
 
-int my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stack_size)
+int apkenv_my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stack_size)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_setstacksize(realattr, stack_size);
 }
 
-int my_pthread_attr_getstacksize(pthread_attr_t const *__attr, size_t *stack_size)
+int apkenv_my_pthread_attr_getstacksize(pthread_attr_t const *__attr, size_t *stack_size)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_getstacksize(realattr, stack_size);
 }
 
-int my_pthread_attr_setstackaddr(pthread_attr_t *__attr, void *stack_addr)
+int apkenv_my_pthread_attr_setstackaddr(pthread_attr_t *__attr, void *stack_addr)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_setstackaddr(realattr, stack_addr);
 }
 
-int my_pthread_attr_getstackaddr(pthread_attr_t const *__attr, void **stack_addr)
+int apkenv_my_pthread_attr_getstackaddr(pthread_attr_t const *__attr, void **stack_addr)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_getstackaddr(realattr, stack_addr);
 }
 
-int my_pthread_attr_setstack(pthread_attr_t *__attr, void *stack_base, size_t stack_size)
+int apkenv_my_pthread_attr_setstack(pthread_attr_t *__attr, void *stack_base, size_t stack_size)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_setstack(realattr, stack_base, stack_size);
 }
 
-int my_pthread_attr_getstack(pthread_attr_t const *__attr, void **stack_base, size_t *stack_size)
+int apkenv_my_pthread_attr_getstack(pthread_attr_t const *__attr, void **stack_base, size_t *stack_size)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_getstack(realattr, stack_base, stack_size);
 }
 
-int my_pthread_attr_setguardsize(pthread_attr_t *__attr, size_t guard_size)
+int apkenv_my_pthread_attr_setguardsize(pthread_attr_t *__attr, size_t guard_size)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_setguardsize(realattr, guard_size);
 }
 
-int my_pthread_attr_getguardsize(pthread_attr_t const *__attr, size_t *guard_size)
+int apkenv_my_pthread_attr_getguardsize(pthread_attr_t const *__attr, size_t *guard_size)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_getguardsize(realattr, guard_size);
 }
 
-int my_pthread_attr_setscope(pthread_attr_t *__attr, int scope)
+int apkenv_my_pthread_attr_setscope(pthread_attr_t *__attr, int scope)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
     return pthread_attr_setscope(realattr, scope);
 }
 
-int my_pthread_attr_getscope(pthread_attr_t const *__attr)
+int apkenv_my_pthread_attr_getscope(pthread_attr_t const *__attr)
 {
     int scope;
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
@@ -276,7 +276,7 @@ int my_pthread_attr_getscope(pthread_attr_t const *__attr)
     return scope;
 }
 
-int my_pthread_getattr_np(pthread_t thid, pthread_attr_t *__attr)
+int apkenv_my_pthread_getattr_np(pthread_t thid, pthread_attr_t *__attr)
 {
     pthread_attr_t *realattr;
 
@@ -294,7 +294,7 @@ int my_pthread_getattr_np(pthread_t thid, pthread_attr_t *__attr)
  *
  * */
 
-int my_pthread_mutex_init(pthread_mutex_t *__mutex,
+int apkenv_my_pthread_mutex_init(pthread_mutex_t *__mutex,
                           __const pthread_mutexattr_t *__mutexattr)
 {
     pthread_mutex_t *realmutex = NULL;
@@ -311,18 +311,18 @@ int my_pthread_mutex_init(pthread_mutex_t *__mutex,
     }
     else {
         /* process-shared mutex: use the shared memory segment */
-        hybris_shm_pointer_t handle = hybris_shm_alloc(sizeof(pthread_mutex_t));
+        apkenv_shm_pointer_t handle = apkenv_shm_alloc(sizeof(pthread_mutex_t));
 
-        *((hybris_shm_pointer_t *)__mutex) = handle;
+        *((apkenv_shm_pointer_t *)__mutex) = handle;
 
         if (handle)
-            realmutex = (pthread_mutex_t *)hybris_get_shmpointer(handle);
+            realmutex = (pthread_mutex_t *)apkenv_get_shmpointer(handle);
     }
 
     return pthread_mutex_init(realmutex, __mutexattr);
 }
 
-int my_pthread_mutex_destroy(pthread_mutex_t *__mutex)
+int apkenv_my_pthread_mutex_destroy(pthread_mutex_t *__mutex)
 {
     int ret;
 
@@ -334,12 +334,12 @@ int my_pthread_mutex_destroy(pthread_mutex_t *__mutex)
     if (!realmutex)
         return EINVAL;
 
-    if (!hybris_is_pointer_in_shm((void*)realmutex)) {
+    if (!apkenv_is_pointer_in_shm((void*)realmutex)) {
         ret = pthread_mutex_destroy(realmutex);
         free(realmutex);
     }
     else {
-        realmutex = (pthread_mutex_t *)hybris_get_shmpointer((hybris_shm_pointer_t)realmutex);
+        realmutex = (pthread_mutex_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)realmutex);
         ret = pthread_mutex_destroy(realmutex);
     }
 
@@ -348,7 +348,7 @@ int my_pthread_mutex_destroy(pthread_mutex_t *__mutex)
     return ret;
 }
 
-int my_pthread_mutex_lock(pthread_mutex_t *__mutex)
+int apkenv_my_pthread_mutex_lock(pthread_mutex_t *__mutex)
 {
     if (!__mutex) {
         LOGD("Null mutex lock, not locking.");
@@ -356,45 +356,45 @@ int my_pthread_mutex_lock(pthread_mutex_t *__mutex)
     }
 
     unsigned int value = (*(unsigned int *) __mutex);
-    if (hybris_check_android_shared_mutex(value)) {
+    if (apkenv_check_android_shared_mutex(value)) {
         LOGD("Shared mutex with Android, not locking.");
         return 0;
     }
 
     pthread_mutex_t *realmutex = (pthread_mutex_t *) value;
-    if (hybris_is_pointer_in_shm((void*)value))
-        realmutex = (pthread_mutex_t *)hybris_get_shmpointer((hybris_shm_pointer_t)value);
+    if (apkenv_is_pointer_in_shm((void*)value))
+        realmutex = (pthread_mutex_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)value);
 
     if (value <= ANDROID_TOP_ADDR_VALUE_MUTEX) {
-        realmutex = hybris_alloc_init_mutex(value);
+        realmutex = apkenv_alloc_init_mutex(value);
         *((unsigned int *)__mutex) = (unsigned int) realmutex;
     }
 
     return pthread_mutex_lock(realmutex);
 }
 
-int my_pthread_mutex_trylock(pthread_mutex_t *__mutex)
+int apkenv_my_pthread_mutex_trylock(pthread_mutex_t *__mutex)
 {
     unsigned int value = (*(unsigned int *) __mutex);
 
-    if (hybris_check_android_shared_mutex(value)) {
+    if (apkenv_check_android_shared_mutex(value)) {
         LOGD("Shared mutex with Android, not try locking.");
         return 0;
     }
 
     pthread_mutex_t *realmutex = (pthread_mutex_t *) value;
-    if (hybris_is_pointer_in_shm((void*)value))
-        realmutex = (pthread_mutex_t *)hybris_get_shmpointer((hybris_shm_pointer_t)value);
+    if (apkenv_is_pointer_in_shm((void*)value))
+        realmutex = (pthread_mutex_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)value);
 
     if (value <= ANDROID_TOP_ADDR_VALUE_MUTEX) {
-        realmutex = hybris_alloc_init_mutex(value);
+        realmutex = apkenv_alloc_init_mutex(value);
         *((unsigned int *)__mutex) = (unsigned int) realmutex;
     }
 
     return pthread_mutex_trylock(realmutex);
 }
 
-int my_pthread_mutex_unlock(pthread_mutex_t *__mutex)
+int apkenv_my_pthread_mutex_unlock(pthread_mutex_t *__mutex)
 {
     if (!__mutex) {
         LOGD("Null mutex lock, not unlocking.");
@@ -402,7 +402,7 @@ int my_pthread_mutex_unlock(pthread_mutex_t *__mutex)
     }
 
     unsigned int value = (*(unsigned int *) __mutex);
-    if (hybris_check_android_shared_mutex(value)) {
+    if (apkenv_check_android_shared_mutex(value)) {
         LOGD("Shared mutex with Android, not unlocking.");
         return 0;
     }
@@ -414,19 +414,19 @@ int my_pthread_mutex_unlock(pthread_mutex_t *__mutex)
     }
 
     pthread_mutex_t *realmutex = (pthread_mutex_t *) value;
-    if (hybris_is_pointer_in_shm((void*)value))
-        realmutex = (pthread_mutex_t *)hybris_get_shmpointer((hybris_shm_pointer_t)value);
+    if (apkenv_is_pointer_in_shm((void*)value))
+        realmutex = (pthread_mutex_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)value);
 
     return pthread_mutex_unlock(realmutex);
 }
 
-int my_pthread_mutex_lock_timeout_np(pthread_mutex_t *__mutex, unsigned __msecs)
+int apkenv_my_pthread_mutex_lock_timeout_np(pthread_mutex_t *__mutex, unsigned __msecs)
 {
     struct timespec tv;
     pthread_mutex_t *realmutex;
     unsigned int value = (*(unsigned int *) __mutex);
 
-    if (hybris_check_android_shared_mutex(value)) {
+    if (apkenv_check_android_shared_mutex(value)) {
         LOGD("Shared mutex with Android, not lock timeout np.");
         return 0;
     }
@@ -434,7 +434,7 @@ int my_pthread_mutex_lock_timeout_np(pthread_mutex_t *__mutex, unsigned __msecs)
     realmutex = (pthread_mutex_t *) value;
 
     if (value <= ANDROID_TOP_ADDR_VALUE_MUTEX) {
-        realmutex = hybris_alloc_init_mutex(value);
+        realmutex = apkenv_alloc_init_mutex(value);
         *((int *)__mutex) = (int) realmutex;
     }
 
@@ -450,7 +450,7 @@ int my_pthread_mutex_lock_timeout_np(pthread_mutex_t *__mutex, unsigned __msecs)
     return pthread_mutex_timedlock(realmutex, &tv);
 }
 
-int my_pthread_mutexattr_setpshared(pthread_mutexattr_t *__attr,
+int apkenv_my_pthread_mutexattr_setpshared(pthread_mutexattr_t *__attr,
                                            int pshared)
 {
     return pthread_mutexattr_setpshared(__attr, pshared);
@@ -464,7 +464,7 @@ int my_pthread_mutexattr_setpshared(pthread_mutexattr_t *__attr,
  *
  * */
 
-int my_pthread_cond_init(pthread_cond_t *cond,
+int apkenv_my_pthread_cond_init(pthread_cond_t *cond,
                                 const pthread_condattr_t *attr)
 {
     pthread_cond_t *realcond = NULL;
@@ -482,18 +482,18 @@ int my_pthread_cond_init(pthread_cond_t *cond,
     }
     else {
         /* process-shared condition: use the shared memory segment */
-        hybris_shm_pointer_t handle = hybris_shm_alloc(sizeof(pthread_cond_t));
+        apkenv_shm_pointer_t handle = apkenv_shm_alloc(sizeof(pthread_cond_t));
 
         *((unsigned int *)cond) = (unsigned int) handle;
 
         if (handle)
-            realcond = (pthread_cond_t *)hybris_get_shmpointer(handle);
+            realcond = (pthread_cond_t *)apkenv_get_shmpointer(handle);
     }
 
     return pthread_cond_init(realcond, attr);
 }
 
-int my_pthread_cond_destroy(pthread_cond_t *cond)
+int apkenv_my_pthread_cond_destroy(pthread_cond_t *cond)
 {
     int ret;
     pthread_cond_t *realcond = (pthread_cond_t *) *(unsigned int *) cond;
@@ -502,12 +502,12 @@ int my_pthread_cond_destroy(pthread_cond_t *cond)
       return EINVAL;
     }
 
-    if (!hybris_is_pointer_in_shm((void*)realcond)) {
+    if (!apkenv_is_pointer_in_shm((void*)realcond)) {
         ret = pthread_cond_destroy(realcond);
         free(realcond);
     }
     else {
-        realcond = (pthread_cond_t *)hybris_get_shmpointer((hybris_shm_pointer_t)realcond);
+        realcond = (pthread_cond_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)realcond);
         ret = pthread_cond_destroy(realcond);
     }
 
@@ -516,142 +516,142 @@ int my_pthread_cond_destroy(pthread_cond_t *cond)
     return ret;
 }
 
-int my_pthread_cond_broadcast(pthread_cond_t *cond)
+int apkenv_my_pthread_cond_broadcast(pthread_cond_t *cond)
 {
     unsigned int value = (*(unsigned int *) cond);
-    if (hybris_check_android_shared_cond(value)) {
+    if (apkenv_check_android_shared_cond(value)) {
         LOGD("shared condition with Android, not broadcasting.");
         return 0;
     }
 
     pthread_cond_t *realcond = (pthread_cond_t *) value;
-    if (hybris_is_pointer_in_shm((void*)value))
-        realcond = (pthread_cond_t *)hybris_get_shmpointer((hybris_shm_pointer_t)value);
+    if (apkenv_is_pointer_in_shm((void*)value))
+        realcond = (pthread_cond_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)value);
 
     if (value <= ANDROID_TOP_ADDR_VALUE_COND) {
-        realcond = hybris_alloc_init_cond();
+        realcond = apkenv_alloc_init_cond();
         *((unsigned int *) cond) = (unsigned int) realcond;
     }
 
     return pthread_cond_broadcast(realcond);
 }
 
-int my_pthread_cond_signal(pthread_cond_t *cond)
+int apkenv_my_pthread_cond_signal(pthread_cond_t *cond)
 {
     unsigned int value = (*(unsigned int *) cond);
 
-    if (hybris_check_android_shared_cond(value)) {
+    if (apkenv_check_android_shared_cond(value)) {
         LOGD("Shared condition with Android, not signaling.");
         return 0;
     }
 
     pthread_cond_t *realcond = (pthread_cond_t *) value;
-    if (hybris_is_pointer_in_shm((void*)value))
-        realcond = (pthread_cond_t *)hybris_get_shmpointer((hybris_shm_pointer_t)value);
+    if (apkenv_is_pointer_in_shm((void*)value))
+        realcond = (pthread_cond_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)value);
 
     if (value <= ANDROID_TOP_ADDR_VALUE_COND) {
-        realcond = hybris_alloc_init_cond();
+        realcond = apkenv_alloc_init_cond();
         *((unsigned int *) cond) = (unsigned int) realcond;
     }
 
     return pthread_cond_signal(realcond);
 }
 
-int my_pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+int apkenv_my_pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
     /* Both cond and mutex can be statically initialized, check for both */
     unsigned int cvalue = (*(unsigned int *) cond);
     unsigned int mvalue = (*(unsigned int *) mutex);
 
-    if (hybris_check_android_shared_cond(cvalue) ||
-        hybris_check_android_shared_mutex(mvalue)) {
+    if (apkenv_check_android_shared_cond(cvalue) ||
+        apkenv_check_android_shared_mutex(mvalue)) {
         LOGD("Shared condition/mutex with Android, not waiting.");
         return 0;
     }
 
     pthread_cond_t *realcond = (pthread_cond_t *) cvalue;
-    if (hybris_is_pointer_in_shm((void*)cvalue))
-        realcond = (pthread_cond_t *)hybris_get_shmpointer((hybris_shm_pointer_t)cvalue);
+    if (apkenv_is_pointer_in_shm((void*)cvalue))
+        realcond = (pthread_cond_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)cvalue);
 
     if (cvalue <= ANDROID_TOP_ADDR_VALUE_COND) {
-        realcond = hybris_alloc_init_cond();
+        realcond = apkenv_alloc_init_cond();
         *((unsigned int *) cond) = (unsigned int) realcond;
     }
 
     pthread_mutex_t *realmutex = (pthread_mutex_t *) mvalue;
-    if (hybris_is_pointer_in_shm((void*)mvalue))
-        realmutex = (pthread_mutex_t *)hybris_get_shmpointer((hybris_shm_pointer_t)mvalue);
+    if (apkenv_is_pointer_in_shm((void*)mvalue))
+        realmutex = (pthread_mutex_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)mvalue);
 
     if (mvalue <= ANDROID_TOP_ADDR_VALUE_MUTEX) {
-        realmutex = hybris_alloc_init_mutex(mvalue);
+        realmutex = apkenv_alloc_init_mutex(mvalue);
         *((unsigned int *) mutex) = (unsigned int) realmutex;
     }
 
     return pthread_cond_wait(realcond, realmutex);
 }
 
-int my_pthread_cond_timedwait(pthread_cond_t *cond,
+int apkenv_my_pthread_cond_timedwait(pthread_cond_t *cond,
                 pthread_mutex_t *mutex, const struct timespec *abstime)
 {
     /* Both cond and mutex can be statically initialized, check for both */
     unsigned int cvalue = (*(unsigned int *) cond);
     unsigned int mvalue = (*(unsigned int *) mutex);
 
-    if (hybris_check_android_shared_cond(cvalue) ||
-         hybris_check_android_shared_mutex(mvalue)) {
+    if (apkenv_check_android_shared_cond(cvalue) ||
+         apkenv_check_android_shared_mutex(mvalue)) {
         LOGD("Shared condition/mutex with Android, not waiting.");
         return 0;
     }
 
     pthread_cond_t *realcond = (pthread_cond_t *) cvalue;
-    if (hybris_is_pointer_in_shm((void*)cvalue))
-        realcond = (pthread_cond_t *)hybris_get_shmpointer((hybris_shm_pointer_t)cvalue);
+    if (apkenv_is_pointer_in_shm((void*)cvalue))
+        realcond = (pthread_cond_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)cvalue);
 
     if (cvalue <= ANDROID_TOP_ADDR_VALUE_COND) {
-        realcond = hybris_alloc_init_cond();
+        realcond = apkenv_alloc_init_cond();
         *((unsigned int *) cond) = (unsigned int) realcond;
     }
 
     pthread_mutex_t *realmutex = (pthread_mutex_t *) mvalue;
-    if (hybris_is_pointer_in_shm((void*)mvalue))
-        realmutex = (pthread_mutex_t *)hybris_get_shmpointer((hybris_shm_pointer_t)mvalue);
+    if (apkenv_is_pointer_in_shm((void*)mvalue))
+        realmutex = (pthread_mutex_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)mvalue);
 
     if (mvalue <= ANDROID_TOP_ADDR_VALUE_MUTEX) {
-        realmutex = hybris_alloc_init_mutex(mvalue);
+        realmutex = apkenv_alloc_init_mutex(mvalue);
         *((unsigned int *) mutex) = (unsigned int) realmutex;
     }
 
     return pthread_cond_timedwait(realcond, realmutex, abstime);
 }
 
-int my_pthread_cond_timedwait_relative_np(pthread_cond_t *cond,
+int apkenv_my_pthread_cond_timedwait_relative_np(pthread_cond_t *cond,
                 pthread_mutex_t *mutex, const struct timespec *reltime)
 {
     /* Both cond and mutex can be statically initialized, check for both */
     unsigned int cvalue = (*(unsigned int *) cond);
     unsigned int mvalue = (*(unsigned int *) mutex);
 
-    if (hybris_check_android_shared_cond(cvalue) ||
-         hybris_check_android_shared_mutex(mvalue)) {
+    if (apkenv_check_android_shared_cond(cvalue) ||
+         apkenv_check_android_shared_mutex(mvalue)) {
         LOGD("Shared condition/mutex with Android, not waiting.");
         return 0;
     }
 
     pthread_cond_t *realcond = (pthread_cond_t *) cvalue;
-    if( hybris_is_pointer_in_shm((void*)cvalue) )
-        realcond = (pthread_cond_t *)hybris_get_shmpointer((hybris_shm_pointer_t)cvalue);
+    if( apkenv_is_pointer_in_shm((void*)cvalue) )
+        realcond = (pthread_cond_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)cvalue);
 
     if (cvalue <= ANDROID_TOP_ADDR_VALUE_COND) {
-        realcond = hybris_alloc_init_cond();
+        realcond = apkenv_alloc_init_cond();
         *((unsigned int *) cond) = (unsigned int) realcond;
     }
 
     pthread_mutex_t *realmutex = (pthread_mutex_t *) mvalue;
-    if (hybris_is_pointer_in_shm((void*)mvalue))
-        realmutex = (pthread_mutex_t *)hybris_get_shmpointer((hybris_shm_pointer_t)mvalue);
+    if (apkenv_is_pointer_in_shm((void*)mvalue))
+        realmutex = (pthread_mutex_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)mvalue);
 
     if (mvalue <= ANDROID_TOP_ADDR_VALUE_MUTEX) {
-        realmutex = hybris_alloc_init_mutex(mvalue);
+        realmutex = apkenv_alloc_init_mutex(mvalue);
         *((unsigned int *) mutex) = (unsigned int) realmutex;
     }
 
@@ -675,7 +675,7 @@ int my_pthread_cond_timedwait_relative_np(pthread_cond_t *cond,
  *
  * */
 
-int my_pthread_rwlockattr_init(pthread_rwlockattr_t *__attr)
+int apkenv_my_pthread_rwlockattr_init(pthread_rwlockattr_t *__attr)
 {
     pthread_rwlockattr_t *realattr;
 
@@ -685,7 +685,7 @@ int my_pthread_rwlockattr_init(pthread_rwlockattr_t *__attr)
     return pthread_rwlockattr_init(realattr);
 }
 
-int my_pthread_rwlockattr_destroy(pthread_rwlockattr_t *__attr)
+int apkenv_my_pthread_rwlockattr_destroy(pthread_rwlockattr_t *__attr)
 {
     int ret;
     pthread_rwlockattr_t *realattr = (pthread_rwlockattr_t *) *(unsigned int *) __attr;
@@ -696,14 +696,14 @@ int my_pthread_rwlockattr_destroy(pthread_rwlockattr_t *__attr)
     return ret;
 }
 
-int my_pthread_rwlockattr_setpshared(pthread_rwlockattr_t *__attr,
+int apkenv_my_pthread_rwlockattr_setpshared(pthread_rwlockattr_t *__attr,
                                             int pshared)
 {
     pthread_rwlockattr_t *realattr = (pthread_rwlockattr_t *) *(unsigned int *) __attr;
     return pthread_rwlockattr_setpshared(realattr, pshared);
 }
 
-int my_pthread_rwlockattr_getpshared(pthread_rwlockattr_t *__attr,
+int apkenv_my_pthread_rwlockattr_getpshared(pthread_rwlockattr_t *__attr,
                                             int *pshared)
 {
     pthread_rwlockattr_t *realattr = (pthread_rwlockattr_t *) *(unsigned int *) __attr;
@@ -718,7 +718,7 @@ int my_pthread_rwlockattr_getpshared(pthread_rwlockattr_t *__attr,
  *
  * */
 
-int my_pthread_rwlock_init(pthread_rwlock_t *__rwlock,
+int apkenv_my_pthread_rwlock_init(pthread_rwlock_t *__rwlock,
                                   __const pthread_rwlockattr_t *__attr)
 {
     pthread_rwlock_t *realrwlock = NULL;
@@ -739,87 +739,87 @@ int my_pthread_rwlock_init(pthread_rwlock_t *__rwlock,
     }
     else {
         /* process-shared condition: use the shared memory segment */
-        hybris_shm_pointer_t handle = hybris_shm_alloc(sizeof(pthread_rwlock_t));
+        apkenv_shm_pointer_t handle = apkenv_shm_alloc(sizeof(pthread_rwlock_t));
 
         *((unsigned int *)__rwlock) = (unsigned int) handle;
 
         if (handle)
-            realrwlock = (pthread_rwlock_t *)hybris_get_shmpointer(handle);
+            realrwlock = (pthread_rwlock_t *)apkenv_get_shmpointer(handle);
     }
 
     return pthread_rwlock_init(realrwlock, realattr);
 }
 
-int my_pthread_rwlock_destroy(pthread_rwlock_t *__rwlock)
+int apkenv_my_pthread_rwlock_destroy(pthread_rwlock_t *__rwlock)
 {
     int ret;
     pthread_rwlock_t *realrwlock = (pthread_rwlock_t *) *(unsigned int *) __rwlock;
 
-    if (!hybris_is_pointer_in_shm((void*)realrwlock)) {
+    if (!apkenv_is_pointer_in_shm((void*)realrwlock)) {
         ret = pthread_rwlock_destroy(realrwlock);
         free(realrwlock);
     }
     else {
         ret = pthread_rwlock_destroy(realrwlock);
-        realrwlock = (pthread_rwlock_t *)hybris_get_shmpointer((hybris_shm_pointer_t)realrwlock);
+        realrwlock = (pthread_rwlock_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)realrwlock);
     }
 
     return ret;
 }
 
-pthread_rwlock_t* hybris_set_realrwlock(pthread_rwlock_t *rwlock)
+pthread_rwlock_t* apkenv_set_realrwlock(pthread_rwlock_t *rwlock)
 {
     unsigned int value = (*(unsigned int *) rwlock);
     pthread_rwlock_t *realrwlock = (pthread_rwlock_t *) value;
-    if (hybris_is_pointer_in_shm((void*)value))
-        realrwlock = (pthread_rwlock_t *)hybris_get_shmpointer((hybris_shm_pointer_t)value);
+    if (apkenv_is_pointer_in_shm((void*)value))
+        realrwlock = (pthread_rwlock_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)value);
 
     if (realrwlock <= ANDROID_TOP_ADDR_VALUE_RWLOCK) {
-        realrwlock = hybris_alloc_init_rwlock();
+        realrwlock = apkenv_alloc_init_rwlock();
         *((unsigned int *)rwlock) = (unsigned int) realrwlock;
     }
     return realrwlock;
 }
 
-int my_pthread_rwlock_rdlock(pthread_rwlock_t *__rwlock)
+int apkenv_my_pthread_rwlock_rdlock(pthread_rwlock_t *__rwlock)
 {
-    pthread_rwlock_t *realrwlock = hybris_set_realrwlock(__rwlock);
+    pthread_rwlock_t *realrwlock = apkenv_set_realrwlock(__rwlock);
     return pthread_rwlock_rdlock(realrwlock);
 }
 
-int my_pthread_rwlock_tryrdlock(pthread_rwlock_t *__rwlock)
+int apkenv_my_pthread_rwlock_tryrdlock(pthread_rwlock_t *__rwlock)
 {
-    pthread_rwlock_t *realrwlock = hybris_set_realrwlock(__rwlock);
+    pthread_rwlock_t *realrwlock = apkenv_set_realrwlock(__rwlock);
     return pthread_rwlock_tryrdlock(realrwlock);
 }
 
-int my_pthread_rwlock_timedrdlock(pthread_rwlock_t *__rwlock,
+int apkenv_my_pthread_rwlock_timedrdlock(pthread_rwlock_t *__rwlock,
                                          __const struct timespec *abs_timeout)
 {
-    pthread_rwlock_t *realrwlock = hybris_set_realrwlock(__rwlock);
+    pthread_rwlock_t *realrwlock = apkenv_set_realrwlock(__rwlock);
     return pthread_rwlock_timedrdlock(realrwlock, abs_timeout);
 }
 
-int my_pthread_rwlock_wrlock(pthread_rwlock_t *__rwlock)
+int apkenv_my_pthread_rwlock_wrlock(pthread_rwlock_t *__rwlock)
 {
-    pthread_rwlock_t *realrwlock = hybris_set_realrwlock(__rwlock);
+    pthread_rwlock_t *realrwlock = apkenv_set_realrwlock(__rwlock);
     return pthread_rwlock_wrlock(realrwlock);
 }
 
-int my_pthread_rwlock_trywrlock(pthread_rwlock_t *__rwlock)
+int apkenv_my_pthread_rwlock_trywrlock(pthread_rwlock_t *__rwlock)
 {
-    pthread_rwlock_t *realrwlock = hybris_set_realrwlock(__rwlock);
+    pthread_rwlock_t *realrwlock = apkenv_set_realrwlock(__rwlock);
     return pthread_rwlock_trywrlock(realrwlock);
 }
 
-int my_pthread_rwlock_timedwrlock(pthread_rwlock_t *__rwlock,
+int apkenv_my_pthread_rwlock_timedwrlock(pthread_rwlock_t *__rwlock,
                                          __const struct timespec *abs_timeout)
 {
-    pthread_rwlock_t *realrwlock = hybris_set_realrwlock(__rwlock);
+    pthread_rwlock_t *realrwlock = apkenv_set_realrwlock(__rwlock);
     return pthread_rwlock_timedwrlock(realrwlock, abs_timeout);
 }
 
-int my_pthread_rwlock_unlock(pthread_rwlock_t *__rwlock)
+int apkenv_my_pthread_rwlock_unlock(pthread_rwlock_t *__rwlock)
 {
     unsigned int value = (*(unsigned int *) __rwlock);
     if (value <= ANDROID_TOP_ADDR_VALUE_RWLOCK) {
@@ -828,13 +828,13 @@ int my_pthread_rwlock_unlock(pthread_rwlock_t *__rwlock)
         return 0;
     }
     pthread_rwlock_t *realrwlock = (pthread_rwlock_t *) value;
-    if (hybris_is_pointer_in_shm((void*)value))
-        realrwlock = (pthread_rwlock_t *)hybris_get_shmpointer((hybris_shm_pointer_t)value);
+    if (apkenv_is_pointer_in_shm((void*)value))
+        realrwlock = (pthread_rwlock_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)value);
 
     return pthread_rwlock_unlock(realrwlock);
 }
 
-int my_pthread_setname_np(pthread_t thid, const char *thname)
+int apkenv_my_pthread_setname_np(pthread_t thid, const char *thname)
 {
     WRAPPERS_DEBUG_PRINTF("pthread_setname_np(%ld, %s)\n", thid, thname);
     return 0;
@@ -906,7 +906,7 @@ late_init_pthread_cond(pthread_cond_t *cond)
 }
 
 int
-my_pthread_mutex_init (pthread_mutex_t *__mutex,
+apkenv_my_pthread_mutex_init (pthread_mutex_t *__mutex,
         __const pthread_mutexattr_t *__mutexattr)
 {
     pthread_mutex_t *realmutex = malloc(sizeof(pthread_mutex_t));
@@ -915,28 +915,28 @@ my_pthread_mutex_init (pthread_mutex_t *__mutex,
 }
 
 int
-my_pthread_mutex_lock (pthread_mutex_t *__mutex)
+apkenv_my_pthread_mutex_lock (pthread_mutex_t *__mutex)
 {
     pthread_mutex_t *realmutex = late_init_pthread_mutex(__mutex);
     return pthread_mutex_lock(realmutex);
 }
 
 int
-my_pthread_mutex_trylock (pthread_mutex_t *__mutex)
+apkenv_my_pthread_mutex_trylock (pthread_mutex_t *__mutex)
 {
     pthread_mutex_t *realmutex = late_init_pthread_mutex(__mutex);
     return pthread_mutex_trylock(realmutex);
 }
 
 int
-my_pthread_mutex_unlock (pthread_mutex_t *__mutex)
+apkenv_my_pthread_mutex_unlock (pthread_mutex_t *__mutex)
 {
     pthread_mutex_t *realmutex = late_init_pthread_mutex(__mutex);
     return pthread_mutex_unlock(realmutex);
 }
 
 int
-my_pthread_mutex_destroy (pthread_mutex_t *__mutex)
+apkenv_my_pthread_mutex_destroy (pthread_mutex_t *__mutex)
 {
     pthread_mutex_t *realmutex = late_init_pthread_mutex(__mutex);
     int ret = pthread_mutex_destroy(realmutex);
@@ -945,7 +945,7 @@ my_pthread_mutex_destroy (pthread_mutex_t *__mutex)
 }
 
 int
-my_pthread_cond_init(pthread_cond_t *cond,
+apkenv_my_pthread_cond_init(pthread_cond_t *cond,
         const pthread_condattr_t *attr)
 {
     assert(cond != NULL);
@@ -955,7 +955,7 @@ my_pthread_cond_init(pthread_cond_t *cond,
 }
 
 int
-my_pthread_cond_destroy(pthread_cond_t *cond)
+apkenv_my_pthread_cond_destroy(pthread_cond_t *cond)
 {
     pthread_cond_t *realcond = late_init_pthread_cond(cond);
     int ret = pthread_cond_destroy(realcond);
@@ -964,21 +964,21 @@ my_pthread_cond_destroy(pthread_cond_t *cond)
 }
 
 int
-my_pthread_cond_broadcast(pthread_cond_t *cond)
+apkenv_my_pthread_cond_broadcast(pthread_cond_t *cond)
 {
     pthread_cond_t *realcond = late_init_pthread_cond(cond);
     return pthread_cond_broadcast(realcond);
 }
 
 int
-my_pthread_cond_signal(pthread_cond_t *cond)
+apkenv_my_pthread_cond_signal(pthread_cond_t *cond)
 {
     pthread_cond_t *realcond = late_init_pthread_cond(cond);
     return pthread_cond_signal(realcond);
 }
 
 int
-my_pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
+apkenv_my_pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
     pthread_cond_t *realcond = late_init_pthread_cond(cond);
     pthread_mutex_t *realmutex = late_init_pthread_mutex(mutex);
@@ -986,7 +986,7 @@ my_pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 }
 
 int
-my_pthread_cond_timedwait(pthread_cond_t *cond,
+apkenv_my_pthread_cond_timedwait(pthread_cond_t *cond,
         pthread_mutex_t *mutex, const struct timespec *abstime)
 {
     pthread_cond_t *realcond = late_init_pthread_cond(cond);
@@ -995,7 +995,7 @@ my_pthread_cond_timedwait(pthread_cond_t *cond,
 }
 
 int
-my_pthread_cond_timeout_np(pthread_cond_t *cond,
+apkenv_my_pthread_cond_timeout_np(pthread_cond_t *cond,
         pthread_mutex_t * mutex, unsigned msecs)
 {
     pthread_cond_t *realcond = late_init_pthread_cond(cond);
@@ -1013,7 +1013,7 @@ my_pthread_cond_timeout_np(pthread_cond_t *cond,
 }
 
 int
-my_pthread_attr_init(pthread_attr_t *__attr)
+apkenv_my_pthread_attr_init(pthread_attr_t *__attr)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1025,7 +1025,7 @@ my_pthread_attr_init(pthread_attr_t *__attr)
 }
 
 int
-my_pthread_attr_destroy(pthread_attr_t *__attr)
+apkenv_my_pthread_attr_destroy(pthread_attr_t *__attr)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1034,7 +1034,7 @@ my_pthread_attr_destroy(pthread_attr_t *__attr)
 }
 
 int
-my_pthread_attr_setdetachstate(pthread_attr_t *__attr, int detachstate)
+apkenv_my_pthread_attr_setdetachstate(pthread_attr_t *__attr, int detachstate)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1044,7 +1044,7 @@ my_pthread_attr_setdetachstate(pthread_attr_t *__attr, int detachstate)
 
 
 int
-my_pthread_attr_getdetachstate(pthread_attr_t *__attr, int* detachstate)
+apkenv_my_pthread_attr_getdetachstate(pthread_attr_t *__attr, int* detachstate)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1053,7 +1053,7 @@ my_pthread_attr_getdetachstate(pthread_attr_t *__attr, int* detachstate)
 }
 
 int
-my_pthread_attr_setschedparam (pthread_attr_t * __attr,struct sched_param * __param)
+apkenv_my_pthread_attr_setschedparam (pthread_attr_t * __attr,struct sched_param * __param)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1062,7 +1062,7 @@ my_pthread_attr_setschedparam (pthread_attr_t * __attr,struct sched_param * __pa
 }
 
 int
-my_pthread_attr_getschedparam(pthread_attr_t *__attr, struct sched_param * __param)
+apkenv_my_pthread_attr_getschedparam(pthread_attr_t *__attr, struct sched_param * __param)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1071,7 +1071,7 @@ my_pthread_attr_getschedparam(pthread_attr_t *__attr, struct sched_param * __par
 }
 
 int
-my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stacksize)
+apkenv_my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stacksize)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1080,7 +1080,7 @@ my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stacksize)
 }
 
 int
-my_pthread_attr_getstacksize(pthread_attr_t *__attr, size_t *stacksize)
+apkenv_my_pthread_attr_getstacksize(pthread_attr_t *__attr, size_t *stacksize)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1089,7 +1089,7 @@ my_pthread_attr_getstacksize(pthread_attr_t *__attr, size_t *stacksize)
 }
 
 int
-my_pthread_attr_getstack(pthread_attr_t *__attr, void** stackaddr, size_t* stacksize)
+apkenv_my_pthread_attr_getstack(pthread_attr_t *__attr, void** stackaddr, size_t* stacksize)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1098,7 +1098,7 @@ my_pthread_attr_getstack(pthread_attr_t *__attr, void** stackaddr, size_t* stack
 }
 
 int
-my_pthread_attr_setstack(pthread_attr_t *__attr, void* stackaddr, size_t stacksize)
+apkenv_my_pthread_attr_setstack(pthread_attr_t *__attr, void* stackaddr, size_t stacksize)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1107,7 +1107,7 @@ my_pthread_attr_setstack(pthread_attr_t *__attr, void* stackaddr, size_t stacksi
 }
 
 int
-my_pthread_attr_setschedpolicy(pthread_attr_t *__attr, int __policy)
+apkenv_my_pthread_attr_setschedpolicy(pthread_attr_t *__attr, int __policy)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1116,7 +1116,7 @@ my_pthread_attr_setschedpolicy(pthread_attr_t *__attr, int __policy)
 }
 
 int
-my_pthread_getattr_np(pthread_t __th, pthread_attr_t *__attr)
+apkenv_my_pthread_getattr_np(pthread_t __th, pthread_attr_t *__attr)
 {
     assert(__attr != NULL);
     pthread_attr_t *realattr = (pthread_attr_t *) *(int *) __attr;
@@ -1125,7 +1125,7 @@ my_pthread_getattr_np(pthread_t __th, pthread_attr_t *__attr)
 }
 
 int
-my_pthread_setname_np(pthread_t thid, const char *thname)
+apkenv_my_pthread_setname_np(pthread_t thid, const char *thname)
 {
     // TODO?
     WRAPPERS_DEBUG_PRINTF("pthread_setname_np(%ld, %s)\n", thid, thname);
@@ -1133,12 +1133,12 @@ my_pthread_setname_np(pthread_t thid, const char *thname)
 }
 
 void
-my_pthread_cleanup_pop(int execute)
+apkenv_my_pthread_cleanup_pop(int execute)
 {
     printf("UNIMPLEMENTED: pthread_cleanup_pop\n");
 }
 void
-my_pthread_cleanup_push(void (*routine) (void *), void *arg)
+apkenv_my_pthread_cleanup_push(void (*routine) (void *), void *arg)
 {
     printf("UNIMPLEMENTED: pthread_cleanup_push\n");
 
@@ -1155,7 +1155,7 @@ start_wrapped_thread(void *arg)
     return result;
 }
 
-int my_pthread_create(pthread_t *thread, const pthread_attr_t *attr,
+int apkenv_my_pthread_create(pthread_t *thread, const pthread_attr_t *attr,
         void *(*start_routine)(void*), void *arg)
 {
     struct WrappedThread *wrapped = malloc(

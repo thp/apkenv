@@ -43,63 +43,63 @@
 /* pthread_cond_t: big struct in glibc, struct{int} in Bionic -> wrap */
 /* pthread_attr_t: big struct in glibc, small struct in Bionic -> wrap */
 
-int my_pthread_create(pthread_t *thread, const pthread_attr_t *__attr,
+int apkenv_my_pthread_create(pthread_t *thread, const pthread_attr_t *__attr,
         void *(*start_routine)(void*), void *arg);
-int my_pthread_attr_init(pthread_attr_t *__attr);
-int my_pthread_attr_destroy(pthread_attr_t *__attr);
-int my_pthread_attr_setdetachstate(pthread_attr_t *__attr, int state);
-int my_pthread_attr_getdetachstate(pthread_attr_t const *__attr, int *state);
-int my_pthread_attr_setschedpolicy(pthread_attr_t *__attr, int policy);
-int my_pthread_attr_getschedpolicy(pthread_attr_t const *__attr, int *policy);
-int my_pthread_attr_setschedparam(pthread_attr_t *__attr, struct sched_param const *param);
-int my_pthread_attr_getschedparam(pthread_attr_t const *__attr, struct sched_param *param);
-int my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stack_size);
-int my_pthread_attr_getstacksize(pthread_attr_t const *__attr, size_t *stack_size);
-int my_pthread_attr_setstackaddr(pthread_attr_t *__attr, void *stack_addr);
-int my_pthread_attr_getstackaddr(pthread_attr_t const *__attr, void **stack_addr);
-int my_pthread_attr_setstack(pthread_attr_t *__attr, void *stack_base, size_t stack_size);
-int my_pthread_attr_getstack(pthread_attr_t const *__attr, void **stack_base, size_t *stack_size);
-int my_pthread_attr_setguardsize(pthread_attr_t *__attr, size_t guard_size);
-int my_pthread_attr_getguardsize(pthread_attr_t const *__attr, size_t *guard_size);
-int my_pthread_attr_setscope(pthread_attr_t *__attr, int scope);
-int my_pthread_attr_getscope(pthread_attr_t const *__attr);
-int my_pthread_getattr_np(pthread_t thid, pthread_attr_t *__attr);
-int my_pthread_mutex_init(pthread_mutex_t *__mutex,
+int apkenv_my_pthread_attr_init(pthread_attr_t *__attr);
+int apkenv_my_pthread_attr_destroy(pthread_attr_t *__attr);
+int apkenv_my_pthread_attr_setdetachstate(pthread_attr_t *__attr, int state);
+int apkenv_my_pthread_attr_getdetachstate(pthread_attr_t const *__attr, int *state);
+int apkenv_my_pthread_attr_setschedpolicy(pthread_attr_t *__attr, int policy);
+int apkenv_my_pthread_attr_getschedpolicy(pthread_attr_t const *__attr, int *policy);
+int apkenv_my_pthread_attr_setschedparam(pthread_attr_t *__attr, struct sched_param const *param);
+int apkenv_my_pthread_attr_getschedparam(pthread_attr_t const *__attr, struct sched_param *param);
+int apkenv_my_pthread_attr_setstacksize(pthread_attr_t *__attr, size_t stack_size);
+int apkenv_my_pthread_attr_getstacksize(pthread_attr_t const *__attr, size_t *stack_size);
+int apkenv_my_pthread_attr_setstackaddr(pthread_attr_t *__attr, void *stack_addr);
+int apkenv_my_pthread_attr_getstackaddr(pthread_attr_t const *__attr, void **stack_addr);
+int apkenv_my_pthread_attr_setstack(pthread_attr_t *__attr, void *stack_base, size_t stack_size);
+int apkenv_my_pthread_attr_getstack(pthread_attr_t const *__attr, void **stack_base, size_t *stack_size);
+int apkenv_my_pthread_attr_setguardsize(pthread_attr_t *__attr, size_t guard_size);
+int apkenv_my_pthread_attr_getguardsize(pthread_attr_t const *__attr, size_t *guard_size);
+int apkenv_my_pthread_attr_setscope(pthread_attr_t *__attr, int scope);
+int apkenv_my_pthread_attr_getscope(pthread_attr_t const *__attr);
+int apkenv_my_pthread_getattr_np(pthread_t thid, pthread_attr_t *__attr);
+int apkenv_my_pthread_mutex_init(pthread_mutex_t *__mutex,
                           __const pthread_mutexattr_t *__mutexattr);
-int my_pthread_mutex_destroy(pthread_mutex_t *__mutex);
-int my_pthread_mutex_lock(pthread_mutex_t *__mutex);
-int my_pthread_mutex_trylock(pthread_mutex_t *__mutex);
-int my_pthread_mutex_unlock(pthread_mutex_t *__mutex);
-int my_pthread_mutex_lock_timeout_np(pthread_mutex_t *__mutex, unsigned __msecs);
-int my_pthread_mutexattr_setpshared(pthread_mutexattr_t *__attr,
+int apkenv_my_pthread_mutex_destroy(pthread_mutex_t *__mutex);
+int apkenv_my_pthread_mutex_lock(pthread_mutex_t *__mutex);
+int apkenv_my_pthread_mutex_trylock(pthread_mutex_t *__mutex);
+int apkenv_my_pthread_mutex_unlock(pthread_mutex_t *__mutex);
+int apkenv_my_pthread_mutex_lock_timeout_np(pthread_mutex_t *__mutex, unsigned __msecs);
+int apkenv_my_pthread_mutexattr_setpshared(pthread_mutexattr_t *__attr,
                                            int pshared);
-int my_pthread_cond_init(pthread_cond_t *cond,
+int apkenv_my_pthread_cond_init(pthread_cond_t *cond,
                                 const pthread_condattr_t *attr);
-int my_pthread_cond_destroy(pthread_cond_t *cond);
-int my_pthread_cond_broadcast(pthread_cond_t *cond);
-int my_pthread_cond_signal(pthread_cond_t *cond);
-int my_pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
-int my_pthread_cond_timedwait(pthread_cond_t *cond,
+int apkenv_my_pthread_cond_destroy(pthread_cond_t *cond);
+int apkenv_my_pthread_cond_broadcast(pthread_cond_t *cond);
+int apkenv_my_pthread_cond_signal(pthread_cond_t *cond);
+int apkenv_my_pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex);
+int apkenv_my_pthread_cond_timedwait(pthread_cond_t *cond,
                 pthread_mutex_t *mutex, const struct timespec *abstime);
-int my_pthread_cond_timedwait_relative_np(pthread_cond_t *cond,
+int apkenv_my_pthread_cond_timedwait_relative_np(pthread_cond_t *cond,
                 pthread_mutex_t *mutex, const struct timespec *abstime);
-int my_pthread_rwlockattr_init(pthread_rwlockattr_t *__attr);
-int my_pthread_rwlockattr_destroy(pthread_rwlockattr_t *__attr);
-int my_pthread_rwlockattr_setpshared(pthread_rwlockattr_t *__attr,
+int apkenv_my_pthread_rwlockattr_init(pthread_rwlockattr_t *__attr);
+int apkenv_my_pthread_rwlockattr_destroy(pthread_rwlockattr_t *__attr);
+int apkenv_my_pthread_rwlockattr_setpshared(pthread_rwlockattr_t *__attr,
                                             int pshared);
-int my_pthread_rwlockattr_getpshared(pthread_rwlockattr_t *__attr,
+int apkenv_my_pthread_rwlockattr_getpshared(pthread_rwlockattr_t *__attr,
                                             int *pshared);
-int my_pthread_rwlock_init(pthread_rwlock_t *__rwlock,
+int apkenv_my_pthread_rwlock_init(pthread_rwlock_t *__rwlock,
                                   __const pthread_rwlockattr_t *__attr);
-int my_pthread_rwlock_destroy(pthread_rwlock_t *__rwlock);
-int my_pthread_rwlock_rdlock(pthread_rwlock_t *__rwlock);
-int my_pthread_rwlock_tryrdlock(pthread_rwlock_t *__rwlock);
-int my_pthread_rwlock_timedrdlock(pthread_rwlock_t *__rwlock,
+int apkenv_my_pthread_rwlock_destroy(pthread_rwlock_t *__rwlock);
+int apkenv_my_pthread_rwlock_rdlock(pthread_rwlock_t *__rwlock);
+int apkenv_my_pthread_rwlock_tryrdlock(pthread_rwlock_t *__rwlock);
+int apkenv_my_pthread_rwlock_timedrdlock(pthread_rwlock_t *__rwlock,
                                          __const struct timespec *abs_timeout);
-int my_pthread_rwlock_wrlock(pthread_rwlock_t *__rwlock);
-int my_pthread_rwlock_trywrlock(pthread_rwlock_t *__rwlock);
-int my_pthread_rwlock_timedwrlock(pthread_rwlock_t *__rwlock,
+int apkenv_my_pthread_rwlock_wrlock(pthread_rwlock_t *__rwlock);
+int apkenv_my_pthread_rwlock_trywrlock(pthread_rwlock_t *__rwlock);
+int apkenv_my_pthread_rwlock_timedwrlock(pthread_rwlock_t *__rwlock,
                                          __const struct timespec *abs_timeout);
-int my_pthread_rwlock_unlock(pthread_rwlock_t *__rwlock);
-int my_pthread_setname_np(pthread_t thid, const char *thname);
+int apkenv_my_pthread_rwlock_unlock(pthread_rwlock_t *__rwlock);
+int apkenv_my_pthread_setname_np(pthread_t thid, const char *thname);
 

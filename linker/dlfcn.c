@@ -58,7 +58,7 @@ static const char *dl_errors[] = {
 #define likely(expr)   __builtin_expect (expr, 1)
 #define unlikely(expr) __builtin_expect (expr, 0)
 
-pthread_mutex_t dl_lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t apkenv_dl_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static void set_dlerror(int err)
 {
@@ -71,7 +71,7 @@ void *apkenv_android_dlopen(const char *filename, int flag)
 {
     soinfo *ret;
 
-    pthread_mutex_lock(&dl_lock);
+    pthread_mutex_lock(&apkenv_dl_lock);
     ret = apkenv_find_library(filename);
 
     if (unlikely(ret == NULL)) {
@@ -80,7 +80,7 @@ void *apkenv_android_dlopen(const char *filename, int flag)
         apkenv_call_constructors_recursive(ret);
         ret->refcount++;
     }
-    pthread_mutex_unlock(&dl_lock);
+    pthread_mutex_unlock(&apkenv_dl_lock);
     return ret;
 }
 
@@ -106,7 +106,7 @@ void *apkenv_android_dlsym(void *handle, const char *symbol)
     Elf32_Sym *sym;
     unsigned bind;
 
-    pthread_mutex_lock(&dl_lock);
+    pthread_mutex_lock(&apkenv_dl_lock);
 
     if(unlikely(handle == 0)) {
         set_dlerror(DL_ERR_INVALID_LIBRARY_HANDLE);
@@ -121,7 +121,7 @@ void *apkenv_android_dlsym(void *handle, const char *symbol)
     if(0 != (sym_addr = apkenv_get_hooked_symbol_dlfcn(handle, symbol)))
     {
         LINKER_DEBUG_PRINTF("symbol %s hooked to %x\n",symbol,sym_addr);
-        pthread_mutex_unlock(&dl_lock);
+        pthread_mutex_unlock(&apkenv_dl_lock);
         return sym_addr;
     }
     if (is_builtin_lib_handle(handle)) {
@@ -150,7 +150,7 @@ void *apkenv_android_dlsym(void *handle, const char *symbol)
 
         if(likely((bind == STB_GLOBAL) && (sym->st_shndx != 0))) {
             unsigned ret = sym->st_value + found->base;
-            pthread_mutex_unlock(&dl_lock);
+            pthread_mutex_unlock(&apkenv_dl_lock);
             return create_wrapper((char*)symbol, (void*)ret, WRAPPER_DYNHOOK);
         }
 
@@ -161,7 +161,7 @@ void *apkenv_android_dlsym(void *handle, const char *symbol)
 
 err:
     LINKER_DEBUG_PRINTF("symbol %s has not been hooked\n",symbol);
-    pthread_mutex_unlock(&dl_lock);
+    pthread_mutex_unlock(&apkenv_dl_lock);
     return 0;
 }
 
@@ -169,7 +169,7 @@ int apkenv_android_dladdr(const void *addr, Dl_info *info)
 {
     int ret = 0;
 
-    pthread_mutex_lock(&dl_lock);
+    pthread_mutex_lock(&apkenv_dl_lock);
 
     /* Determine if this address can be found in any library currently mapped */
     soinfo *si = apkenv_find_containing_library(addr);
@@ -191,7 +191,7 @@ int apkenv_android_dladdr(const void *addr, Dl_info *info)
         ret = 1;
     }
 
-    pthread_mutex_unlock(&dl_lock);
+    pthread_mutex_unlock(&apkenv_dl_lock);
 
     return ret;
 }
@@ -201,9 +201,9 @@ int apkenv_android_dlclose(void *handle)
     if (is_builtin_lib_handle(handle))
         return 0;
 
-    pthread_mutex_lock(&dl_lock);
+    pthread_mutex_lock(&apkenv_dl_lock);
     (void)apkenv_unload_library((soinfo*)handle);
-    pthread_mutex_unlock(&dl_lock);
+    pthread_mutex_unlock(&apkenv_dl_lock);
     return 0;
 }
 
@@ -230,14 +230,14 @@ apkenv_android_dl_iterate_phdr(int (*cb)(struct dl_phdr_info *info, size_t size,
 #endif
 
 
-static Elf32_Sym libdl_symtab[] = {
-      // total length of libdl_info.strtab, including trailing 0
+static Elf32_Sym apkenv_libdl_symtab[] = {
+      // total length of apkenv_libdl_info.strtab, including trailing 0
       // This is actually the the STH_UNDEF entry. Technically, it's
       // supposed to have st_name == 0, but instead, it points to an index
       // in the strtab with a \0 to make iterating through the symtab easier.
     { st_name: sizeof(ANDROID_LIBDL_STRTAB) - 1,
     },
-    { st_name: 0,   // starting index of the name in libdl_info.strtab
+    { st_name: 0,   // starting index of the name in apkenv_libdl_info.strtab
       st_value: (Elf32_Addr) &apkenv_android_dlopen_wrap,
       st_info: STB_GLOBAL << 4,
       st_shndx: 1,
@@ -279,16 +279,16 @@ static Elf32_Sym libdl_symtab[] = {
 
 /* Fake out a hash table with a single bucket.
  * A search of the hash table will look through
- * libdl_symtab starting with index [1], then
- * use libdl_chains to find the next index to
- * look at.  libdl_chains should be set up to
- * walk through every element in libdl_symtab,
+ * apkenv_libdl_symtab starting with index [1], then
+ * use apkenv_libdl_chains to find the next index to
+ * look at.  apkenv_libdl_chains should be set up to
+ * walk through every element in apkenv_libdl_symtab,
  * and then end with 0 (sentinel value).
  *
- * I.e., libdl_chains should look like
+ * I.e., apkenv_libdl_chains should look like
  * { 0, 2, 3, ... N, 0 } where N is the number
- * of actual symbols, or nelems(libdl_symtab)-1
- * (since the first element of libdl_symtab is not
+ * of actual symbols, or nelems(apkenv_libdl_symtab)-1
+ * (since the first element of apkenv_libdl_symtab is not
  * a real symbol).
  *
  * (see _elf_lookup())
@@ -296,19 +296,19 @@ static Elf32_Sym libdl_symtab[] = {
  * Note that adding any new symbols here requires
  * stubbing them out in libdl.
  */
-static unsigned libdl_buckets[1] = { 1 };
-static unsigned libdl_chains[7] = { 0, 2, 3, 4, 5, 6, 0 };
+static unsigned apkenv_libdl_buckets[1] = { 1 };
+static unsigned apkenv_libdl_chains[7] = { 0, 2, 3, 4, 5, 6, 0 };
 
-soinfo libdl_info = {
+soinfo apkenv_libdl_info = {
     name: "libdl.so",
     flags: FLAG_LINKED,
 
     strtab: ANDROID_LIBDL_STRTAB,
-    symtab: libdl_symtab,
+    symtab: apkenv_libdl_symtab,
 
     nbucket: 1,
     nchain: 7,
-    bucket: libdl_buckets,
-    chain: libdl_chains,
+    bucket: apkenv_libdl_buckets,
+    chain: apkenv_libdl_chains,
 };
 

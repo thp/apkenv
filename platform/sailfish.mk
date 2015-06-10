@@ -7,6 +7,12 @@ BIONIC_LIBS := $(wildcard libs/sailfish/*.so)
 
 CFLAGS += -DAPKENV_LOCAL_BIONIC_PATH=\"./libs/sailfish/\"
 
+# for libaudioresource
+CFLAGS += $(shell $(PKG_CONFIG) audioresource --cflags)
+LDFLAGS += $(shell $(PKG_CONFIG) audioresource --libs)
+CFLAGS += $(shell $(PKG_CONFIG) glib-2.0 --cflags)
+LDFLAGS += $(shell $(PKG_CONFIG) glib-2.0 --libs)
+
 install_sailfish:
 	$(SILENTMSG) -e "\tINSTALL\tBIONIC"
 	$(SILENTCMD)mkdir -p $(DESTDIR)$(PREFIX)/lib/$(TARGET)/bionic

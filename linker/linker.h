@@ -156,7 +156,7 @@ struct soinfo
 };
 
 
-extern soinfo libdl_info;
+extern soinfo apkenv_libdl_info;
 
 #ifdef ANDROID_ARM_LINKER
 
