@@ -123,8 +123,12 @@ void *apkenv_get_hooked_symbol(const char *sym, int die_if_pthread)
     }
 
     if (strstr(sym, "pthread") != NULL) {
+        if(die_if_pthread)
+        {
+            printf("Unimplemented but required: %s\n", sym);
+            exit(4);
+        }
         printf("Unimplemented: %s\n", sym);
-        if(die_if_pthread) exit(4);
     }
 
     return NULL;
