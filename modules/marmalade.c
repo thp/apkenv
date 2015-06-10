@@ -1008,5 +1008,5 @@ marmalade_requests_exit(struct SupportModule *self)
     return 1;
 }
 
-APKENV_MODULE(marmalade, MODULE_PRIORITY_GENERIC)
+APKENV_MODULE(marmalade, MODULE_PRIORITY_ENGINE)
 
