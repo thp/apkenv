@@ -31,6 +31,8 @@
 
 #include "../../accelerometer/accelerometer.h"
 
+#include "input_transform.h"
+
 struct SDLAccelerometer {
     // Must have the same structure as struct Accelerometer from accelerometer.h
     int (*init)(struct SDLAccelerometer *accelerometer);
@@ -71,6 +73,9 @@ sdl_accelerometer_get(struct SDLAccelerometer *accelerometer, float *x, float *y
     if (z) {
         *z = GET_AXIS(accelerometer->joystick, 2);
     }
+
+    *x = input_transform_float_x(*x, *y);
+    *y = input_transform_float_y(*x, *y);
 
     return 1;
 }

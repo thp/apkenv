@@ -21,7 +21,7 @@
 
 
 extern struct ModuleHacks global_module_hacks;
-
+extern struct GlobalState global;
 static GLenum matrix_mode = 0;
 
 struct gles1_functions {
@@ -518,10 +518,17 @@ void
 my_glLoadMatrixf(const GLfloat *m)
 {
     WRAPPERS_DEBUG_PRINTF("glLoadMatrixf()\n", m);
-    if (0 != global_module_hacks.gles_landscape_to_portrait && GL_PROJECTION == matrix_mode) {
-        functions.glLoadIdentity();
-        functions.glRotatef(90, 0, 0, 1);
-        functions.glMultMatrixf(m);
+    if(matrix_mode == GL_PROJECTION && global.platform->get_orientation() != global_module_hacks.current_orientation) {
+        if(global_module_hacks.current_orientation == ORIENTATION_LANDSCAPE) {
+            functions.glLoadIdentity();
+            functions.glRotatef(270, 0, 0, 1);
+            functions.glMultMatrixf(m);
+        }
+        else {
+            functions.glLoadIdentity();
+            functions.glRotatef(90, 0, 0, 1);
+            functions.glMultMatrixf(m);
+        }
     }
     else {
         functions.glLoadMatrixf(m);
@@ -561,8 +568,13 @@ void
 my_glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glOrthof()\n", left, right, bottom, top, zNear, zFar);
-    if (global_module_hacks.gles_landscape_to_portrait!=0) {
-        functions.glRotatef(90, 0, 0, 1);
+    if(global.platform->get_orientation() != global_module_hacks.current_orientation) {
+        if(global_module_hacks.current_orientation == ORIENTATION_LANDSCAPE) {
+            functions.glRotatef(270, 0, 0, 1);
+        }
+        else {
+            functions.glRotatef(90, 0, 0, 1);
+        }
     }
     functions.glOrthof(left, right, bottom, top, zNear, zFar);
 }
@@ -1026,10 +1038,17 @@ void
 my_glLoadMatrixx(const GLfixed *m)
 {
     WRAPPERS_DEBUG_PRINTF("glLoadMatrixx()\n", m);
-    if (0 != global_module_hacks.gles_landscape_to_portrait && GL_PROJECTION == matrix_mode) {
-        functions.glLoadIdentity();
-        functions.glRotatex(90<<16, 0, 0, 1<<16);
-        functions.glMultMatrixx(m);
+    if(matrix_mode == GL_PROJECTION && global.platform->get_orientation() != global_module_hacks.current_orientation) {
+        if(global_module_hacks.current_orientation == ORIENTATION_LANDSCAPE) {
+            functions.glLoadIdentity();
+            functions.glRotatex(270<<16, 0, 0, 1<<16);
+            functions.glMultMatrixx(m);
+        }
+        else {
+            functions.glLoadIdentity();
+            functions.glRotatex(90<<16, 0, 0, 1<<16);
+            functions.glMultMatrixx(m);
+        }
     }
     else {
         functions.glLoadMatrixx(m);
@@ -1330,9 +1349,10 @@ void
 my_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
     WRAPPERS_DEBUG_PRINTF("glViewport(%d, %d, %d, %d)\n", x, y, width, height);
-    if (global_module_hacks.gles_landscape_to_portrait!=0) {
+    if(global.platform->get_orientation() != global_module_hacks.current_orientation) {
         functions.glViewport(y, x, height, width);
-    } else {
+    }
+    else {
         functions.glViewport(x, y, width, height);
     }
 }

@@ -623,7 +623,7 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
     self->priv->JNI_OnLoad(VM_M, NULL);
 
     self->priv->nativeResize(ENV_M, GLOBAL_M, height, width);
-    self->priv->global->module_hacks->gles_landscape_to_portrait = 1;
+    GLOBAL_M->module_hacks->current_orientation = ORIENTATION_PORTRAIT;
 
 #ifdef PANDORA
     self->priv->global->module_hacks->gles_downscale_images = 1;
@@ -640,13 +640,6 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
 static void
 cuttherope_input(struct SupportModule *self, int event, int x, int y, int finger)
 {
-    if(self->global->module_hacks->gles_landscape_to_portrait)
-    {
-        int tmpx = x;
-        x = 480-y;
-        y = tmpx;
-    }
-
     if (event==ACTION_MOVE) {
         self->priv->nativeTouchAdd(ENV_M,GLOBAL_M,0,2,x,y);
     }

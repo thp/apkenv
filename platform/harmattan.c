@@ -40,6 +40,8 @@
 #include "common/sdl_audio_impl.h"
 #include "common/sdl_mixer_impl.h"
 
+#include "common/input_transform.h"
+
 struct PlatformPriv {
     SDL_Surface *screen;
 };
@@ -123,11 +125,11 @@ harmattan_input_update(struct SupportModule *module)
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_MOUSEBUTTONDOWN) {
-            module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
+            module->input(module, ACTION_DOWN, input_transform_x(e.button.x, e.button.y), input_transform_y(e.button.x, e.button.y), e.button.which);
         } else if (e.type == SDL_MOUSEBUTTONUP) {
-            module->input(module, ACTION_UP, e.button.x, e.button.y, e.button.which);
+            module->input(module, ACTION_UP, input_transform_x(e.button.x, e.button.y), input_transform_y(e.button.x, e.button.y), e.button.which);
         } else if (e.type == SDL_MOUSEMOTION) {
-            module->input(module, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
+            module->input(module, ACTION_MOVE, input_transform_x(e.motion.x, e.motion.y), input_transform_y(e.motion.x, e.motion.y), e.motion.which);
         } else if (e.type == SDL_QUIT) {
             return 1;
         } else if (e.type == SDL_ACTIVEEVENT) {
@@ -150,6 +152,12 @@ harmattan_input_update(struct SupportModule *module)
     }
 
     return 0;
+}
+
+static int
+harmattan_get_orientation(void)
+{
+    return ORIENTATION_LANDSCAPE;
 }
 
 static void
@@ -178,6 +186,7 @@ struct PlatformSupport platform_support = {
     harmattan_get_path,
     harmattan_get_size,
     harmattan_input_update,
+    harmattan_get_orientation,
     harmattan_request_text_input,
     harmattan_update,
     harmattan_exit,

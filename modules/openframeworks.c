@@ -307,6 +307,8 @@ openframeworks_init(struct SupportModule *self, int width, int height, const cha
     char buf[1024];
     struct stat st;
 
+    GLOBAL_M->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+
     openframeworks_priv.app_name = GLOBAL_M->lookup_resource("app_name");
     openframeworks_priv.home = strdup(home);
     openframeworks_priv.w = width;
