@@ -243,6 +243,9 @@ void gles1_init(void)
 {
     void *h = dlopen("libGLESv1_CM.so", RTLD_LAZY);
     if (h == NULL) {
+        h = dlopen("libGLESv1_CM.so.1", RTLD_LAZY);
+    }
+    if (h == NULL) {
         fprintf(stderr, "libGLESv1_CM.so missing, recompile without APKENV_GLES\n");
         exit(1);
     }

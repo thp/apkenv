@@ -171,6 +171,9 @@ void gles2_init(void)
 {
     void *h = dlopen("libGLESv2.so", RTLD_LAZY);
     if (h == NULL) {
+        h = dlopen("libGLESv2.so.2", RTLD_LAZY);
+    }
+    if (h == NULL) {
         fprintf(stderr, "libGLESv2.so missing, recompile without APKENV_GLES2\n");
         exit(1);
     }
