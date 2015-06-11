@@ -109,7 +109,7 @@ sailfish_get_path(enum PlatformPath which)
         case PLATFORM_PATH_DATA_DIRECTORY:
             return "/home/nemo/.apkenv/";
         case PLATFORM_PATH_MODULE_DIRECTORY:
-            return "/opt/apkenv/modules/";
+            return "/usr/lib/apkenv/modules/";
         default:
             return NULL;
     }

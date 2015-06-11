@@ -13,6 +13,8 @@ LDFLAGS += $(shell $(PKG_CONFIG) audioresource --libs)
 CFLAGS += $(shell $(PKG_CONFIG) glib-2.0 --cflags)
 LDFLAGS += $(shell $(PKG_CONFIG) glib-2.0 --libs)
 
+# only install bionic libs if we actually have them
+ifneq ($(BIONIC_LIBS),)
 install_sailfish:
 	$(SILENTMSG) -e "\tINSTALL\tBIONIC"
 	$(SILENTCMD)mkdir -p $(DESTDIR)$(PREFIX)/lib/$(TARGET)/bionic
@@ -20,6 +22,7 @@ install_sailfish:
 
 PLATFORM_INSTALL_TARGETS += install_sailfish
 .PHONY: install_sailfish
+endif
 
 rpm:
 	echo "rpm TARGET TODO"
