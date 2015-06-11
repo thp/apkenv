@@ -345,6 +345,8 @@ static void
 fruitninja_init(struct SupportModule *self, int width, int height, const char *home)
 {
     global = GLOBAL_M;
+    global->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+
     self->priv->myHome = strdup(home);
 
     apkenv_mixer_open(22050, AudioFormat_S16SYS, 2, 1024);

@@ -74,6 +74,8 @@ trg2_try_init(struct SupportModule *self)
 static void
 trg2_init(struct SupportModule *self, int width, int height, const char *home)
 {
+    GLOBAL_M->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+
     apkenv_accelerometer_init();
     self->priv->JNI_OnLoad(VM_M, NULL);
     self->priv->native_init(ENV_M, GLOBAL_M);

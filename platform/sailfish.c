@@ -37,6 +37,8 @@
 #include "common/sdl_audio_impl.h"
 #include "common/sdl_mixer_impl.h"
 
+#include "common/input_transform.h"
+
 #include <audioresource.h>
 #include <glib.h>
 static audioresource_t *l_audioresource = NULL;
@@ -125,11 +127,11 @@ sailfish_input_update(struct SupportModule *module)
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_FINGERDOWN) {
-            module->input(module, ACTION_DOWN, e.tfinger.x, e.tfinger.y, e.tfinger.fingerId);
+            module->input(module, ACTION_DOWN, input_transform_x(e.tfinger.x, e.tfinger.y), input_transform_y(e.tfinger.x, e.tfinger.y), e.tfinger.fingerId);
         } else if (e.type == SDL_FINGERUP) {
-            module->input(module, ACTION_UP, e.tfinger.x, e.tfinger.y, e.tfinger.fingerId);
+            module->input(module, ACTION_UP, input_transform_x(e.tfinger.x, e.tfinger.y), input_transform_y(e.tfinger.x, e.tfinger.y), e.tfinger.fingerId);
         } else if (e.type == SDL_FINGERMOTION) {
-            module->input(module, ACTION_MOVE, e.tfinger.x, e.tfinger.y, e.tfinger.fingerId);
+            module->input(module, ACTION_MOVE, input_transform_x(e.tfinger.x, e.tfinger.y), input_transform_y(e.tfinger.x, e.tfinger.y), e.tfinger.fingerId);
         } else if (e.type == SDL_QUIT) {
             return 1;
         } else if (e.type == SDL_WINDOWEVENT) {
@@ -152,6 +154,12 @@ sailfish_input_update(struct SupportModule *module)
     }
 
     return 0;
+}
+
+static int
+sailfish_get_orientation(void)
+{
+    return ORIENTATION_PORTRAIT;
 }
 
 static void
@@ -185,6 +193,7 @@ struct PlatformSupport platform_support = {
     sailfish_get_path,
     sailfish_get_size,
     sailfish_input_update,
+    sailfish_get_orientation,
     sailfish_request_text_input,
     sailfish_update,
     sailfish_exit,

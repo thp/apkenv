@@ -41,6 +41,8 @@
 #include "common/sdl_audio_impl.h"
 #include "common/sdl_mixer_impl.h"
 
+#include "common/input_transform.h"
+
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/fb.h>
@@ -289,19 +291,19 @@ pandora_input_update(struct SupportModule *module)
                 module->key_input(module, ACTION_UP, keymap[e.key.keysym.sym], e.key.keysym.unicode);
             }
         } else if (e.type == SDL_MOUSEBUTTONDOWN) {
-            module->input(module, ACTION_DOWN, e.button.x, e.button.y, e.button.which);
+            module->input(module, ACTION_DOWN, input_transform_x(e.button.x, e.button.y), input_transform_y(e.button.x, e.button.y), e.button.which);
             if (emulate_multitouch) {
-                module->input(module,ACTION_DOWN, width-e.button.x, height-e.button.y,emulate_finger_id);
+                module->input(module,ACTION_DOWN, input_transform_x(width-e.button.x), input_transform_y(height-e.button.y),emulate_finger_id);
             }
         } else if (e.type == SDL_MOUSEBUTTONUP) {
-            module->input(module, ACTION_UP, e.button.x, e.button.y, e.button.which);
+            module->input(module, ACTION_UP, input_transform_x(e.button.x, e.button.y), input_transform_y(e.button.x, e.button.y), e.button.which);
             if (emulate_multitouch) {
-                module->input(module,ACTION_UP, width-e.button.x, height-e.button.y,emulate_finger_id);
+                module->input(module,ACTION_UP, input_transform_x(width-e.button.x), input_transform_y(height-e.button.y),emulate_finger_id);
             }
         } else if (e.type == SDL_MOUSEMOTION) {
-            module->input(module, ACTION_MOVE, e.motion.x, e.motion.y, e.motion.which);
+            module->input(module, ACTION_MOVE, input_transform_x(e.motion.x, e.motion.y), input_transform_y(e.motion.x, e.motion.y), e.motion.which);
             if (emulate_multitouch) {
-                module->input(module,ACTION_MOVE, width-e.button.x, height-e.button.y,emulate_finger_id);
+                module->input(module,ACTION_MOVE, input_transform_x(width-e.button.x, height-e.button.y), input_transform_y(width-e.button.x, height-e.button.y),emulate_finger_id);
             }
         } else if (e.type == SDL_QUIT) {
             return 1;
@@ -325,6 +327,12 @@ pandora_input_update(struct SupportModule *module)
     }
 
     return 0;
+}
+
+static int
+pandora_get_orientation(void)
+{
+    return ORIENTATION_LANDSCAPE;
 }
 
 static void
@@ -385,6 +393,7 @@ struct PlatformSupport platform_support = {
     pandora_get_path,
     pandora_get_size,
     pandora_input_update,
+    pandora_get_orientation,
     pandora_request_text_input,
     pandora_update,
     pandora_exit,

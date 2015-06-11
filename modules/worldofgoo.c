@@ -389,6 +389,8 @@ worldofgoo_try_init(struct SupportModule *self)
 static void
 worldofgoo_init(struct SupportModule *self, int width, int height, const char *home)
 {
+    GLOBAL_M->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+
     self->priv->home_directory = home;
     self->priv->apk_in_mem = GLOBAL_M->apk_in_mem;
     build_apk_index(GLOBAL_M->apk_filename);

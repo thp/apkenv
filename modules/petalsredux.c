@@ -120,6 +120,8 @@ petalsredux_init(struct SupportModule *self, int width, int height, const char *
 {
     self->priv->JNI_OnLoad(VM_M, NULL);
 
+    GLOBAL_M->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+
     self->priv->native_start = jnienv_find_native_method(NULL, "nativeStart");
     self->priv->native_pause = jnienv_find_native_method(NULL, "nativePause");
     self->priv->native_resume = jnienv_find_native_method(NULL, "nativeResume");

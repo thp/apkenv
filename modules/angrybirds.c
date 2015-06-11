@@ -202,8 +202,12 @@ angrybirds_init(struct SupportModule *self, int width, int height, const char *h
 {
     MODULE_DEBUG_PRINTF("Module: Init(%i,%i,%s)\n",width,height,home);
 
-    self->priv->myHome = strdup(home);
     global = GLOBAL_M;
+
+    global->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+
+    self->priv->myHome = strdup(home);
+
     self->priv->native_init(ENV_M, GLOBAL_M, width, height, GLOBAL_M->env->NewStringUTF(ENV_M, home));
 }
 

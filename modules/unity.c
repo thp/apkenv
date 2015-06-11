@@ -228,6 +228,7 @@ static void
 unity_init(struct SupportModule *self, int width, int height, const char *home)
 {
     global = GLOBAL_M;
+    global->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
 
     system("export MALLOC_CHECK_=0"); //<unit? or who? does something weird on the pandora ...
 

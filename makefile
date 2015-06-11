@@ -56,6 +56,8 @@ SOURCES += $(wildcard mixer/*.c)
 PLATFORM_INSTALL_TARGETS :=
 include platform/$(PLATFORM).mk
 
+SOURCES += $(wildcard platform/common/*.c)
+
 OBJS := $(patsubst %.c,%.o,$(SOURCES))
 
 # Support modules for specific applications

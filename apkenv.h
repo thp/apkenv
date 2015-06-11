@@ -40,6 +40,10 @@
 #define APKENV_HEADLINE APKENV_NAME " " APKENV_VERSION " - " APKENV_WEBSITE
 #define APKENV_COPYRIGHT "Copyright (c) 2012, 2013, 2014 Thomas Perl <m@thp.io>"
 
+/* these are used to determine if the screen content has to be rotated for the current platform */
+#define ORIENTATION_LANDSCAPE   0
+#define ORIENTATION_PORTRAIT    1
+
 struct GlobalState;
 struct SupportModule;
 struct SupportModulePriv;
@@ -50,7 +54,7 @@ struct ConfigOption {
 };
 
 struct ModuleHacks {
-    int gles_landscape_to_portrait;
+    int current_orientation;
     int gles_downscale_images;
     int gles_no_readpixels;
 };
@@ -121,6 +125,9 @@ struct PlatformSupport {
 
     /* Process input events and forward to "module", return nonzero to exit */
     int (*input_update)(struct SupportModule *module);
+
+    /* this returns the platforms default orientation for rotating the app content properly */
+    int (*get_orientation)(void);
 
     /**
      * Asynchronously request text input from the native platform
