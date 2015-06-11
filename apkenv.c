@@ -341,6 +341,7 @@ system_init(int gles_version)
     }
 
     gles_extensions_init();
+    gles1_init();
     gles2_init();
 
     /* SDL loads some libs.. */

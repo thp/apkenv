@@ -9,6 +9,8 @@
 #include <assert.h>
 #include <EGL/egl.h>
 
+#include <dlfcn.h>
+
 #ifdef APKENV_DEBUG
 #  define WRAPPERS_DEBUG_PRINTF(...) printf(__VA_ARGS__)
 #  define GL_TEST_ERROR if (glGetError()!=GL_NO_ERROR) { printf("GL ERROR near %s\n", __FUNCTION__); }
@@ -21,6 +23,154 @@
 extern struct ModuleHacks global_module_hacks;
 
 static GLenum matrix_mode = 0;
+
+struct gles1_functions {
+    void (*glAlphaFunc)(GLenum func, GLclampf ref);
+    void (*glClearColor)(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha);
+    void (*glClearDepthf)(GLclampf depth);
+    void (*glClipPlanef)(GLenum plane, const GLfloat *equation);
+    void (*glColor4f)(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha);
+    void (*glDepthRangef)(GLclampf zNear, GLclampf zFar);
+    void (*glFogf)(GLenum pname, GLfloat param);
+    void (*glFogfv)(GLenum pname, const GLfloat *params);
+    void (*glFrustumf)(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar);
+    void (*glGetClipPlanef)(GLenum pname, GLfloat eqn[4]);
+    void (*glGetFloatv)(GLenum pname, GLfloat *params);
+    void (*glGetLightfv)(GLenum light, GLenum pname, GLfloat *params);
+    void (*glGetMaterialfv)(GLenum face, GLenum pname, GLfloat *params);
+    void (*glGetTexEnvfv)(GLenum env, GLenum pname, GLfloat *params);
+    void (*glGetTexParameterfv)(GLenum target, GLenum pname, GLfloat *params);
+    void (*glLightModelf)(GLenum pname, GLfloat param);
+    void (*glLightModelfv)(GLenum pname, const GLfloat *params);
+    void (*glLightf)(GLenum light, GLenum pname, GLfloat param);
+    void (*glLightfv)(GLenum light, GLenum pname, const GLfloat *params);
+    void (*glLineWidth)(GLfloat width);
+    void (*glLoadMatrixf)(const GLfloat *m);
+    void (*glMaterialf)(GLenum face, GLenum pname, GLfloat param);
+    void (*glMaterialfv)(GLenum face, GLenum pname, const GLfloat *params);
+    void (*glMultMatrixf)(const GLfloat *m);
+    void (*glMultiTexCoord4f)(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q);
+    void (*glNormal3f)(GLfloat nx, GLfloat ny, GLfloat nz);
+    void (*glOrthof)(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar);
+    void (*glPointParameterf)(GLenum pname, GLfloat param);
+    void (*glPointParameterfv)(GLenum pname, const GLfloat *params);
+    void (*glPointSize)(GLfloat size);
+    void (*glPolygonOffset)(GLfloat factor, GLfloat units);
+    void (*glRotatef)(GLfloat angle, GLfloat x, GLfloat y, GLfloat z);
+    void (*glScalef)(GLfloat x, GLfloat y, GLfloat z);
+    void (*glTexEnvf)(GLenum target, GLenum pname, GLfloat param);
+    void (*glTexEnvfv)(GLenum target, GLenum pname, const GLfloat *params);
+    void (*glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
+    void (*glTexParameterfv)(GLenum target, GLenum pname, const GLfloat *params);
+    void (*glTranslatef)(GLfloat x, GLfloat y, GLfloat z);
+    void (*glActiveTexture)(GLenum texture);
+    void (*glAlphaFuncx)(GLenum func, GLclampx ref);
+    void (*glBindBuffer)(GLenum target, GLuint buffer);
+    void (*glBindTexture)(GLenum target, GLuint texture);
+    void (*glBlendFunc)(GLenum sfactor, GLenum dfactor);
+    void (*glBufferData)(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
+    void (*glBufferSubData)(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data);
+    void (*glClear)(GLbitfield mask);
+    void (*glClearColorx)(GLclampx red, GLclampx green, GLclampx blue, GLclampx alpha);
+    void (*glClearDepthx)(GLclampx depth);
+    void (*glClearStencil)(GLint s);
+    void (*glClientActiveTexture)(GLenum texture);
+    void (*glClipPlanex)(GLenum plane, const GLfixed *equation);
+    void (*glColor4ub)(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha);
+    void (*glColor4x)(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha);
+    void (*glColorMask)(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha);
+    void (*glColorPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+    void (*glCompressedTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data);
+    void (*glCompressedTexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const GLvoid *data);
+    void (*glCopyTexImage2D)(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border);
+    void (*glCopyTexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height);
+    void (*glCullFace)(GLenum mode);
+    void (*glDeleteBuffers)(GLsizei n, const GLuint *buffers);
+    void (*glDeleteTextures)(GLsizei n, const GLuint *textures);
+    void (*glDepthFunc)(GLenum func);
+    void (*glDepthMask)(GLboolean flag);
+    void (*glDepthRangex)(GLclampx zNear, GLclampx zFar);
+    void (*glDisable)(GLenum cap);
+    void (*glDisableClientState)(GLenum array);
+    void (*glDrawArrays)(GLenum mode, GLint first, GLsizei count);
+    void (*glDrawElements)(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices);
+    void (*glEnable)(GLenum cap);
+    void (*glEnableClientState)(GLenum array);
+    void (*glFinish)(void);
+    void (*glFlush)(void);
+    void (*glFogx)(GLenum pname, GLfixed param);
+    void (*glFogxv)(GLenum pname, const GLfixed *params);
+    void (*glFrontFace)(GLenum mode);
+    void (*glFrustumx)(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed zNear, GLfixed zFar);
+    void (*glGetBooleanv)(GLenum pname, GLboolean *params);
+    void (*glGetBufferParameteriv)(GLenum target, GLenum pname, GLint *params);
+    void (*glGetClipPlanex)(GLenum pname, GLfixed eqn[4]);
+    void (*glGenBuffers)(GLsizei n, GLuint *buffers);
+    void (*glGenTextures)(GLsizei n, GLuint *textures);
+    GLenum (*glGetError)(void);
+    void (*glGetFixedv)(GLenum pname, GLfixed *params);
+    void (*glGetIntegerv)(GLenum pname, GLint *params);
+    void (*glGetLightxv)(GLenum light, GLenum pname, GLfixed *params);
+    void (*glGetMaterialxv)(GLenum face, GLenum pname, GLfixed *params);
+    void (*glGetPointerv)(GLenum pname, GLvoid **params);
+    const GLubyte * (*glGetString)(GLenum name);
+    void (*glGetTexEnviv)(GLenum env, GLenum pname, GLint *params);
+    void (*glGetTexEnvxv)(GLenum env, GLenum pname, GLfixed *params);
+    void (*glGetTexParameteriv)(GLenum target, GLenum pname, GLint *params);
+    void (*glGetTexParameterxv)(GLenum target, GLenum pname, GLfixed *params);
+    void (*glHint)(GLenum target, GLenum mode);
+    GLboolean (*glIsBuffer)(GLuint buffer);
+    GLboolean (*glIsEnabled)(GLenum cap);
+    GLboolean (*glIsTexture)(GLuint texture);
+    void (*glLightModelx)(GLenum pname, GLfixed param);
+    void (*glLightModelxv)(GLenum pname, const GLfixed *params);
+    void (*glLightx)(GLenum light, GLenum pname, GLfixed param);
+    void (*glLightxv)(GLenum light, GLenum pname, const GLfixed *params);
+    void (*glLineWidthx)(GLfixed width);
+    void (*glLoadIdentity)(void);
+    void (*glLoadMatrixx)(const GLfixed *m);
+    void (*glLogicOp)(GLenum opcode);
+    void (*glMaterialx)(GLenum face, GLenum pname, GLfixed param);
+    void (*glMaterialxv)(GLenum face, GLenum pname, const GLfixed *params);
+    void (*glMatrixMode)(GLenum mode);
+    void (*glMultMatrixx)(const GLfixed *m);
+    void (*glMultiTexCoord4x)(GLenum target, GLfixed s, GLfixed t, GLfixed r, GLfixed q);
+    void (*glNormal3x)(GLfixed nx, GLfixed ny, GLfixed nz);
+    void (*glNormalPointer)(GLenum type, GLsizei stride, const GLvoid *pointer);
+    void (*glOrthox)(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed zNear, GLfixed zFar);
+    void (*glPixelStorei)(GLenum pname, GLint param);
+    void (*glPointParameterx)(GLenum pname, GLfixed param);
+    void (*glPointParameterxv)(GLenum pname, const GLfixed *params);
+    void (*glPointSizex)(GLfixed size);
+    void (*glPolygonOffsetx)(GLfixed factor, GLfixed units);
+    void (*glPopMatrix)(void);
+    void (*glPushMatrix)(void);
+    void (*glReadPixels)(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels);
+    void (*glRotatex)(GLfixed angle, GLfixed x, GLfixed y, GLfixed z);
+    void (*glSampleCoverage)(GLclampf value, GLboolean invert);
+    void (*glSampleCoveragex)(GLclampx value, GLboolean invert);
+    void (*glScalex)(GLfixed x, GLfixed y, GLfixed z);
+    void (*glScissor)(GLint x, GLint y, GLsizei width, GLsizei height);
+    void (*glShadeModel)(GLenum mode);
+    void (*glStencilFunc)(GLenum func, GLint ref, GLuint mask);
+    void (*glStencilMask)(GLuint mask);
+    void (*glStencilOp)(GLenum fail, GLenum zfail, GLenum zpass);
+    void (*glTexCoordPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+    void (*glTexEnvi)(GLenum target, GLenum pname, GLint param);
+    void (*glTexEnvx)(GLenum target, GLenum pname, GLfixed param);
+    void (*glTexEnviv)(GLenum target, GLenum pname, const GLint *params);
+    void (*glTexEnvxv)(GLenum target, GLenum pname, const GLfixed *params);
+    void (*glTexImage2D)(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels);
+    void (*glTexParameteri)(GLenum target, GLenum pname, GLint param);
+    void (*glTexParameterx)(GLenum target, GLenum pname, GLfixed param);
+    void (*glTexParameteriv)(GLenum target, GLenum pname, const GLint *params);
+    void (*glTexParameterxv)(GLenum target, GLenum pname, const GLfixed *params);
+    void (*glTexSubImage2D)(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels);
+    void (*glTranslatex)(GLfixed x, GLfixed y, GLfixed z);
+    void (*glVertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
+    void (*glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+    void (*glPointSizePointerOES)(GLenum type, GLsizei stride, const GLvoid *pointer);
+};
 
 struct gles_extensions {
     /* GL_OES_framebuffer_object */
@@ -57,6 +207,9 @@ static struct gles_extensions extensions;
     extensions . ext = (typeof(extensions . ext))eglGetProcAddress(#ext); \
     WRAPPERS_DEBUG_PRINTF("%s is at 0x%x\n", #ext, extensions . ext)
 
+#define GET_FUNC(name) \
+    functions.name = (void*)dlsym(h, #name)
+
 void gles_extensions_init()
 {
     init_extension(glIsRenderbufferOES);
@@ -84,840 +237,997 @@ void gles_extensions_init()
     init_extension(glGetBufferPointervOES);
 }
 
+static struct gles1_functions functions;
+
+void gles1_init(void)
+{
+    void *h = dlopen("libGLESv1_CM.so", RTLD_LAZY);
+    if (h == NULL) {
+        fprintf(stderr, "libGLESv1_CM.so missing, recompile without APKENV_GLES\n");
+        exit(1);
+    }
+
+    GET_FUNC(glAlphaFunc);
+    GET_FUNC(glClearColor);
+    GET_FUNC(glClearDepthf);
+    GET_FUNC(glClipPlanef);
+    GET_FUNC(glColor4f);
+    GET_FUNC(glDepthRangef);
+    GET_FUNC(glFogf);
+    GET_FUNC(glFogfv);
+    GET_FUNC(glFrustumf);
+    GET_FUNC(glGetClipPlanef);
+    GET_FUNC(glGetFloatv);
+    GET_FUNC(glGetLightfv);
+    GET_FUNC(glGetMaterialfv);
+    GET_FUNC(glGetTexEnvfv);
+    GET_FUNC(glGetTexParameterfv);
+    GET_FUNC(glLightModelf);
+    GET_FUNC(glLightModelfv);
+    GET_FUNC(glLightf);
+    GET_FUNC(glLightfv);
+    GET_FUNC(glLineWidth);
+    GET_FUNC(glLoadMatrixf);
+    GET_FUNC(glMaterialf);
+    GET_FUNC(glMaterialfv);
+    GET_FUNC(glMultMatrixf);
+    GET_FUNC(glMultiTexCoord4f);
+    GET_FUNC(glNormal3f);
+    GET_FUNC(glOrthof);
+    GET_FUNC(glPointParameterf);
+    GET_FUNC(glPointParameterfv);
+    GET_FUNC(glPointSize);
+    GET_FUNC(glPolygonOffset);
+    GET_FUNC(glRotatef);
+    GET_FUNC(glScalef);
+    GET_FUNC(glTexEnvf);
+    GET_FUNC(glTexEnvfv);
+    GET_FUNC(glTexParameterf);
+    GET_FUNC(glTexParameterfv);
+    GET_FUNC(glTranslatef);
+    GET_FUNC(glActiveTexture);
+    GET_FUNC(glAlphaFuncx);
+    GET_FUNC(glBindBuffer);
+    GET_FUNC(glBindTexture);
+    GET_FUNC(glBlendFunc);
+    GET_FUNC(glBufferData);
+    GET_FUNC(glBufferSubData);
+    GET_FUNC(glClear);
+    GET_FUNC(glClearColorx);
+    GET_FUNC(glClearDepthx);
+    GET_FUNC(glClearStencil);
+    GET_FUNC(glClientActiveTexture);
+    GET_FUNC(glClipPlanex);
+    GET_FUNC(glColor4ub);
+    GET_FUNC(glColor4x);
+    GET_FUNC(glColorMask);
+    GET_FUNC(glColorPointer);
+    GET_FUNC(glCompressedTexImage2D);
+    GET_FUNC(glCompressedTexSubImage2D);
+    GET_FUNC(glCopyTexImage2D);
+    GET_FUNC(glCopyTexSubImage2D);
+    GET_FUNC(glCullFace);
+    GET_FUNC(glDeleteBuffers);
+    GET_FUNC(glDeleteTextures);
+    GET_FUNC(glDepthFunc);
+    GET_FUNC(glDepthMask);
+    GET_FUNC(glDepthRangex);
+    GET_FUNC(glDisable);
+    GET_FUNC(glDisableClientState);
+    GET_FUNC(glDrawArrays);
+    GET_FUNC(glDrawElements);
+    GET_FUNC(glEnable);
+    GET_FUNC(glEnableClientState);
+    GET_FUNC(glFinish);
+    GET_FUNC(glFlush);
+    GET_FUNC(glFogx);
+    GET_FUNC(glFogxv);
+    GET_FUNC(glFrontFace);
+    GET_FUNC(glFrustumx);
+    GET_FUNC(glGetBooleanv);
+    GET_FUNC(glGetBufferParameteriv);
+    GET_FUNC(glGetClipPlanex);
+    GET_FUNC(glGenBuffers);
+    GET_FUNC(glGenTextures);
+    GET_FUNC(glGetError);
+    GET_FUNC(glGetFixedv);
+    GET_FUNC(glGetIntegerv);
+    GET_FUNC(glGetLightxv);
+    GET_FUNC(glGetMaterialxv);
+    GET_FUNC(glGetPointerv);
+    GET_FUNC(glGetString);
+    GET_FUNC(glGetTexEnviv);
+    GET_FUNC(glGetTexEnvxv);
+    GET_FUNC(glGetTexParameteriv);
+    GET_FUNC(glGetTexParameterxv);
+    GET_FUNC(glHint);
+    GET_FUNC(glIsBuffer);
+    GET_FUNC(glIsEnabled);
+    GET_FUNC(glIsTexture);
+    GET_FUNC(glLightModelx);
+    GET_FUNC(glLightModelxv);
+    GET_FUNC(glLightx);
+    GET_FUNC(glLightxv);
+    GET_FUNC(glLineWidthx);
+    GET_FUNC(glLoadIdentity);
+    GET_FUNC(glLoadMatrixx);
+    GET_FUNC(glLogicOp);
+    GET_FUNC(glMaterialx);
+    GET_FUNC(glMaterialxv);
+    GET_FUNC(glMatrixMode);
+    GET_FUNC(glMultMatrixx);
+    GET_FUNC(glMultiTexCoord4x);
+    GET_FUNC(glNormal3x);
+    GET_FUNC(glNormalPointer);
+    GET_FUNC(glOrthox);
+    GET_FUNC(glPixelStorei);
+    GET_FUNC(glPointParameterx);
+    GET_FUNC(glPointParameterxv);
+    GET_FUNC(glPointSizex);
+    GET_FUNC(glPolygonOffsetx);
+    GET_FUNC(glPopMatrix);
+    GET_FUNC(glPushMatrix);
+    GET_FUNC(glReadPixels);
+    GET_FUNC(glRotatex);
+    GET_FUNC(glSampleCoverage);
+    GET_FUNC(glSampleCoveragex);
+    GET_FUNC(glScalex);
+    GET_FUNC(glScissor);
+    GET_FUNC(glShadeModel);
+    GET_FUNC(glStencilFunc);
+    GET_FUNC(glStencilMask);
+    GET_FUNC(glStencilOp);
+    GET_FUNC(glTexCoordPointer);
+    GET_FUNC(glTexEnvi);
+    GET_FUNC(glTexEnvx);
+    GET_FUNC(glTexEnviv);
+    GET_FUNC(glTexEnvxv);
+    GET_FUNC(glTexImage2D);
+    GET_FUNC(glTexParameteri);
+    GET_FUNC(glTexParameterx);
+    GET_FUNC(glTexParameteriv);
+    GET_FUNC(glTexParameterxv);
+    GET_FUNC(glTexSubImage2D);
+    GET_FUNC(glTranslatex);
+    GET_FUNC(glVertexPointer);
+    GET_FUNC(glViewport);
+    GET_FUNC(glPointSizePointerOES);
+}
+
 void
 my_glAlphaFunc(GLenum func, GLclampf ref)
 {
     WRAPPERS_DEBUG_PRINTF("glAlphaFunc()\n", func, ref);
-    glAlphaFunc(func, ref);
+    functions.glAlphaFunc(func, ref);
 }
 void
 my_glClearColor(GLclampf red, GLclampf green, GLclampf blue, GLclampf alpha)
 {
     WRAPPERS_DEBUG_PRINTF("glClearColor()\n", red, green, blue, alpha);
-    glClearColor(red, green, blue, alpha);
+    functions.glClearColor(red, green, blue, alpha);
 }
 void
 my_glClearDepthf(GLclampf depth)
 {
     WRAPPERS_DEBUG_PRINTF("glClearDepthf()\n", depth);
-    glClearDepthf(depth);
+    functions.glClearDepthf(depth);
 }
 void
 my_glClipPlanef(GLenum plane, const GLfloat *equation)
 {
     WRAPPERS_DEBUG_PRINTF("glClipPlanef()\n", plane, equation);
-    glClipPlanef(plane, equation);
+    functions.glClipPlanef(plane, equation);
 }
 void
 my_glColor4f(GLfloat red, GLfloat green, GLfloat blue, GLfloat alpha)
 {
     WRAPPERS_DEBUG_PRINTF("glColor4f()\n", red, green, blue, alpha);
-    glColor4f(red, green, blue, alpha);
+    functions.glColor4f(red, green, blue, alpha);
 }
 void
 my_glDepthRangef(GLclampf zNear, GLclampf zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glDepthRangef()\n", zNear, zFar);
-    glDepthRangef(zNear, zFar);
+    functions.glDepthRangef(zNear, zFar);
 }
 void
 my_glFogf(GLenum pname, GLfloat param)
 {
     WRAPPERS_DEBUG_PRINTF("glFogf()\n", pname, param);
-    glFogf(pname, param);
+    functions.glFogf(pname, param);
 }
 void
 my_glFogfv(GLenum pname, const GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glFogfv()\n", pname, params);
-    glFogfv(pname, params);
+    functions.glFogfv(pname, params);
 }
 void
 my_glFrustumf(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glFrustumf()\n", left, right, bottom, top, zNear, zFar);
-    glFrustumf(left, right, bottom, top, zNear, zFar);
+    functions.glFrustumf(left, right, bottom, top, zNear, zFar);
 }
 void
 my_glGetClipPlanef(GLenum pname, GLfloat eqn[4])
 {
     WRAPPERS_DEBUG_PRINTF("glGetClipPlanef()\n", pname, eqn);
-    glGetClipPlanef(pname, eqn);
+    functions.glGetClipPlanef(pname, eqn);
 }
 void
 my_glGetFloatv(GLenum pname, GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetFloatv()\n", pname, params);
-    glGetFloatv(pname, params);
+    functions.glGetFloatv(pname, params);
 }
 void
 my_glGetLightfv(GLenum light, GLenum pname, GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetLightfv()\n", light, pname, params);
-    glGetLightfv(light, pname, params);
+    functions.glGetLightfv(light, pname, params);
 }
 void
 my_glGetMaterialfv(GLenum face, GLenum pname, GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetMaterialfv()\n", face, pname, params);
-    glGetMaterialfv(face, pname, params);
+    functions.glGetMaterialfv(face, pname, params);
 }
 void
 my_glGetTexEnvfv(GLenum env, GLenum pname, GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexEnvfv()\n", env, pname, params);
-    glGetTexEnvfv(env, pname, params);
+    functions.glGetTexEnvfv(env, pname, params);
 }
 void
 my_glGetTexParameterfv(GLenum target, GLenum pname, GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexParameterfv()\n", target, pname, params);
-    glGetTexParameterfv(target, pname, params);
+    functions.glGetTexParameterfv(target, pname, params);
 }
 void
 my_glLightModelf(GLenum pname, GLfloat param)
 {
     WRAPPERS_DEBUG_PRINTF("glLightModelf()\n", pname, param);
-    glLightModelf(pname, param);
+    functions.glLightModelf(pname, param);
 }
 void
 my_glLightModelfv(GLenum pname, const GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glLightModelfv()\n", pname, params);
-    glLightModelfv(pname, params);
+    functions.glLightModelfv(pname, params);
 }
 void
 my_glLightf(GLenum light, GLenum pname, GLfloat param)
 {
     WRAPPERS_DEBUG_PRINTF("glLightf()\n", light, pname, param);
-    glLightf(light, pname, param);
+    functions.glLightf(light, pname, param);
 }
 void
 my_glLightfv(GLenum light, GLenum pname, const GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glLightfv()\n", light, pname, params);
-    glLightfv(light, pname, params);
+    functions.glLightfv(light, pname, params);
 }
 void
 my_glLineWidth(GLfloat width)
 {
     WRAPPERS_DEBUG_PRINTF("glLineWidth()\n", width);
-    glLineWidth(width);
+    functions.glLineWidth(width);
 }
 void
 my_glLoadMatrixf(const GLfloat *m)
 {
     WRAPPERS_DEBUG_PRINTF("glLoadMatrixf()\n", m);
     if (0 != global_module_hacks.gles_landscape_to_portrait && GL_PROJECTION == matrix_mode) {
-        glLoadIdentity();
-        glRotatef(90, 0, 0, 1);
-        glMultMatrixf(m);
+        functions.glLoadIdentity();
+        functions.glRotatef(90, 0, 0, 1);
+        functions.glMultMatrixf(m);
     }
     else {
-        glLoadMatrixf(m);
+        functions.glLoadMatrixf(m);
     }
 }
 void
 my_glMaterialf(GLenum face, GLenum pname, GLfloat param)
 {
     WRAPPERS_DEBUG_PRINTF("glMaterialf()\n", face, pname, param);
-    glMaterialf(face, pname, param);
+    functions.glMaterialf(face, pname, param);
 }
 void
 my_glMaterialfv(GLenum face, GLenum pname, const GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glMaterialfv()\n", face, pname, params);
-    glMaterialfv(face, pname, params);
+    functions.glMaterialfv(face, pname, params);
 }
 void
 my_glMultMatrixf(const GLfloat *m)
 {
     WRAPPERS_DEBUG_PRINTF("glMultMatrixf()\n", m);
-    glMultMatrixf(m);
+    functions.glMultMatrixf(m);
 }
 void
 my_glMultiTexCoord4f(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q)
 {
     WRAPPERS_DEBUG_PRINTF("glMultiTexCoord4f()\n", target, s, t, r, q);
-    glMultiTexCoord4f(target, s, t, r, q);
+    functions.glMultiTexCoord4f(target, s, t, r, q);
 }
 void
 my_glNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 {
     WRAPPERS_DEBUG_PRINTF("glNormal3f()\n", nx, ny, nz);
-    glNormal3f(nx, ny, nz);
+    functions.glNormal3f(nx, ny, nz);
 }
 void
 my_glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glOrthof()\n", left, right, bottom, top, zNear, zFar);
     if (global_module_hacks.gles_landscape_to_portrait!=0) {
-        glRotatef(90, 0, 0, 1);
+        functions.glRotatef(90, 0, 0, 1);
     }
-    glOrthof(left, right, bottom, top, zNear, zFar);
+    functions.glOrthof(left, right, bottom, top, zNear, zFar);
 }
 void
 my_glPointParameterf(GLenum pname, GLfloat param)
 {
     WRAPPERS_DEBUG_PRINTF("glPointParameterf()\n", pname, param);
-    glPointParameterf(pname, param);
+    functions.glPointParameterf(pname, param);
 }
 void
 my_glPointParameterfv(GLenum pname, const GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glPointParameterfv()\n", pname, params);
-    glPointParameterfv(pname, params);
+    functions.glPointParameterfv(pname, params);
 }
 void
 my_glPointSize(GLfloat size)
 {
     WRAPPERS_DEBUG_PRINTF("glPointSize()\n", size);
-    glPointSize(size);
+    functions.glPointSize(size);
 }
 void
 my_glPolygonOffset(GLfloat factor, GLfloat units)
 {
     WRAPPERS_DEBUG_PRINTF("glPolygonOffset()\n", factor, units);
-    glPolygonOffset(factor, units);
+    functions.glPolygonOffset(factor, units);
 }
 void
 my_glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 {
     WRAPPERS_DEBUG_PRINTF("glRotatef()\n", angle, x, y, z);
-    glRotatef(angle, x, y, z);
+    functions.glRotatef(angle, x, y, z);
 }
 void
 my_glScalef(GLfloat x, GLfloat y, GLfloat z)
 {
     WRAPPERS_DEBUG_PRINTF("glScalef()\n", x, y, z);
-    glScalef(x, y, z);
+    functions.glScalef(x, y, z);
 }
 void
 my_glTexEnvf(GLenum target, GLenum pname, GLfloat param)
 {
     WRAPPERS_DEBUG_PRINTF("glTexEnvf()\n", target, pname, param);
-    glTexEnvf(target, pname, param);
+    functions.glTexEnvf(target, pname, param);
 }
 void
 my_glTexEnvfv(GLenum target, GLenum pname, const GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glTexEnvfv()\n", target, pname, params);
-    glTexEnvfv(target, pname, params);
+    functions.glTexEnvfv(target, pname, params);
 }
 void
 my_glTexParameterf(GLenum target, GLenum pname, GLfloat param)
 {
     WRAPPERS_DEBUG_PRINTF("glTexParameterf()\n", target, pname, param);
-    glTexParameterf(target, pname, param);
+    functions.glTexParameterf(target, pname, param);
 }
 void
 my_glTexParameterfv(GLenum target, GLenum pname, const GLfloat *params)
 {
     WRAPPERS_DEBUG_PRINTF("glTexParameterfv()\n", target, pname, params);
-    glTexParameterfv(target, pname, params);
+    functions.glTexParameterfv(target, pname, params);
 }
 void
 my_glTranslatef(GLfloat x, GLfloat y, GLfloat z)
 {
     WRAPPERS_DEBUG_PRINTF("glTranslatef()\n", x, y, z);
-    glTranslatef(x, y, z);
+    functions.glTranslatef(x, y, z);
 }
 void
 my_glActiveTexture(GLenum texture)
 {
     WRAPPERS_DEBUG_PRINTF("glActiveTexture()\n", texture);
-    glActiveTexture(texture);
+    functions.glActiveTexture(texture);
 }
 void
 my_glAlphaFuncx(GLenum func, GLclampx ref)
 {
     WRAPPERS_DEBUG_PRINTF("glAlphaFuncx()\n", func, ref);
-    glAlphaFuncx(func, ref);
+    functions.glAlphaFuncx(func, ref);
 }
 void
 my_glBindBuffer(GLenum target, GLuint buffer)
 {
     WRAPPERS_DEBUG_PRINTF("glBindBuffer()\n", target, buffer);
-    glBindBuffer(target, buffer);
+    functions.glBindBuffer(target, buffer);
 }
 void
 my_glBindTexture(GLenum target, GLuint texture)
 {
     WRAPPERS_DEBUG_PRINTF("glBindTexture()\n", target, texture);
-    glBindTexture(target, texture);
+    functions.glBindTexture(target, texture);
 }
 void
 my_glBlendFunc(GLenum sfactor, GLenum dfactor)
 {
     WRAPPERS_DEBUG_PRINTF("glBlendFunc()\n", sfactor, dfactor);
-    glBlendFunc(sfactor, dfactor);
+    functions.glBlendFunc(sfactor, dfactor);
 }
 void
 my_glBufferData(GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage)
 {
     WRAPPERS_DEBUG_PRINTF("glBufferData()\n", target, size, data, usage);
-    glBufferData(target, size, data, usage);
+    functions.glBufferData(target, size, data, usage);
 }
 void
 my_glBufferSubData(GLenum target, GLintptr offset, GLsizeiptr size, const GLvoid *data)
 {
     WRAPPERS_DEBUG_PRINTF("glBufferSubData()\n", target, offset, size, data);
-    glBufferSubData(target, offset, size, data);
+    functions.glBufferSubData(target, offset, size, data);
 }
 void
 my_glClear(GLbitfield mask)
 {
     WRAPPERS_DEBUG_PRINTF("glClear()\n", mask);
-    glClear(mask);
+    functions.glClear(mask);
 }
 void
 my_glClearColorx(GLclampx red, GLclampx green, GLclampx blue, GLclampx alpha)
 {
     WRAPPERS_DEBUG_PRINTF("glClearColorx()\n", red, green, blue, alpha);
-    glClearColorx(red, green, blue, alpha);
+    functions.glClearColorx(red, green, blue, alpha);
 }
 void
 my_glClearDepthx(GLclampx depth)
 {
     WRAPPERS_DEBUG_PRINTF("glClearDepthx()\n", depth);
-    glClearDepthx(depth);
+    functions.glClearDepthx(depth);
 }
 void
 my_glClearStencil(GLint s)
 {
     WRAPPERS_DEBUG_PRINTF("glClearStencil()\n", s);
-    glClearStencil(s);
+    functions.glClearStencil(s);
 }
 void
 my_glClientActiveTexture(GLenum texture)
 {
     WRAPPERS_DEBUG_PRINTF("glClientActiveTexture()\n", texture);
-    glClientActiveTexture(texture);
+    functions.glClientActiveTexture(texture);
 }
 void
 my_glClipPlanex(GLenum plane, const GLfixed *equation)
 {
     WRAPPERS_DEBUG_PRINTF("glClipPlanex()\n", plane, equation);
-    glClipPlanex(plane, equation);
+    functions.glClipPlanex(plane, equation);
 }
 void
 my_glColor4ub(GLubyte red, GLubyte green, GLubyte blue, GLubyte alpha)
 {
     WRAPPERS_DEBUG_PRINTF("glColor4ub()\n", red, green, blue, alpha);
-    glColor4ub(red, green, blue, alpha);
+    functions.glColor4ub(red, green, blue, alpha);
 }
 void
 my_glColor4x(GLfixed red, GLfixed green, GLfixed blue, GLfixed alpha)
 {
     WRAPPERS_DEBUG_PRINTF("glColor4x()\n", red, green, blue, alpha);
-    glColor4x(red, green, blue, alpha);
+    functions.glColor4x(red, green, blue, alpha);
 }
 void
 my_glColorMask(GLboolean red, GLboolean green, GLboolean blue, GLboolean alpha)
 {
     WRAPPERS_DEBUG_PRINTF("glColorMask()\n", red, green, blue, alpha);
-    glColorMask(red, green, blue, alpha);
+    functions.glColorMask(red, green, blue, alpha);
 }
 void
 my_glColorPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
     WRAPPERS_DEBUG_PRINTF("glColorPointer()\n", size, type, stride, pointer);
-    glColorPointer(size, type, stride, pointer);
+    functions.glColorPointer(size, type, stride, pointer);
 }
 void
 my_glCompressedTexImage2D(GLenum target, GLint level, GLenum internalformat, GLsizei width, GLsizei height, GLint border, GLsizei imageSize, const GLvoid *data)
 {
     WRAPPERS_DEBUG_PRINTF("glCompressedTexImage2D()\n", target, level, internalformat, width, height, border, imageSize, data);
-    glCompressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
+    functions.glCompressedTexImage2D(target, level, internalformat, width, height, border, imageSize, data);
 }
 void
 my_glCompressedTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLsizei imageSize, const GLvoid *data)
 {
     WRAPPERS_DEBUG_PRINTF("glCompressedTexSubImage2D()\n", target, level, xoffset, yoffset, width, height, format, imageSize, data);
-    glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
+    functions.glCompressedTexSubImage2D(target, level, xoffset, yoffset, width, height, format, imageSize, data);
 }
 void
 my_glCopyTexImage2D(GLenum target, GLint level, GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height, GLint border)
 {
     WRAPPERS_DEBUG_PRINTF("glCopyTexImage2D()\n", target, level, internalformat, x, y, width, height, border);
-    glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
+    functions.glCopyTexImage2D(target, level, internalformat, x, y, width, height, border);
 }
 void
 my_glCopyTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLint x, GLint y, GLsizei width, GLsizei height)
 {
     WRAPPERS_DEBUG_PRINTF("glCopyTexSubImage2D()\n", target, level, xoffset, yoffset, x, y, width, height);
-    glCopyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height);
+    functions.glCopyTexSubImage2D(target, level, xoffset, yoffset, x, y, width, height);
 }
 void
 my_glCullFace(GLenum mode)
 {
     WRAPPERS_DEBUG_PRINTF("glCullFace()\n", mode);
-    glCullFace(mode);
+    functions.glCullFace(mode);
 }
 void
 my_glDeleteBuffers(GLsizei n, const GLuint *buffers)
 {
     WRAPPERS_DEBUG_PRINTF("glDeleteBuffers()\n", n, buffers);
-    glDeleteBuffers(n, buffers);
+    functions.glDeleteBuffers(n, buffers);
 }
 void
 my_glDeleteTextures(GLsizei n, const GLuint *textures)
 {
     WRAPPERS_DEBUG_PRINTF("glDeleteTextures()\n", n, textures);
-    glDeleteTextures(n, textures);
+    functions.glDeleteTextures(n, textures);
 }
 void
 my_glDepthFunc(GLenum func)
 {
     WRAPPERS_DEBUG_PRINTF("glDepthFunc()\n", func);
-    glDepthFunc(func);
+    functions.glDepthFunc(func);
 }
 void
 my_glDepthMask(GLboolean flag)
 {
     WRAPPERS_DEBUG_PRINTF("glDepthMask()\n", flag);
-    glDepthMask(flag);
+    functions.glDepthMask(flag);
 }
 void
 my_glDepthRangex(GLclampx zNear, GLclampx zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glDepthRangex()\n", zNear, zFar);
-    glDepthRangex(zNear, zFar);
+    functions.glDepthRangex(zNear, zFar);
 }
 void
 my_glDisable(GLenum cap)
 {
     WRAPPERS_DEBUG_PRINTF("glDisable()\n", cap);
-    glDisable(cap);
+    functions.glDisable(cap);
 }
 void
 my_glDisableClientState(GLenum array)
 {
     WRAPPERS_DEBUG_PRINTF("glDisableClientState()\n", array);
-    glDisableClientState(array);
+    functions.glDisableClientState(array);
 }
 void
 my_glDrawArrays(GLenum mode, GLint first, GLsizei count)
 {
     WRAPPERS_DEBUG_PRINTF("glDrawArrays()\n", mode, first, count);
-    glDrawArrays(mode, first, count);
+    functions.glDrawArrays(mode, first, count);
 }
 void
 my_glDrawElements(GLenum mode, GLsizei count, GLenum type, const GLvoid *indices)
 {
     WRAPPERS_DEBUG_PRINTF("glDrawElements(%d, %d, %d, %p)\n", mode, count, type, indices);
-    glDrawElements(mode, count, type, indices);
+    functions.glDrawElements(mode, count, type, indices);
 }
 void
 my_glEnable(GLenum cap)
 {
     WRAPPERS_DEBUG_PRINTF("glEnable()\n", cap);
-    glEnable(cap);
+    functions.glEnable(cap);
 }
 void
 my_glEnableClientState(GLenum array)
 {
     WRAPPERS_DEBUG_PRINTF("glEnableClientState(0x%x)\n", array);
-    glEnableClientState(array);
+    functions.glEnableClientState(array);
 }
 void
 my_glFinish()
 {
     WRAPPERS_DEBUG_PRINTF("glFinish()\n");
-    glFinish();
+    functions.glFinish();
 }
 void
 my_glFlush()
 {
     WRAPPERS_DEBUG_PRINTF("glFlush()\n");
-    glFlush();
+    functions.glFlush();
 }
 void
 my_glFogx(GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glFogx()\n", pname, param);
-    glFogx(pname, param);
+    functions.glFogx(pname, param);
 }
 void
 my_glFogxv(GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glFogxv()\n", pname, params);
-    glFogxv(pname, params);
+    functions.glFogxv(pname, params);
 }
 void
 my_glFrontFace(GLenum mode)
 {
     WRAPPERS_DEBUG_PRINTF("glFrontFace()\n", mode);
-    glFrontFace(mode);
+    functions.glFrontFace(mode);
 }
 void
 my_glFrustumx(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed zNear, GLfixed zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glFrustumx()\n", left, right, bottom, top, zNear, zFar);
-    glFrustumx(left, right, bottom, top, zNear, zFar);
+    functions.glFrustumx(left, right, bottom, top, zNear, zFar);
 }
 void
 my_glGetBooleanv(GLenum pname, GLboolean *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetBooleanv()\n", pname, params);
-    glGetBooleanv(pname, params);
+    functions.glGetBooleanv(pname, params);
 }
 void
 my_glGetBufferParameteriv(GLenum target, GLenum pname, GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetBufferParameteriv()\n", target, pname, params);
-    glGetBufferParameteriv(target, pname, params);
+    functions.glGetBufferParameteriv(target, pname, params);
 }
 void
 my_glGetClipPlanex(GLenum pname, GLfixed eqn[4])
 {
     WRAPPERS_DEBUG_PRINTF("glGetClipPlanex()\n", pname, eqn);
-    glGetClipPlanex(pname, eqn);
+    functions.glGetClipPlanex(pname, eqn);
 }
 void
 my_glGenBuffers(GLsizei n, GLuint *buffers)
 {
     WRAPPERS_DEBUG_PRINTF("glGenBuffers()\n", n, buffers);
-    glGenBuffers(n, buffers);
+    functions.glGenBuffers(n, buffers);
 }
 void
 my_glGenTextures(GLsizei n, GLuint *textures)
 {
     WRAPPERS_DEBUG_PRINTF("glGenTextures()\n", n, textures);
-    glGenTextures(n, textures);
+    functions.glGenTextures(n, textures);
 }
 GLenum
 my_glGetError()
 {
     WRAPPERS_DEBUG_PRINTF("glGetError()\n");
-    return glGetError();
+    return functions.glGetError();
 }
 void
 my_glGetFixedv(GLenum pname, GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetFixedv()\n", pname, params);
-    glGetFixedv(pname, params);
+    functions.glGetFixedv(pname, params);
 }
 void
 my_glGetIntegerv(GLenum pname, GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetIntegerv()\n", pname, params);
-    glGetIntegerv(pname, params);
+    functions.glGetIntegerv(pname, params);
 }
 void
 my_glGetLightxv(GLenum light, GLenum pname, GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetLightxv()\n", light, pname, params);
-    glGetLightxv(light, pname, params);
+    functions.glGetLightxv(light, pname, params);
 }
 void
 my_glGetMaterialxv(GLenum face, GLenum pname, GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetMaterialxv()\n", face, pname, params);
-    glGetMaterialxv(face, pname, params);
+    functions.glGetMaterialxv(face, pname, params);
 }
 void
 my_glGetPointerv(GLenum pname, void **params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetPointerv()\n", pname, params);
-    glGetPointerv(pname, params);
+    functions.glGetPointerv(pname, params);
 }
 const GLubyte *
 my_glGetString(GLenum name)
 {
-    WRAPPERS_DEBUG_PRINTF("glGetString()\n", name);
-    return glGetString(name);
+    WRAPPERS_DEBUG_PRINTF("glGetString(%d)\n", name);
+    return functions.glGetString(name);
 }
 void
 my_glGetTexEnviv(GLenum env, GLenum pname, GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexEnviv()\n", env, pname, params);
-    glGetTexEnviv(env, pname, params);
+    functions.glGetTexEnviv(env, pname, params);
 }
 void
 my_glGetTexEnvxv(GLenum env, GLenum pname, GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexEnvxv()\n", env, pname, params);
-    glGetTexEnvxv(env, pname, params);
+    functions.glGetTexEnvxv(env, pname, params);
 }
 void
 my_glGetTexParameteriv(GLenum target, GLenum pname, GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexParameteriv()\n", target, pname, params);
-    glGetTexParameteriv(target, pname, params);
+    functions.glGetTexParameteriv(target, pname, params);
 }
 void
 my_glGetTexParameterxv(GLenum target, GLenum pname, GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glGetTexParameterxv()\n", target, pname, params);
-    glGetTexParameterxv(target, pname, params);
+    functions.glGetTexParameterxv(target, pname, params);
 }
 void
 my_glHint(GLenum target, GLenum mode)
 {
     WRAPPERS_DEBUG_PRINTF("glHint()\n", target, mode);
-    glHint(target, mode);
+    functions.glHint(target, mode);
 }
 GLboolean
 my_glIsBuffer(GLuint buffer)
 {
     WRAPPERS_DEBUG_PRINTF("glIsBuffer()\n", buffer);
-    return glIsBuffer(buffer);
+    return functions.glIsBuffer(buffer);
 }
 GLboolean
 my_glIsEnabled(GLenum cap)
 {
     WRAPPERS_DEBUG_PRINTF("glIsEnabled()\n", cap);
-    return glIsEnabled(cap);
+    return functions.glIsEnabled(cap);
 }
 GLboolean
 my_glIsTexture(GLuint texture)
 {
     WRAPPERS_DEBUG_PRINTF("glIsTexture()\n", texture);
-    return glIsTexture(texture);
+    return functions.glIsTexture(texture);
 }
 void
 my_glLightModelx(GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glLightModelx()\n", pname, param);
-    glLightModelx(pname, param);
+    functions.glLightModelx(pname, param);
 }
 void
 my_glLightModelxv(GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glLightModelxv()\n", pname, params);
-    glLightModelxv(pname, params);
+    functions.glLightModelxv(pname, params);
 }
 void
 my_glLightx(GLenum light, GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glLightx()\n", light, pname, param);
-    glLightx(light, pname, param);
+    functions.glLightx(light, pname, param);
 }
 void
 my_glLightxv(GLenum light, GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glLightxv()\n", light, pname, params);
-    glLightxv(light, pname, params);
+    functions.glLightxv(light, pname, params);
 }
 void
 my_glLineWidthx(GLfixed width)
 {
     WRAPPERS_DEBUG_PRINTF("glLineWidthx()\n", width);
-    glLineWidthx(width);
+    functions.glLineWidthx(width);
 }
 void
 my_glLoadIdentity()
 {
     WRAPPERS_DEBUG_PRINTF("glLoadIdentity()\n");
-    glLoadIdentity();
+    functions.glLoadIdentity();
 }
 void
 my_glLoadMatrixx(const GLfixed *m)
 {
     WRAPPERS_DEBUG_PRINTF("glLoadMatrixx()\n", m);
     if (0 != global_module_hacks.gles_landscape_to_portrait && GL_PROJECTION == matrix_mode) {
-        glLoadIdentity();
-        glRotatex(90<<16, 0, 0, 1<<16);
-        glMultMatrixx(m);
+        functions.glLoadIdentity();
+        functions.glRotatex(90<<16, 0, 0, 1<<16);
+        functions.glMultMatrixx(m);
     }
     else {
-        glLoadMatrixx(m);
+        functions.glLoadMatrixx(m);
     }
 }
 void
 my_glLogicOp(GLenum opcode)
 {
     WRAPPERS_DEBUG_PRINTF("glLogicOp()\n", opcode);
-    glLogicOp(opcode);
+    functions.glLogicOp(opcode);
 }
 void
 my_glMaterialx(GLenum face, GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glMaterialx()\n", face, pname, param);
-    glMaterialx(face, pname, param);
+    functions.glMaterialx(face, pname, param);
 }
 void
 my_glMaterialxv(GLenum face, GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glMaterialxv()\n", face, pname, params);
-    glMaterialxv(face, pname, params);
+    functions.glMaterialxv(face, pname, params);
 }
 void
 my_glMatrixMode(GLenum mode)
 {
     WRAPPERS_DEBUG_PRINTF("glMatrixMode()\n", mode);
     matrix_mode = mode;
-    glMatrixMode(mode);
+    functions.glMatrixMode(mode);
 }
 void
 my_glMultMatrixx(const GLfixed *m)
 {
     WRAPPERS_DEBUG_PRINTF("glMultMatrixx()\n", m);
-    glMultMatrixx(m);
+    functions.glMultMatrixx(m);
 }
 void
 my_glMultiTexCoord4x(GLenum target, GLfixed s, GLfixed t, GLfixed r, GLfixed q)
 {
     WRAPPERS_DEBUG_PRINTF("glMultiTexCoord4x()\n", target, s, t, r, q);
-    glMultiTexCoord4x(target, s, t, r, q);
+    functions.glMultiTexCoord4x(target, s, t, r, q);
 }
 void
 my_glNormal3x(GLfixed nx, GLfixed ny, GLfixed nz)
 {
     WRAPPERS_DEBUG_PRINTF("glNormal3x()\n", nx, ny, nz);
-    glNormal3x(nx, ny, nz);
+    functions.glNormal3x(nx, ny, nz);
 }
 void
 my_glNormalPointer(GLenum type, GLsizei stride, const GLvoid *pointer)
 {
     WRAPPERS_DEBUG_PRINTF("glNormalPointer()\n", type, stride, pointer);
-    glNormalPointer(type, stride, pointer);
+    functions.glNormalPointer(type, stride, pointer);
 }
 void
 my_glOrthox(GLfixed left, GLfixed right, GLfixed bottom, GLfixed top, GLfixed zNear, GLfixed zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glOrthox()\n", left, right, bottom, top, zNear, zFar);
-    glOrthox(left, right, bottom, top, zNear, zFar);
+    functions.glOrthox(left, right, bottom, top, zNear, zFar);
 }
 void
 my_glPixelStorei(GLenum pname, GLint param)
 {
     WRAPPERS_DEBUG_PRINTF("glPixelStorei()\n", pname, param);
-    glPixelStorei(pname, param);
+    functions.glPixelStorei(pname, param);
 }
 void
 my_glPointParameterx(GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glPointParameterx()\n", pname, param);
-    glPointParameterx(pname, param);
+    functions.glPointParameterx(pname, param);
 }
 void
 my_glPointParameterxv(GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glPointParameterxv()\n", pname, params);
-    glPointParameterxv(pname, params);
+    functions.glPointParameterxv(pname, params);
 }
 void
 my_glPointSizex(GLfixed size)
 {
     WRAPPERS_DEBUG_PRINTF("glPointSizex()\n", size);
-    glPointSizex(size);
+    functions.glPointSizex(size);
 }
 void
 my_glPolygonOffsetx(GLfixed factor, GLfixed units)
 {
     WRAPPERS_DEBUG_PRINTF("glPolygonOffsetx()\n", factor, units);
-    glPolygonOffsetx(factor, units);
+    functions.glPolygonOffsetx(factor, units);
 }
 void
 my_glPopMatrix()
 {
     WRAPPERS_DEBUG_PRINTF("glPopMatrix()\n");
-    glPopMatrix();
+    functions.glPopMatrix();
 }
 void
 my_glPushMatrix()
 {
     WRAPPERS_DEBUG_PRINTF("glPushMatrix()\n");
-    glPushMatrix();
+    functions.glPushMatrix();
 }
 void
 my_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, GLvoid *pixels)
 {
     WRAPPERS_DEBUG_PRINTF("glReadPixels(%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", x, y, width, height, format, type, pixels);
     if (global_module_hacks.gles_no_readpixels==0)
-        glReadPixels(x, y, width, height, format, type, pixels);
+        functions.glReadPixels(x, y, width, height, format, type, pixels);
 }
 void
 my_glRotatex(GLfixed angle, GLfixed x, GLfixed y, GLfixed z)
 {
     WRAPPERS_DEBUG_PRINTF("glRotatex()\n", angle, x, y, z);
-    glRotatex(angle, x, y, z);
+    functions.glRotatex(angle, x, y, z);
 }
 void
 my_glSampleCoverage(GLclampf value, GLboolean invert)
 {
     WRAPPERS_DEBUG_PRINTF("glSampleCoverage()\n", value, invert);
-    glSampleCoverage(value, invert);
+    functions.glSampleCoverage(value, invert);
 }
 void
 my_glSampleCoveragex(GLclampx value, GLboolean invert)
 {
     WRAPPERS_DEBUG_PRINTF("glSampleCoveragex()\n", value, invert);
-    glSampleCoveragex(value, invert);
+    functions.glSampleCoveragex(value, invert);
 }
 void
 my_glScalex(GLfixed x, GLfixed y, GLfixed z)
 {
     WRAPPERS_DEBUG_PRINTF("glScalex()\n", x, y, z);
-    glScalex(x, y, z);
+    functions.glScalex(x, y, z);
 }
 void
 my_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
 {
     WRAPPERS_DEBUG_PRINTF("glScissor()\n", x, y, width, height);
-    glScissor(x, y, width, height);
+    functions.glScissor(x, y, width, height);
 }
 void
 my_glShadeModel(GLenum mode)
 {
     WRAPPERS_DEBUG_PRINTF("glShadeModel()\n", mode);
-    glShadeModel(mode);
+    functions.glShadeModel(mode);
 }
 void
 my_glStencilFunc(GLenum func, GLint ref, GLuint mask)
 {
     WRAPPERS_DEBUG_PRINTF("glStencilFunc()\n", func, ref, mask);
-    glStencilFunc(func, ref, mask);
+    functions.glStencilFunc(func, ref, mask);
 }
 void
 my_glStencilMask(GLuint mask)
 {
     WRAPPERS_DEBUG_PRINTF("glStencilMask()\n", mask);
-    glStencilMask(mask);
+    functions.glStencilMask(mask);
 }
 void
 my_glStencilOp(GLenum fail, GLenum zfail, GLenum zpass)
 {
     WRAPPERS_DEBUG_PRINTF("glStencilOp()\n", fail, zfail, zpass);
-    glStencilOp(fail, zfail, zpass);
+    functions.glStencilOp(fail, zfail, zpass);
 }
 void
 my_glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
     WRAPPERS_DEBUG_PRINTF("glTexCoordPointer()\n", size, type, stride, pointer);
-    glTexCoordPointer(size, type, stride, pointer);
+    functions.glTexCoordPointer(size, type, stride, pointer);
 }
 void
 my_glTexEnvi(GLenum target, GLenum pname, GLint param)
 {
     WRAPPERS_DEBUG_PRINTF("glTexEnvi()\n", target, pname, param);
-    glTexEnvi(target, pname, param);
+    functions.glTexEnvi(target, pname, param);
 }
 void
 my_glTexEnvx(GLenum target, GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glTexEnvx()\n", target, pname, param);
-    glTexEnvx(target, pname, param);
+    functions.glTexEnvx(target, pname, param);
 }
 void
 my_glTexEnviv(GLenum target, GLenum pname, const GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glTexEnviv()\n", target, pname, params);
-    glTexEnviv(target, pname, params);
+    functions.glTexEnviv(target, pname, params);
 }
 void
 my_glTexEnvxv(GLenum target, GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glTexEnvxv()\n", target, pname, params);
-    glTexEnvxv(target, pname, params);
+    functions.glTexEnvxv(target, pname, params);
 }
 void
 my_glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels)
 {
     int maxsize = 0;
-    glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxsize);
+    functions.glGetIntegerv(GL_MAX_TEXTURE_SIZE,&maxsize);
 
     int downscale = global_module_hacks.gles_downscale_images && (width>=maxsize || height>=maxsize);
 
@@ -938,7 +1248,7 @@ my_glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width,
         }
 
         WRAPPERS_DEBUG_PRINTF("downscale/glTexImage2D(0x%x,%d,%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", target, level, internalformat, width, height, border, format, type, pixels);
-        glTexImage2D(target, level, internalformat, width>>1, height>>1, border, format, type, downsized);
+        functions.glTexImage2D(target, level, internalformat, width>>1, height>>1, border, format, type, downsized);
         free(downsized);
     }
     else
@@ -961,7 +1271,7 @@ my_glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width,
             }
         }
         WRAPPERS_DEBUG_PRINTF("downscale/glTexImage2D(0x%x,%d,%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", target, level, internalformat, width, height, border, format, type, pixels);
-        glTexImage2D(target, level, internalformat, width>>1, height>>1, border, format, type, downsized);
+        functions.glTexImage2D(target, level, internalformat, width>>1, height>>1, border, format, type, downsized);
         free(downsized);
     }
     else
@@ -971,59 +1281,59 @@ my_glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width,
         else
             WRAPPERS_DEBUG_PRINTF("glTexImage2D(0x%x,%d,%d,%d,%d,%d,0x%x,0x%x,0x%x)\n", target, level, internalformat, width, height, border, format, type, pixels);
 
-        glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
+        functions.glTexImage2D(target, level, internalformat, width, height, border, format, type, pixels);
     }
 }
 void
 my_glTexParameteri(GLenum target, GLenum pname, GLint param)
 {
     WRAPPERS_DEBUG_PRINTF("glTexParameteri()\n", target, pname, param);
-    glTexParameteri(target, pname, param);
+    functions.glTexParameteri(target, pname, param);
 }
 void
 my_glTexParameterx(GLenum target, GLenum pname, GLfixed param)
 {
     WRAPPERS_DEBUG_PRINTF("glTexParameterx()\n", target, pname, param);
-    glTexParameterx(target, pname, param);
+    functions.glTexParameterx(target, pname, param);
 }
 void
 my_glTexParameteriv(GLenum target, GLenum pname, const GLint *params)
 {
     WRAPPERS_DEBUG_PRINTF("glTexParameteriv()\n", target, pname, params);
-    glTexParameteriv(target, pname, params);
+    functions.glTexParameteriv(target, pname, params);
 }
 void
 my_glTexParameterxv(GLenum target, GLenum pname, const GLfixed *params)
 {
     WRAPPERS_DEBUG_PRINTF("glTexParameterxv()\n", target, pname, params);
-    glTexParameterxv(target, pname, params);
+    functions.glTexParameterxv(target, pname, params);
 }
 void
 my_glTexSubImage2D(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels)
 {
     WRAPPERS_DEBUG_PRINTF("glTexSubImage2D()\n", target, level, xoffset, yoffset, width, height, format, type, pixels);
-    glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
+    functions.glTexSubImage2D(target, level, xoffset, yoffset, width, height, format, type, pixels);
 }
 void
 my_glTranslatex(GLfixed x, GLfixed y, GLfixed z)
 {
     WRAPPERS_DEBUG_PRINTF("glTranslatex()\n", x, y, z);
-    glTranslatex(x, y, z);
+    functions.glTranslatex(x, y, z);
 }
 void
 my_glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
     WRAPPERS_DEBUG_PRINTF("glVertexPointer()\n", size, type, stride, pointer);
-    glVertexPointer(size, type, stride, pointer);
+    functions.glVertexPointer(size, type, stride, pointer);
 }
 void
 my_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
     WRAPPERS_DEBUG_PRINTF("glViewport(%d, %d, %d, %d)\n", x, y, width, height);
     if (global_module_hacks.gles_landscape_to_portrait!=0) {
-        glViewport(y, x, height, width);
+        functions.glViewport(y, x, height, width);
     } else {
-        glViewport(x, y, width, height);
+        functions.glViewport(x, y, width, height);
     }
 }
 void
