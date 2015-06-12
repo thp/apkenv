@@ -657,6 +657,8 @@ int main(int argc, char **argv)
     lib->next = 0;
 
     struct SharedLibrary *shlib = shlibs;
+    struct JniLibrary *prev = NULL;
+
     while (shlib!=0) {
         const char *basename = strrchr(shlib->filename, '/');
         if (basename++ == NULL)
@@ -666,6 +668,13 @@ int main(int argc, char **argv)
                 break;
         if (libblacklist[ilib] != NULL) {
             shlib = shlib->next;
+            if(shlib == 0) {
+                if(prev != NULL) {
+                    prev->next = 0;
+                }
+                free(lib);
+                break;
+            }
             continue;
         }
         apkenv_add_sopath(shlib->dirname);
@@ -680,6 +689,7 @@ int main(int argc, char **argv)
         shlib = shlib->next;
         if (shlib!=0) {
             lib->next = malloc(sizeof(struct JniLibrary));
+            prev = lib;
             lib = lib->next;
             lib->next = 0;
         }
