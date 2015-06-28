@@ -216,7 +216,10 @@ play_sound(const char *filename, int loop, double volume)
         apkenv_mixer_stop_music(sound->music);
         active_music = sound->music;
         apkenv_mixer_volume_music(sound->music, volume);
+        /* workaround, until we fix it */
+#ifndef PLATFORM_SAILFISH
         apkenv_mixer_play_music(sound->music, loop);
+#endif
     }
     return sound;
 }

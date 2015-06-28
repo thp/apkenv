@@ -19,6 +19,10 @@ V ?= 0
 # Default linker flags
 LDFLAGS += -fPIC -rdynamic -pthread -ldl -lz -lpng -ljpeg
 
+# world of goo workaround
+ifeq ($(PLATFORM),sailfish)
+	CFLAGS += -DPLATFORM_SAILFISH
+endif
 
 ifeq ($(LATEHOOKS),1)
     CFLAGS += -DAPKENV_LATEHOOKS
