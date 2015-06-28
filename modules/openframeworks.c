@@ -308,11 +308,19 @@ openframeworks_init(struct SupportModule *self, int width, int height, const cha
     struct stat st;
 
     GLOBAL_M->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+    GLOBAL_M->module_hacks->gles_viewport_hack = 1;
 
     openframeworks_priv.app_name = GLOBAL_M->lookup_resource("app_name");
     openframeworks_priv.home = strdup(home);
-    openframeworks_priv.w = width;
-    openframeworks_priv.h = height;
+    if(GLOBAL_M->platform->get_orientation() == ORIENTATION_PORTRAIT) {
+        GLOBAL_M->module_hacks->gles_scale = 1;
+        openframeworks_priv.w = height;
+        openframeworks_priv.h = width;
+    }
+    else {
+        openframeworks_priv.w = width;
+        openframeworks_priv.h = height;
+    }
 
     if (strcmp(openframeworks_priv.app_name, "Super Hexagon") == 0) {
         /* do SuperHexagonSplash's work */
@@ -330,7 +338,7 @@ openframeworks_init(struct SupportModule *self, int width, int height, const cha
         GLOBAL_M->env->NewStringUTF(ENV_M, home),
         GLOBAL_M->env->NewStringUTF(ENV_M, openframeworks_priv.app_name));
     self->priv->init(ENV_M, GLOBAL_M);
-    self->priv->setup(ENV_M, GLOBAL_M, width, height);
+    self->priv->setup(ENV_M, GLOBAL_M, openframeworks_priv.w, openframeworks_priv.h);
     self->priv->onPause(ENV_M, GLOBAL_M); // must pause for resume to work
     openframeworks_resume(self);
 }

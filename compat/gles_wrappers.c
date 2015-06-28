@@ -614,8 +614,16 @@ my_glRotatef(GLfloat angle, GLfloat x, GLfloat y, GLfloat z)
 void
 my_glScalef(GLfloat x, GLfloat y, GLfloat z)
 {
-    WRAPPERS_DEBUG_PRINTF("glScalef()\n", x, y, z);
-    functions.glScalef(x, y, z);
+     WRAPPERS_DEBUG_PRINTF("glScalef()\n", x, y, z);
+    if(global_module_hacks.gles_scale) {
+        int width, height;
+        global.platform->get_size(&width, &height);
+        GLfloat aspect_ratio = (GLfloat)width / (GLfloat)height;
+        functions.glScalef(x*aspect_ratio, y/aspect_ratio, z);
+    }
+    else {
+        functions.glScalef(x, y, z);
+    }
 }
 void
 my_glTexEnvf(GLenum target, GLenum pname, GLfloat param)
