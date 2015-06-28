@@ -166,13 +166,13 @@ load_sound(const char *filename)
         return;
 
     sound->filename = strdup(filename);
-    apkenv_mixer_set_sound_channel(sound->chunk, -1);
     mem = (const char *)worldofgoo_priv.apk_in_mem + zip_index->offset;
     if (strstr(filename, "music/") != NULL) {
         sound->music = apkenv_mixer_load_music_buffer((void*)mem, zip_index->length);
         loaded = (sound->music != NULL);
     } else {
         sound->chunk = apkenv_mixer_load_sound_buffer((void*)mem, zip_index->length);
+        apkenv_mixer_set_sound_channel(sound->chunk, -1);
         if (sound->chunk != NULL) {
             loaded = 1;
             /* SDL_mixer can't resample 44100 to 32000 Hz :( */
