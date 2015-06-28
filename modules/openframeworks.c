@@ -202,7 +202,7 @@ hexagon_extract(const char *filename, char *buffer, size_t size)
 
     // XXX: could use internal unzip instead..
     snprintf(cmd, sizeof(cmd),
-        "t=$(tempfile); cat > $t; unzip $t -d \"%s\"; rm -f $t",
+        "t=tempfile; cat > $t; unzip $t -d \"%s\"; rm -f $t",
         openframeworks_priv.home);
     f = popen(cmd, "w");
     if (f == NULL) {
