@@ -57,6 +57,7 @@ struct ModuleHacks {
     int current_orientation;
     int gles_downscale_images;
     int gles_no_readpixels;
+    int gles_viewport_hack;
 };
 
 struct SupportModule {

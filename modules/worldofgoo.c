@@ -390,6 +390,7 @@ static void
 worldofgoo_init(struct SupportModule *self, int width, int height, const char *home)
 {
     GLOBAL_M->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+    GLOBAL_M->module_hacks->gles_viewport_hack = 1;
 
     self->priv->home_directory = home;
     self->priv->apk_in_mem = GLOBAL_M->apk_in_mem;
@@ -405,7 +406,12 @@ worldofgoo_init(struct SupportModule *self, int width, int height, const char *h
 
     self->priv->nativeOnCreate(ENV_M, GLOBAL_M, JNI_FALSE, JNI_TRUE, JNI_FALSE);
     self->priv->nativeOnSurfaceCreated(ENV_M, GLOBAL_M);
-    self->priv->nativeResize(ENV_M, GLOBAL_M, width, height);
+    if(GLOBAL_M->platform->get_orientation() == ORIENTATION_LANDSCAPE) {
+        self->priv->nativeResize(ENV_M, GLOBAL_M, width, height);
+    }
+    else {
+        self->priv->nativeResize(ENV_M, GLOBAL_M, height, width);
+    }
 }
 
 static void

@@ -16,6 +16,9 @@ int input_transform_x(int x, int y)
     /* no rotation hack for glesv2 */
     if(global.loader_seen_glesv2) return x;
 
+    /* custom rotation hack for world of goo */
+    if(global_module_hacks.gles_viewport_hack) return y;
+
     if(global_module_hacks.current_orientation != global.platform->get_orientation()) {
         if(global_module_hacks.current_orientation == ORIENTATION_LANDSCAPE) {
             return y * aspect_ratio;
@@ -38,6 +41,9 @@ int input_transform_y(int x, int y)
 
     /* no rotation hack for glesv2 */
     if(global.loader_seen_glesv2) return y;
+
+    /* custom rotation hack for world of goo */
+    if(global_module_hacks.gles_viewport_hack) return width - x;
 
     if(global_module_hacks.current_orientation != global.platform->get_orientation()) {
         if(global_module_hacks.current_orientation == ORIENTATION_LANDSCAPE) {
