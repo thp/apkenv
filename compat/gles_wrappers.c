@@ -1352,12 +1352,7 @@ void
 my_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
     WRAPPERS_DEBUG_PRINTF("glViewport(%d, %d, %d, %d)\n", x, y, width, height);
-    if(global.platform->get_orientation() != global_module_hacks.current_orientation) {
-        functions.glViewport(y, x, height, width);
-    }
-    else {
-        functions.glViewport(x, y, width, height);
-    }
+    functions.glViewport(x, y, width, height);
 }
 void
 my_glPointSizePointerOES(GLenum type, GLsizei stride, const GLvoid *pointer)
