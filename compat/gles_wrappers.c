@@ -554,7 +554,20 @@ void
 my_glMultMatrixf(const GLfloat *m)
 {
     WRAPPERS_DEBUG_PRINTF("glMultMatrixf()\n", m);
-    functions.glMultMatrixf(m);
+    if(matrix_mode == GL_PROJECTION && global.platform->get_orientation() != global_module_hacks.current_orientation) {
+        WRAPPERS_DEBUG_PRINTF("glMultMatrixf rotation hack\n");
+        if(global_module_hacks.current_orientation == ORIENTATION_LANDSCAPE) {
+            functions.glRotatef(270, 0, 0, 1);
+            functions.glMultMatrixf(m);
+        }
+        else {
+            functions.glRotatef(90, 0, 0, 1);
+            functions.glMultMatrixf(m);
+        }
+    }
+    else {
+        functions.glMultMatrixf(m);
+    }
 }
 void
 my_glMultiTexCoord4f(GLenum target, GLfloat s, GLfloat t, GLfloat r, GLfloat q)
