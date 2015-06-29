@@ -166,13 +166,13 @@ load_sound(const char *filename)
         return;
 
     sound->filename = strdup(filename);
-    apkenv_mixer_set_sound_channel(sound->chunk, -1);
     mem = (const char *)worldofgoo_priv.apk_in_mem + zip_index->offset;
     if (strstr(filename, "music/") != NULL) {
         sound->music = apkenv_mixer_load_music_buffer((void*)mem, zip_index->length);
         loaded = (sound->music != NULL);
     } else {
         sound->chunk = apkenv_mixer_load_sound_buffer((void*)mem, zip_index->length);
+        apkenv_mixer_set_sound_channel(sound->chunk, -1);
         if (sound->chunk != NULL) {
             loaded = 1;
             /* SDL_mixer can't resample 44100 to 32000 Hz :( */
@@ -216,7 +216,10 @@ play_sound(const char *filename, int loop, double volume)
         apkenv_mixer_stop_music(sound->music);
         active_music = sound->music;
         apkenv_mixer_volume_music(sound->music, volume);
+        /* workaround, until we fix it */
+#ifndef PLATFORM_SAILFISH
         apkenv_mixer_play_music(sound->music, loop);
+#endif
     }
     return sound;
 }
@@ -390,6 +393,7 @@ static void
 worldofgoo_init(struct SupportModule *self, int width, int height, const char *home)
 {
     GLOBAL_M->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+    GLOBAL_M->module_hacks->gles_viewport_hack = 1;
 
     self->priv->home_directory = home;
     self->priv->apk_in_mem = GLOBAL_M->apk_in_mem;
@@ -405,7 +409,12 @@ worldofgoo_init(struct SupportModule *self, int width, int height, const char *h
 
     self->priv->nativeOnCreate(ENV_M, GLOBAL_M, JNI_FALSE, JNI_TRUE, JNI_FALSE);
     self->priv->nativeOnSurfaceCreated(ENV_M, GLOBAL_M);
-    self->priv->nativeResize(ENV_M, GLOBAL_M, width, height);
+    if(GLOBAL_M->platform->get_orientation() == ORIENTATION_LANDSCAPE) {
+        self->priv->nativeResize(ENV_M, GLOBAL_M, width, height);
+    }
+    else {
+        self->priv->nativeResize(ENV_M, GLOBAL_M, height, width);
+    }
 }
 
 static void
