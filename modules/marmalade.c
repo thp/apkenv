@@ -932,17 +932,17 @@ marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
        int action = 0;
        if(ACTION_DOWN == event)
        {
-           action = POINTER_DOWN;
+           action = TOUCH_DOWN;
            MODULE_DEBUG_PRINTF("onMotionEvent: down\n");
        }
        else if(ACTION_UP == event)
        {
-           action = POINTER_UP;
+           action = TOUCH_UP;
            MODULE_DEBUG_PRINTF("onMotionEvent: up\n");
        }
        else if(ACTION_MOVE == event)
        {
-           action = POINTER_MOVE;
+           action = TOUCH_MOVE;
            MODULE_DEBUG_PRINTF("onMotionEvent: move\n");
        }
 
