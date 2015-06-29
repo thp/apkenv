@@ -622,7 +622,13 @@ cuttherope_init(struct SupportModule *self, int width, int height, const char *h
 
     self->priv->JNI_OnLoad(VM_M, NULL);
 
-    self->priv->nativeResize(ENV_M, GLOBAL_M, height, width);
+    if(GLOBAL_M->platform->get_orientation() == ORIENTATION_PORTRAIT) {
+        self->priv->nativeResize(ENV_M, GLOBAL_M, width, height);
+    }
+    else {
+        self->priv->nativeResize(ENV_M, GLOBAL_M, height, width);
+    }
+
     GLOBAL_M->module_hacks->current_orientation = ORIENTATION_PORTRAIT;
 
 #ifdef PANDORA
