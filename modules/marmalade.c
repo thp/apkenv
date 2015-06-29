@@ -872,6 +872,7 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
 {
     self->priv->global = GLOBAL_M;
     self->priv->global->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+    self->priv->global->module_hacks->glOrthof_rotation_hack = 1;
     self->priv->module = self;
     self->priv->home = strdup(home);
 

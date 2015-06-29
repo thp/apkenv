@@ -522,6 +522,7 @@ my_glLoadMatrixf(const GLfloat *m)
 {
     WRAPPERS_DEBUG_PRINTF("glLoadMatrixf()\n", m);
     if(matrix_mode == GL_PROJECTION && global.platform->get_orientation() != global_module_hacks.current_orientation) {
+        WRAPPERS_DEBUG_PRINTF("glLoadMatrixf rotation hack\n");
         if(global_module_hacks.current_orientation == ORIENTATION_LANDSCAPE) {
             functions.glLoadIdentity();
             functions.glRotatef(270, 0, 0, 1);
@@ -571,12 +572,16 @@ void
 my_glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
 {
     WRAPPERS_DEBUG_PRINTF("glOrthof()\n", left, right, bottom, top, zNear, zFar);
-    if(global.platform->get_orientation() != global_module_hacks.current_orientation) {
-        if(global_module_hacks.current_orientation == ORIENTATION_LANDSCAPE) {
-            functions.glRotatef(270, 0, 0, 1);
-        }
-        else {
-            functions.glRotatef(90, 0, 0, 1);
+    if(global_module_hacks.glOrthof_rotation_hack)
+    {
+        if(global.platform->get_orientation() != global_module_hacks.current_orientation) {
+            WRAPPERS_DEBUG_PRINTF("glOrthof rotation hack\n");
+            if(global_module_hacks.current_orientation == ORIENTATION_LANDSCAPE) {
+                functions.glRotatef(270, 0, 0, 1);
+            }
+            else {
+                functions.glRotatef(90, 0, 0, 1);
+            }
         }
     }
     functions.glOrthof(left, right, bottom, top, zNear, zFar);
@@ -1050,6 +1055,7 @@ my_glLoadMatrixx(const GLfixed *m)
 {
     WRAPPERS_DEBUG_PRINTF("glLoadMatrixx()\n", m);
     if(matrix_mode == GL_PROJECTION && global.platform->get_orientation() != global_module_hacks.current_orientation) {
+        WRAPPERS_DEBUG_PRINTF("glLoadMatrixx rotation hack\n");
         if(global_module_hacks.current_orientation == ORIENTATION_LANDSCAPE) {
             functions.glLoadIdentity();
             functions.glRotatex(270<<16, 0, 0, 1<<16);
@@ -1361,6 +1367,7 @@ my_glViewport(GLint x, GLint y, GLsizei width, GLsizei height)
 {
     WRAPPERS_DEBUG_PRINTF("glViewport(%d, %d, %d, %d)\n", x, y, width, height);
     if(global_module_hacks.gles_viewport_hack) {
+        WRAPPERS_DEBUG_PRINTF("glViewport rotation hack\n");
         if(global.platform->get_orientation() != global_module_hacks.current_orientation) {
             functions.glViewport(y, x, height, width);
         }
