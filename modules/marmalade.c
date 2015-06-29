@@ -657,13 +657,12 @@ marmalade_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
         if(3 == orientation || ANDROID_ORIENTATION_PORTRAIT == orientation)
         {
             marmalade_priv.global->module_hacks->current_orientation = ORIENTATION_PORTRAIT;
-            marmalade_priv.loaderview.setPixelsNative(ENV(marmalade_priv.global),marmalade_priv.theview,marmalade_priv.height,marmalade_priv.width,marmalade_priv.pixels, 0);
         }
         else
         {
             marmalade_priv.global->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
-            marmalade_priv.loaderview.setPixelsNative(ENV(marmalade_priv.global),marmalade_priv.theview,marmalade_priv.width,marmalade_priv.height,marmalade_priv.pixels, 0);
         }
+        marmalade_priv.loaderview.setPixelsNative(ENV(marmalade_priv.global),marmalade_priv.theview,marmalade_priv.width,marmalade_priv.height,marmalade_priv.pixels, 0);
     }
     else if(method_is(soundStart))
     {
