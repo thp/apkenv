@@ -482,7 +482,12 @@ marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 
     if(method_is(getOrientation))
     {
-        return marmalade_priv.global->module_hacks->current_orientation;
+        if(marmalade_priv.global->module_hacks->current_orientation == ORIENTATION_PORTRAIT) {
+            return ANDROID_ORIENTATION_PORTRAIT;
+        }
+        else {
+            return ANDROID_ORIENTATION_LANDSCAPE;
+        }
     }
     else if(method_is(getNetworkType))
     {
