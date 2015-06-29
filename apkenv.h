@@ -58,6 +58,7 @@ struct ModuleHacks {
     int gles_downscale_images;
     int gles_no_readpixels;
     int gles_viewport_hack;
+    int gles_scale;
 };
 
 struct SupportModule {

@@ -71,4 +71,5 @@
 {"pthread_rwlock_trywrlock", apkenv_my_pthread_rwlock_trywrlock},
 {"pthread_rwlock_timedrdlock", apkenv_my_pthread_rwlock_timedrdlock},
 {"pthread_rwlock_timedwrlock", apkenv_my_pthread_rwlock_timedwrlock},
+{"pthread_sigmask", pthread_sigmask},
 
