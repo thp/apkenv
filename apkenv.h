@@ -59,6 +59,7 @@ struct ModuleHacks {
     int gles_no_readpixels;
     int gles_viewport_hack;
     int gles_scale;
+    int glOrthof_rotation_hack;
 };
 
 struct SupportModule {

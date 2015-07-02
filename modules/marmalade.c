@@ -482,7 +482,12 @@ marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 
     if(method_is(getOrientation))
     {
-        return marmalade_priv.global->module_hacks->current_orientation;
+        if(marmalade_priv.global->module_hacks->current_orientation == ORIENTATION_PORTRAIT) {
+            return ANDROID_ORIENTATION_PORTRAIT;
+        }
+        else {
+            return ANDROID_ORIENTATION_LANDSCAPE;
+        }
     }
     else if(method_is(getNetworkType))
     {
@@ -867,6 +872,7 @@ marmalade_init(struct SupportModule *self, int width, int height, const char *ho
 {
     self->priv->global = GLOBAL_M;
     self->priv->global->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+    self->priv->global->module_hacks->glOrthof_rotation_hack = 1;
     self->priv->module = self;
     self->priv->home = strdup(home);
 
@@ -932,17 +938,17 @@ marmalade_input(struct SupportModule *self, int event, int x, int y, int finger)
        int action = 0;
        if(ACTION_DOWN == event)
        {
-           action = POINTER_DOWN;
+           action = TOUCH_DOWN;
            MODULE_DEBUG_PRINTF("onMotionEvent: down\n");
        }
        else if(ACTION_UP == event)
        {
-           action = POINTER_UP;
+           action = TOUCH_UP;
            MODULE_DEBUG_PRINTF("onMotionEvent: up\n");
        }
        else if(ACTION_MOVE == event)
        {
-           action = POINTER_MOVE;
+           action = TOUCH_MOVE;
            MODULE_DEBUG_PRINTF("onMotionEvent: move\n");
        }
 
