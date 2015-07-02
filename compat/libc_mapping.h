@@ -36,6 +36,7 @@
 {"sprintf", sprintf},
 {"snprintf", my_snprintf},
 {"vsnprintf", my_vsnprintf},
+{"vasprintf", my_vasprintf},
 
 {"fopen", my_fopen},
 {"fdopen", fdopen},
