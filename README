@@ -72,6 +72,11 @@ find the library function in which it crashes - this will not list functions
 from Bionic libs, but only from your system libraries (another reason why it
 is usually a good idea to map system-level functions).
 
+apkenv now also has some more in depth debugging options (see --help), for
+example tracing calls to bionic libraries (-ta -u), while running an app this
+will show you which bionic functions are called from the app and if the crash
+happens soon after one of the bionic functions is called try adding this
+function to the hooks, in some cases this has helped us to fix crashes.
 
 Documentation
 =============
