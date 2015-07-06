@@ -393,6 +393,7 @@ static void
 worldofgoo_init(struct SupportModule *self, int width, int height, const char *home)
 {
     GLOBAL_M->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+    GLOBAL_M->module_hacks->glOrthof_rotation_hack = 1;
     GLOBAL_M->module_hacks->gles_viewport_hack = 1;
 
     self->priv->home_directory = home;
