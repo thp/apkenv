@@ -276,6 +276,7 @@ int my_sprintf(char *str, const char *format, ...) SOFTFP;
 int my_snprintf(char *str, size_t size, const char *format, ...) SOFTFP;
 int my_vsnprintf(char *str, size_t size, const char *format, va_list ap) SOFTFP;
 int my_vasprintf(char **strp, const char *fmt, va_list ap) SOFTFP;
+int my_vsprintf(char *str, const char *format, va_list ap) SOFTFP;
 
 int my_stat(const char *path, void *buf);
 int my_fstat(int fd, void *buf);
