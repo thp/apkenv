@@ -851,6 +851,13 @@ void
 my_glDrawArrays(GLenum mode, GLint first, GLsizei count)
 {
     WRAPPERS_DEBUG_PRINTF("glDrawArrays()\n", mode, first, count);
+    if(global_module_hacks.glDrawArrays_rotation_hack) {
+        if(global.platform->get_orientation() != global_module_hacks.current_orientation) {
+            functions.glMatrixMode(GL_PROJECTION);
+            functions.glLoadIdentity();
+            functions.glRotatef(270, 0, 0, 1);
+        }
+    }
     functions.glDrawArrays(mode, first, count);
 }
 void
@@ -1216,7 +1223,13 @@ void
 my_glScissor(GLint x, GLint y, GLsizei width, GLsizei height)
 {
     WRAPPERS_DEBUG_PRINTF("glScissor()\n", x, y, width, height);
-    functions.glScissor(x, y, width, height);
+    if(global.platform->get_orientation() != global_module_hacks.current_orientation) {
+        WRAPPERS_DEBUG_PRINTF("glScissor rotation hack\n");
+        functions.glScissor(y, x, height, width);
+    }
+    else {
+        functions.glScissor(x, y, width, height);
+    }
 }
 void
 my_glShadeModel(GLenum mode)

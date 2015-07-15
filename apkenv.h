@@ -60,6 +60,7 @@ struct ModuleHacks {
     int gles_viewport_hack;
     int gles_scale;
     int glOrthof_rotation_hack;
+    int glDrawArrays_rotation_hack;
 };
 
 struct SupportModule {

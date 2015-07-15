@@ -36,6 +36,8 @@
 {"sprintf", sprintf},
 {"snprintf", my_snprintf},
 {"vsnprintf", my_vsnprintf},
+{"vasprintf", my_vasprintf},
+{"vsprintf", my_vsprintf},
 
 {"fopen", my_fopen},
 {"fdopen", fdopen},
@@ -251,6 +253,7 @@
 
 /* grp.h */
 {"__cxa_atexit", __cxa_atexit},
+{"atexit", atexit},
 
 /*
  * bionic libc's __isthreaded

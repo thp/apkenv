@@ -1,3 +1,5 @@
 {"bsd_signal", bsd_signal},
 {"strcasecmp", my_strcasecmp},
-
+{"mprotect", mprotect},
+{"access", access},
+{"clock_getres", clock_getres},

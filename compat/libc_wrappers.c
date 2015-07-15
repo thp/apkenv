@@ -870,6 +870,18 @@ int my_vsnprintf(char *str, size_t size, const char *format, va_list ap)
     return vsnprintf(str, size, format, ap);
 }
 
+int my_vasprintf(char **strp, const char *fmt, va_list ap)
+{
+    WRAPPERS_DEBUG_PRINTF("vasprintf\n");
+    return vasprintf(strp, fmt, ap);
+}
+
+int my_vsprintf(char *str, const char *format, va_list ap)
+{
+    WRAPPERS_DEBUG_PRINTF("vsprintf\n");
+    return vsprintf(str, format, ap);
+}
+
 /* android uses kernel's stat64 as 'struct stat', so do direct syscalls */
 int my_stat(const char *path, void *buf)
 {

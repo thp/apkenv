@@ -1489,7 +1489,8 @@ JNIEnv_NewStringUTF(JNIEnv* p0, const char* p1)
 {
     struct dummy_jstring *result = malloc(sizeof(struct dummy_jstring));
     JNIENV_DEBUG_PRINTF("JNIEnv_NewStringUTF('%s') -> %x\n", p1, result);
-    result->data = strdup(p1);
+    if(p1) result->data = strdup(p1);
+    else result->data = strdup("(null)");
     return result;
 }
 

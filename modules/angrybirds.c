@@ -205,16 +205,42 @@ angrybirds_init(struct SupportModule *self, int width, int height, const char *h
     global = GLOBAL_M;
 
     global->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+    global->module_hacks->glDrawArrays_rotation_hack = 1;
+    global->module_hacks->gles_viewport_hack = 1;
 
     self->priv->myHome = strdup(home);
 
-    self->priv->native_init(ENV_M, GLOBAL_M, width, height, GLOBAL_M->env->NewStringUTF(ENV_M, home));
+    if(GLOBAL_M->platform->get_orientation() == ORIENTATION_LANDSCAPE) {
+        self->priv->native_init(ENV_M, GLOBAL_M, width, height, GLOBAL_M->env->NewStringUTF(ENV_M, home));
+    }
+    else {
+        self->priv->native_init(ENV_M, GLOBAL_M, height, width, GLOBAL_M->env->NewStringUTF(ENV_M, home));
+    }
 }
+
+static int first_finger = -1;
 
 static void
 angrybirds_input(struct SupportModule *self, int event, int x, int y, int finger)
 {
-    self->priv->native_input(ENV_M, GLOBAL_M, event, x, y, finger);
+    /* make sure first touch input is always finger == 0, seems to be required */
+    if(event == ACTION_DOWN)
+    {
+        if(first_finger == -1)
+        {
+            first_finger = finger;
+        }
+    }
+
+    self->priv->native_input(ENV_M, GLOBAL_M, event, x, y, (first_finger == finger) ? 0 : finger);
+
+    if(event == ACTION_UP)
+    {
+        if(first_finger == finger)
+        {
+            first_finger = -1;
+        }
+    }
 }
 
 static void

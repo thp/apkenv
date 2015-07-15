@@ -827,6 +827,18 @@ marmalade_CallBooleanMethodV(JNIEnv* p0, jobject p1, jmethodID p2, va_list p3)
     return 0;
 }
 
+static jobject
+marmalade_CallStaticObjectMethodV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
+{
+    MODULE_DEBUG_PRINTF("marmalade_CallStaticObjectMethodV %s\n", p2->name);
+
+    if(strcmp(p2->name, "JGetSDCardAbsolutePath") == 0) {
+        return (*env)->NewStringUTF(env, marmalade_priv.home);
+    }
+
+    return NULL;
+}
+
 extern void *memmem (__const void *__haystack, size_t __haystacklen,
                      __const void *__needle, size_t __needlelen);
 
@@ -863,6 +875,7 @@ marmalade_try_init(struct SupportModule *self)
     self->override_env.NewGlobalRef = marmalade_NewGlobalRef;
     self->override_env.GetObjectField = marmalade_GetObjectField;
     self->override_env.GetObjectClass = marmalade_GetObjectClass;
+    self->override_env.CallStaticObjectMethodV = marmalade_CallStaticObjectMethodV;
 
     return (self->priv->JNI_OnLoad != NULL) && marmalade_priv.marmalade_found;
 }
