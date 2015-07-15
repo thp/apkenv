@@ -218,10 +218,29 @@ angrybirds_init(struct SupportModule *self, int width, int height, const char *h
     }
 }
 
+static int first_finger = -1;
+
 static void
 angrybirds_input(struct SupportModule *self, int event, int x, int y, int finger)
 {
-    self->priv->native_input(ENV_M, GLOBAL_M, event, x, y, finger);
+    /* make sure first touch input is always finger == 0, seems to be required */
+    if(event == ACTION_DOWN)
+    {
+        if(first_finger == -1)
+        {
+            first_finger = finger;
+        }
+    }
+
+    self->priv->native_input(ENV_M, GLOBAL_M, event, x, y, (first_finger == finger) ? 0 : finger);
+
+    if(event == ACTION_UP)
+    {
+        if(first_finger == finger)
+        {
+            first_finger = -1;
+        }
+    }
 }
 
 static void
