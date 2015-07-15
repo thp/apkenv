@@ -205,10 +205,17 @@ angrybirds_init(struct SupportModule *self, int width, int height, const char *h
     global = GLOBAL_M;
 
     global->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
+    global->module_hacks->glDrawArrays_rotation_hack = 1;
+    global->module_hacks->gles_viewport_hack = 1;
 
     self->priv->myHome = strdup(home);
 
-    self->priv->native_init(ENV_M, GLOBAL_M, width, height, GLOBAL_M->env->NewStringUTF(ENV_M, home));
+    if(GLOBAL_M->platform->get_orientation() == ORIENTATION_LANDSCAPE) {
+        self->priv->native_init(ENV_M, GLOBAL_M, width, height, GLOBAL_M->env->NewStringUTF(ENV_M, home));
+    }
+    else {
+        self->priv->native_init(ENV_M, GLOBAL_M, height, width, GLOBAL_M->env->NewStringUTF(ENV_M, home));
+    }
 }
 
 static void
