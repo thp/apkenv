@@ -106,9 +106,11 @@ clean:
 	$(SILENTMSG) -e "\tCLEAN"
 	$(SILENTCMD)rm -rf $(TARGET) $(OBJS) $(MODULES) $(DEPS)
 
+distclean: clean
+
 ifneq ($(MAKECMDGOALS),clean)
     -include $(DEPS)
 endif
 
 .DEFAULT: all
-.PHONY: all modules install clean
+.PHONY: all modules install clean distclean
