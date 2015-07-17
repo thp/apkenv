@@ -246,6 +246,10 @@ void gles1_init(void)
         h = dlopen("libGLESv1_CM.so.1", RTLD_LAZY);
     }
     if (h == NULL) {
+	// Library name on Harmattan
+        h = dlopen("libGLES_CM.so", RTLD_LAZY);
+    }
+    if (h == NULL) {
         fprintf(stderr, "libGLESv1_CM.so missing, recompile without APKENV_GLES\n");
         exit(1);
     }
