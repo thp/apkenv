@@ -60,10 +60,11 @@ rpi2_init(int gles_version)
         return 0;
     }
 
-    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gles_version);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 
 #if SDL_VERSION_ATLEAST(2,0,0)
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gles_version);
+
     priv.window = SDL_CreateWindow(
                                     "apkenv",
                                     SDL_WINDOWPOS_UNDEFINED,
@@ -74,9 +75,13 @@ rpi2_init(int gles_version)
 
     priv.glcontext = SDL_GL_CreateContext(priv.window);
 #else
-    priv.screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGLES | SDL_FULLSCREEN);
+    priv.screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGL | SDL_FULLSCREEN);
 
     if (priv.screen == NULL) {
+        return 0;
+    }
+
+    if(gles_version == 2) {
         return 0;
     }
 #endif
