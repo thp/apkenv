@@ -192,7 +192,9 @@ struct GlobalState {
     int trace_unhooked;
     int trace_dynhooked;
     int trace_arm_injection;
+#ifndef NO_THUMB
     int trace_thumb_injection;
+#endif
     struct trace_list *functions_to_trace;
     int trace_all;
     

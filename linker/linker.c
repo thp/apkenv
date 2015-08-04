@@ -1764,6 +1764,12 @@ static void apkenv_wrap_function(void *sym_addr, char *sym_name, int is_thumb, s
             
             __clear_cache((int32_t*)sym_addr, (int32_t*)sym_addr + 2);
         }
+#ifdef NO_THUMB
+        else
+        {
+            ERROR("detected thumb function but apkenv was compiled with NO_THUMB");
+        }
+#else
         else
         {
             DEBUG("HOOKING INTERNAL (THUMB) FUNCTION %s@%x (in %s) TO: %x\n",sym_name,sym_addr,si->name,hook);
@@ -1784,6 +1790,7 @@ static void apkenv_wrap_function(void *sym_addr, char *sym_name, int is_thumb, s
             
             __clear_cache((int16_t*)sym_addr, (int16_t*)sym_addr + 8);
         }
+#endif
     }
     else
 #endif /* APKENV_LATEHOOKS */
@@ -1797,12 +1804,19 @@ static void apkenv_wrap_function(void *sym_addr, char *sym_name, int is_thumb, s
     }
     // TODO: this will fail if the first 2-5 instructions do something pc related
     // (this DOES happen very often)
+#ifdef NO_THUMB
+    else if(sym_addr && is_thumb)
+    {
+        ERROR("detected thumb function %s, but apkenv was compiled with NO_THUMB", sym_name);
+    }
+#else
     else if(sym_addr && is_thumb)
     {
         DEBUG("CREATING THUMB WRAPPER FOR: %s@%x (in %s)\n",sym_name,sym_addr,si->name);
         
         create_wrapper(sym_name, sym_addr, WRAPPER_THUMB_INJECTION);
     }
+#endif
 }
 
 

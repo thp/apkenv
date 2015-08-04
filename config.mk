@@ -1,6 +1,8 @@
 # Latehooks (experimental)
 LATEHOOKS ?= 1
 
+NO_THUMB ?= 0
+
 # Debug build (logging + debug symbols)
 DEBUG ?= 0
 

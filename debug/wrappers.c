@@ -109,7 +109,9 @@ const char *msg_latehook = "calling late hooked method";
 const char *msg_unhooked = "calling unhooked method";
 const char *msg_dynhook = "calling dynamically loaded method";
 const char *msg_arm_injection = "called injected ARM wrapper";
+#ifndef NO_THUMB
 const char *msg_thumb_injection = "called injected THUMB wrapper";
+#endif
 
 // the following definition is taken from linux-2.6/arch/arm/mm/alignment.c
 /* Thumb-2 32 bit format per ARMv7 DDI0406A A6.3, either f800h,e800h,f800h */
@@ -151,9 +153,11 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
         case WRAPPER_ARM_INJECTION:
             if(!global.trace_arm_injection) return function;
             break;
+#ifndef NO_THUMB
         case WRAPPER_THUMB_INJECTION:
             if(!global.trace_thumb_injection) return function;
             break;
+#endif
         default:
             assert(NULL == "ERROR: invalid wrapper type!\n");
     };
@@ -180,10 +184,12 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
             wrapper_code = wrapper_code_arm;
             msg = msg_arm_injection;
             break;
+#ifndef NO_THUMB
         case WRAPPER_THUMB_INJECTION:
             wrapper_code = wrapper_code_thumb;
             msg = msg_thumb_injection;
             break;
+#endif
         default:
             assert(NULL == "ERROR: invalid wrapper type!\n");
     }

@@ -242,7 +242,9 @@ usage()
     printf("\t--enable-trace_unhooked|-u\t\tEnable tracing of unhooked functions.\n");
     printf("\t--enable-trace-dynhook|-d\t\tEnable tracing of dynamically loaded functions.\n");
     printf("\t--enable-trace-arm-injection|-ai\tEnable tracing of unhooked internal ARM functions. (EXPERIMENTAL)\n");
+#ifndef NO_THUMB
     printf("\t--enable-trace-thumb-injection|-ti\tEnable tracing of unhooked internal THUMB functions. (HIGHLY EXPERIMENTAL)\n");
+#endif
     printf("\t--trace-function|-tf <function>\t\tTrace the specified function.\n");
     printf("\t--trace-all|-ta\t\t\t\tTrace all functions.\n");
     printf("\t--use-dvm <path/to/android>\t\tUse the dalvikvm instead of our fake vm.\n");
@@ -486,7 +488,9 @@ int main(int argc, char **argv)
     global.trace_unhooked = 0;
     global.trace_dynhooked = 0;
     global.trace_arm_injection = 0;
-    global.trace_thumb_injection = 0; 
+#ifndef NO_THUMB
+    global.trace_thumb_injection = 0;
+#endif
     global.functions_to_trace = NULL;
     
     global.use_dvm = 0;
@@ -528,10 +532,12 @@ int main(int argc, char **argv)
                  || 0 == strcmp(argv[i], "-ai")) {
                 global.trace_arm_injection = 1;
             }
+#ifndef NO_THUMB
             else if(0 == strcmp(argv[i], "--enable-trace-thumb-injection")
                  || 0 == strcmp(argv[i], "-ti")) {
                 global.trace_thumb_injection = 1;
             }
+#endif
             else if(0 == strcmp(argv[i], "--trace-all")
                  || 0 == strcmp(argv[i], "-ta")) {
                 global.trace_all = 1;
@@ -576,7 +582,10 @@ int main(int argc, char **argv)
     if((global.trace_all || NULL != global.functions_to_trace)
     && !global.trace_latehooked && !global.trace_unhooked
     && !global.trace_dynhooked && !global.trace_arm_injection
-    && !global.trace_thumb_injection) {
+#ifndef NO_THUMB
+    && !global.trace_thumb_injection
+#endif
+      ) {
         printf("WARNING: specified --trace-all or --trace-function but no type of tracing is enabled\n");
         usage();
     }

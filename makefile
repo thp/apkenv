@@ -47,7 +47,6 @@ SOURCES += $(wildcard apklib/*.c)
 SOURCES += $(wildcard jni/*.c)
 SOURCES += $(wildcard imagelib/*.c)
 SOURCES += $(wildcard debug/*.c)
-SOURCES += $(wildcard debug/wrappers/*.c)
 SOURCES += $(wildcard accelerometer/*.c)
 SOURCES += $(wildcard audio/*.c)
 SOURCES += $(wildcard mixer/*.c)
@@ -55,6 +54,12 @@ SOURCES += $(wildcard mixer/*.c)
 # Platform-specific targets and configuration
 PLATFORM_INSTALL_TARGETS :=
 include platform/$(PLATFORM).mk
+
+ifeq (${NO_THUMB},0)
+  SOURCES += $(wildcard debug/wrappers/*.c)
+else
+  SOURCES += $(wildcard debug/wrappers/*arm.c)
+endif
 
 SOURCES += $(wildcard platform/common/*.c)
 
