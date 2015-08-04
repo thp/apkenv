@@ -2,7 +2,7 @@ SOURCES += platform/fremantle.c
 CFLAGS += -DFREMANTLE
 LDFLAGS += -lSDL_mixer -lSDL_gles
 CFLAGS += -DAPKENV_GLES -DAPKENV_GLES2
-LDFLAGS += -lGLES_CM -lGLESv2 -lEGL
+LDFLAGS += -lEGL
 
 # We can re-use the Bionic libs from Harmattan
 BIONIC_LIBS := $(wildcard libs/harmattan/*.so)
