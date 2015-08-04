@@ -1,7 +1,7 @@
 SOURCES += platform/rpi2.c
 LDFLAGS += -lm -lrt
 CFLAGS += -DAPKENV_GLES -DAPKENV_GLES2 -DMESA_EGL_NO_X11_HEADERS -DNO_IMGLIB_JPEG_MEM_SRC -DNO_THUMB -I/opt/vc/include -I/opt/vc/include/interface/vcos/pthreads
-LDFLAGS += -lEGL
+LDFLAGS += -L/opt/vc/lib -lEGL
 
 ifeq ($(USE_SDL2),1)
   LDFLAGS += -lSDL2_mixer
