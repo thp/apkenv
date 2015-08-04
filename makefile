@@ -21,6 +21,8 @@ endif
 CFLAGS += $(LIBPNG_CFLAGS)
 LDFLAGS += $(LIBPNG_LDLIBS)
 
+USE_SDL2 := 1
+
 ifeq ($(origin SDL_CFLAGS) $(origin SDL_LDLIBS), undefined undefined)
   SDL_CONFIG = $(CROSS_COMPILE)sdl2-config
   ifeq ($(shell which $(SDL_CONFIG) 2>/dev/null),)
@@ -28,6 +30,7 @@ ifeq ($(origin SDL_CFLAGS) $(origin SDL_LDLIBS), undefined undefined)
     ifeq ($(shell which $(SDL_CONFIG) 2>/dev/null),)
       $(error No SDL development libraries found!)
     else
+      USE_SDL2 := 0
       $(warning Using SDL 1.2 libraries)
     endif
   endif

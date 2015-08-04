@@ -33,7 +33,7 @@
 
 #include <linux/limits.h>
 
-#include <SDL2/SDL.h>
+#include <SDL.h>
 
 #include "common/sdl_accelerometer_impl.h"
 #include "common/sdl_audio_impl.h"
@@ -42,8 +42,12 @@
 #include "common/input_transform.h"
 
 struct PlatformPriv {
+#if SDL_VERSION_ATLEAST(2,0,0)
     SDL_Window *window;
     SDL_GLContext glcontext;
+#else
+    SDL_Surface *screen;
+#endif
 };
 
 static struct PlatformPriv priv;
@@ -59,6 +63,7 @@ rpi2_init(int gles_version)
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, gles_version);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 16);
 
+#if SDL_VERSION_ATLEAST(2,0,0)
     priv.window = SDL_CreateWindow(
                                     "apkenv",
                                     SDL_WINDOWPOS_UNDEFINED,
@@ -68,8 +73,13 @@ rpi2_init(int gles_version)
                                   );
 
     priv.glcontext = SDL_GL_CreateContext(priv.window);
+#else
+    priv.screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGLES | SDL_FULLSCREEN);
 
-    /* TODO: swipe lock? */
+    if (priv.screen == NULL) {
+        return 0;
+    }
+#endif
 
     SDL_ShowCursor(0);
 
@@ -114,7 +124,17 @@ rpi2_get_path(enum PlatformPath which)
 static void
 rpi2_get_size(int *width, int *height)
 {
+#if SDL_VERSION_ATLEAST(2,0,0)
     SDL_GetWindowSize(priv.window, width, height);
+#else
+    if (width) {
+        *width = priv.screen->w;
+    }
+
+    if (height) {
+        *height = priv.screen->h;
+    }
+#endif
 }
 
 static int
@@ -122,6 +142,7 @@ rpi2_input_update(struct SupportModule *module)
 {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
+#if SDL_VERSION_ATLEAST(2,0,0)
         if (e.type == SDL_FINGERDOWN) {
             module->input(module, ACTION_DOWN, input_transform_x(e.tfinger.x, e.tfinger.y), input_transform_y(e.tfinger.x, e.tfinger.y), e.tfinger.fingerId);
         } else if (e.type == SDL_FINGERUP) {
@@ -147,6 +168,33 @@ rpi2_input_update(struct SupportModule *module)
                     break;
             }
         }
+#else
+        if (e.type == SDL_MOUSEBUTTONDOWN) {
+            module->input(module, ACTION_DOWN, input_transform_x(e.button.x, e.button.y), input_transform_y(e.button.x, e.button.y), e.button.which);
+        } else if (e.type == SDL_MOUSEBUTTONUP) {
+            module->input(module, ACTION_UP, input_transform_x(e.button.x, e.button.y), input_transform_y(e.button.x, e.button.y), e.button.which);
+        } else if (e.type == SDL_MOUSEMOTION) {
+            module->input(module, ACTION_MOVE, input_transform_x(e.motion.x, e.motion.y), input_transform_y(e.motion.x, e.motion.y), e.motion.which);
+        } else if (e.type == SDL_QUIT) {
+            return 1;
+        } else if (e.type == SDL_ACTIVEEVENT) {
+            if (e.active.state == SDL_APPACTIVE && e.active.gain == 0) {
+                module->pause(module);
+                while (1) {
+                    SDL_WaitEvent(&e);
+                    if (e.type == SDL_ACTIVEEVENT) {
+                        if (e.active.state == SDL_APPACTIVE &&
+                                e.active.gain == 1) {
+                            break;
+                        }
+                    } else if (e.type == SDL_QUIT) {
+                        return 1;
+                    }
+                }
+                module->resume(module);
+            }
+        }
+#endif
     }
 
     return 0;
@@ -171,15 +219,21 @@ rpi2_request_text_input(int is_password, const char *text,
 static void
 rpi2_update()
 {
+#if SDL_VERSION_ATLEAST(2,0,0)
     SDL_GL_SwapWindow(priv.window);
+#else
+    SDL_GL_SwapBuffers();
+#endif
 }
 
 static void
 rpi2_exit()
 {
+#if SDL_VERSION_ATLEAST(2,0,0)
     SDL_GL_DeleteContext(priv.glcontext);
     SDL_DestroyWindow(priv.window);
     SDL_Quit();
+#endif
 }
 
 struct PlatformSupport platform_support = {
