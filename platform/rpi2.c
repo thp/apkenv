@@ -81,14 +81,29 @@ rpi2_init(int gles_version)
     return 1;
 }
 
+static int paths_initialized = 0;
+static char install_path[PATH_MAX];
+static char data_path[PATH_MAX];
+
 static const char *
 rpi2_get_path(enum PlatformPath which)
 {
+    if(!paths_initialized) {
+        char *userhome = getenv("HOME");
+        if(!userhome) {
+            printf("getenv(\"HOME\") failed, assuming default debian directories");
+            userhome = "/home/debian";
+        }
+        sprintf(install_path, "%s/%s", userhome, ".local/share/applications/");
+        sprintf(data_path, "%s/%s", userhome, ".apkenv/");
+        paths_initialized = 1;
+    }
+
     switch (which) {
         case PLATFORM_PATH_INSTALL_DIRECTORY:
-            return "/home/debian/.local/share/applications/";
+            return install_path;
         case PLATFORM_PATH_DATA_DIRECTORY:
-            return "/home/debian/.apkenv/";
+            return data_path;
         case PLATFORM_PATH_MODULE_DIRECTORY:
             return "/usr/lib/apkenv/modules/";
         default:
