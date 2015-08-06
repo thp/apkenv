@@ -75,7 +75,7 @@ rpi2_init(int gles_version)
 
     priv.glcontext = SDL_GL_CreateContext(priv.window);
 #else
-    priv.screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGL | SDL_FULLSCREEN);
+    priv.screen = SDL_SetVideoMode(0, 0, 0, SDL_OPENGL);
 
     if (priv.screen == NULL) {
         return 0;
