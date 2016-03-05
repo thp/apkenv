@@ -60,7 +60,7 @@ int wrapper_cmp(void *a, void *b) {
     return c;
 }
 
-void register_wrapper(void *wrapper_ptr, unsigned int size, char *name, int type)
+void register_wrapper(void *wrapper_ptr, unsigned int size, const char * const name, int type)
 {
     struct wrapper *it = wrappers;
     struct wrapper *last = NULL;
@@ -87,7 +87,7 @@ void register_wrapper(void *wrapper_ptr, unsigned int size, char *name, int type
 
 extern struct GlobalState global;
 
-int is_traceable(char *symbol)
+int is_traceable(const char * const symbol)
 {
     if(global.trace_all) return 1;
 
@@ -110,6 +110,7 @@ const char *msg_unhooked = "calling unhooked method";
 const char *msg_dynhook = "calling dynamically loaded method";
 const char *msg_arm_injection = "called injected ARM wrapper";
 const char *msg_thumb_injection = "called injected THUMB wrapper";
+const char *msg_dalvik = "called dalvik env/vm function";
 
 // the following definition is taken from linux-2.6/arch/arm/mm/alignment.c
 /* Thumb-2 32 bit format per ARMv7 DDI0406A A6.3, either f800h,e800h,f800h */
@@ -128,7 +129,7 @@ get_wrapper_code_size(void *wrapper)
     return ((void *)ptr - (void *)wrapper);
 }
 
-void *create_wrapper(char *symbol, void *function, int wrapper_type)
+void *create_wrapper(const char * const symbol, void *function, int wrapper_type)
 {   
     size_t wrapper_size = 0;
     void *wrapper_code = NULL;
@@ -148,6 +149,11 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
         case WRAPPER_DYNHOOK:
             if(!global.trace_dynhooked) return function;
             break;
+        case WRAPPER_DALVIK:
+#ifndef APKENV_DEBUG
+            return function;
+#endif
+            break;
         case WRAPPER_ARM_INJECTION:
             if(!global.trace_arm_injection) return function;
             break;
@@ -157,9 +163,12 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
         default:
             assert(NULL == "ERROR: invalid wrapper type!\n");
     };
-    
-    if(!is_traceable(symbol))
-        return function;
+
+    if(wrapper_type != WRAPPER_DALVIK)
+    {
+        if(!is_traceable(symbol))
+            return function;
+    }
     
     // get wrapper size and setup msg
     switch(wrapper_type)
@@ -175,6 +184,10 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
         case WRAPPER_DYNHOOK:
             wrapper_code = wrapper_code_generic;
             msg = msg_dynhook;
+            break;
+        case WRAPPER_DALVIK:
+            wrapper_code = wrapper_code_generic;
+            msg = msg_dalvik;
             break;
         case WRAPPER_ARM_INJECTION:
             wrapper_code = wrapper_code_arm;
@@ -218,6 +231,7 @@ void *create_wrapper(char *symbol, void *function, int wrapper_type)
         case WRAPPER_LATEHOOK:
         case WRAPPER_UNHOOKED:
         case WRAPPER_DYNHOOK:
+        case WRAPPER_DALVIK:
             ((int32_t*)wrapper_addr)[helper++] = (uint32_t)symbol;
             ((int32_t*)wrapper_addr)[helper++] = (uint32_t)function;
             ((int32_t*)wrapper_addr)[helper++] = (uint32_t)trace_callback;

@@ -77,11 +77,32 @@ struct GlobalState *global;
 /* Fill audio buffer */
 void my_audio_callback(void *ud, void *stream, int len)
 {
-    struct dummy_array array;
-    array.data = stream;
-    array.length = len;
-    array.element_size = 1;
-    angrybirds_priv.native_mixdata(ENV(global), VM(global), audioHandle, &array, len);
+    JNIEnv *thread_env;
+    JNIEnv ref_env;
+
+    jarray *array;
+    (*VM(global))->AttachCurrentThread(VM(global), &thread_env, NULL);
+
+    /* here we need the original NewGlobalRef */
+    if(global->use_dvm)
+    {
+        ref_env = &global->dalvik_copy_env;
+    }
+    else ref_env = *thread_env;
+
+    array = (*thread_env)->NewShortArray(thread_env, len / 2);
+
+    jobject *ref = ref_env->NewGlobalRef(thread_env, array);
+    angrybirds_priv.native_mixdata(ENV(global), VM(global), audioHandle, ref, len);
+    ref_env->DeleteGlobalRef(thread_env, ref);
+
+    jshort *elements = (*thread_env)->GetShortArrayElements(thread_env, array, 0);
+    memcpy(stream, elements, len);
+    (*thread_env)->ReleaseShortArrayElements(thread_env, array, elements, JNI_ABORT);
+
+    (*thread_env)->DeleteLocalRef(thread_env, array);
+
+    (*VM(global))->DetachCurrentThread(VM(global));
 }
 
 
@@ -123,6 +144,7 @@ angrybirds_jnienv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
         apkenv_audio_open(freq, format, channels, samples, my_audio_callback, NULL);
     }
 
+    if(global->use_dvm) return 0x1;
     return GLOBAL_J(env);
 }
 
@@ -136,20 +158,25 @@ angrybirds_jnienv_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_li
         // Process input to prevent "not responding" message when game starts
         global->platform->input_update(global->active_module);
 
-        struct dummy_jstring *str = va_arg(p3,struct dummy_jstring*);
+        char *str_data = dup_jstring(global, va_arg(p3, jstring*));
         char tmp[PATH_MAX];
         strcpy(tmp, "assets/");
-        strcat(tmp, str->data);
+        strcat(tmp, str_data);
 
 #ifdef PANDORA
-        if (strcmp(str->data,"data/bundleIndex.idx")==0) //ignore this file, it segfaults but the games still work afterwards
+        if (strcmp(str_data,"data/bundleIndex.idx")==0) //ignore this file, it segfaults but the games still work afterwards
             return NULL;
 #endif
 
-        struct dummy_array *result = global->read_file_to_jni_array(tmp);
+        jarray *result = global->read_file_to_jni_array(tmp);
 
-        MODULE_DEBUG_PRINTF("angrybirds_readFile: %s -> %x\n", str->data, result);
+        MODULE_DEBUG_PRINTF("angrybirds_readFile: %s -> %x\n", str_data, result);
+        free(str_data);
         return result;
+    }
+    else if (strcmp(p2->name, "getUniqueIdHash") == 0)
+    {
+        return (*env)->NewStringUTF(env, "");
     }
     return NULL;
 }
@@ -158,14 +185,51 @@ angrybirds_jnienv_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_li
 void
 angrybirds_jnienv_DeleteLocalRef(JNIEnv* p0, jobject p1)
 {
-    MODULE_DEBUG_PRINTF("angrybirds_jnienv_DeleteLocalRef(%x)\n", p1);
-    if (p1 == GLOBAL_J(p0) || p1 == NULL) {
-        MODULE_DEBUG_PRINTF("WARNING: DeleteLocalRef on global\n");
-        return;
+    if(!global->use_dvm)
+    {
+        MODULE_DEBUG_PRINTF("angrybirds_jnienv_DeleteLocalRef(%x)\n", p1);
+        if (p1 == GLOBAL_J(p0) || p1 == NULL) {
+            MODULE_DEBUG_PRINTF("WARNING: DeleteLocalRef on global\n");
+            return;
+        }
+        free(p1);
     }
-    free(p1);
+    else
+    {
+        global->dalvik_copy_env.DeleteLocalRef(p0, p1);
+    }
 }
 
+jobjectArray
+angrybirds_jnienv_NewObjectArray(JNIEnv* p0, jsize p1, jclass p2, jobject p3)
+{
+    MODULE_DEBUG_PRINTF("angrybirds_jnienv_NewObjectArray()\n");
+    return NULL;
+}
+
+jobject
+angrybirds_jnienv_CallStaticObjectMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
+{
+    struct dummy_jclass *jcl = p1;
+    MODULE_DEBUG_PRINTF("angrybirds_jnienv__CallStaticObjectMethodV(%s, %s/%s, ...)\n",
+            jcl->name, p2->name, p2->sig);
+    return NULL;
+}
+
+void
+angrybirds_jnienv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
+{
+    struct dummy_jclass *jcl = p1;
+    MODULE_DEBUG_PRINTF("angrybirds_jnienv__CallStaticVoidMethodV(%s, %s/%s, ...)\n",
+            jcl->name, p2->name, p2->sig);
+}
+
+jboolean
+angrybirds_jnienv_CallBooleanMethodV(JNIEnv* p0, jobject p1, jmethodID p2, va_list p3)
+{
+    MODULE_DEBUG_PRINTF("angrybirds_jnienv__CallBooleanMethodV(%p, %s/%s, ...)\n", p1, p2->name, p2->sig);
+    return 0;
+}
 
 static int
 angrybirds_try_init(struct SupportModule *self)
@@ -183,6 +247,10 @@ angrybirds_try_init(struct SupportModule *self)
     /* Overrides for angrybirds_jnienv_ */
     self->override_env.CallObjectMethodV = angrybirds_jnienv_CallObjectMethodV;
     self->override_env.DeleteLocalRef = angrybirds_jnienv_DeleteLocalRef;
+    self->override_env.CallBooleanMethodV = angrybirds_jnienv_CallBooleanMethodV;
+    self->override_env.CallStaticObjectMethodV = angrybirds_jnienv_CallStaticObjectMethodV;
+    self->override_env.CallStaticVoidMethodV = angrybirds_jnienv_CallStaticVoidMethodV;
+    self->override_env.NewObjectArray = angrybirds_jnienv_NewObjectArray;
     self->override_env.CallVoidMethodV = angrybirds_jnienv_CallVoidMethodV;
     self->override_env.NewObjectV = angrybirds_jnienv_NewObjectV;
 

@@ -173,6 +173,8 @@ struct GlobalState {
     struct _JavaVM *_vm;
     struct _JNIEnv *_env;
 
+    struct JNINativeInterface dalvik_copy_env;
+
     struct ConfigOption *config;
     int config_count;
     int config_size;

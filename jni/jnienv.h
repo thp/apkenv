@@ -37,6 +37,10 @@
 
 #define GLOBAL_J(env) ((struct GlobalState*)((*env)->reserved0))
 
+// helpers for dalvikvm debugging
+extern const char *envnames[];
+extern const char *vmnames[];
+
 struct dummy_jstring {
     char *data;
 };

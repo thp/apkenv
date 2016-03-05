@@ -92,4 +92,28 @@ enum {
 typedef void (*jni_onload_t)(JavaVM *vm, void *reserved) SOFTFP;
 typedef void (*jni_onunload_t)(JavaVM *vm, void *reserved) SOFTFP;
 
+#include "../jni/jnienv.h"
+#include <string.h>
+
+char *dup_jstring(struct GlobalState *global, void *str)
+{
+    char *result;
+
+    if(global->use_dvm)
+    {
+        jstring *jstr = str;
+        const char *chars = global->env->GetStringUTFChars(ENV(global), jstr, NULL);
+
+        result = strdup(chars);
+
+        global->env->ReleaseStringUTFChars(ENV(global), jstr, chars);
+    }
+    else
+    {
+        result = strdup(((struct dummy_jstring*)str)->data);
+    }
+
+    return result;
+}
+
 #endif /* APKENV_MODULES_COMMON_H */

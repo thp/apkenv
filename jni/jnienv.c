@@ -41,6 +41,355 @@
 #  define JNIENV_DEBUG_PRINTF(...)
 #endif
 
+const char *envnames[] = 
+{
+    "reserved0",
+    "reserved1",
+    "reserved2",
+    "reserved3",
+
+    "GetVersion", 
+
+    "DefineClass", 
+
+    "FindClass", 
+
+    "FromReflectedMethod", 
+    "FromReflectedField", 
+    /* spec doesn't show jboolean parameter */
+    "ToReflectedMethod", 
+
+    "GetSuperclass", 
+    "IsAssignableFrom", 
+
+    /* spec doesn't show jboolean parameter */
+    "ToReflectedField", 
+
+    "Throw", 
+    "ThrowNew", 
+    "ExceptionOccurred", 
+    "ExceptionDescribe", 
+    "ExceptionClear", 
+    "FatalError", 
+
+    "PushLocalFrame", 
+    "PopLocalFrame", 
+
+    "NewGlobalRef", 
+    "DeleteGlobalRef", 
+    "DeleteLocalRef", 
+    "IsSameObject", 
+
+    "NewLocalRef", 
+    "EnsureLocalCapacity", 
+
+    "AllocObject", 
+    "NewObject", 
+    "NewObjectV", 
+    "NewObjectA", 
+
+    "GetObjectClass", 
+    "IsInstanceOf", 
+    "GetMethodID", 
+
+    "CallObjectMethod", 
+    "CallObjectMethodV", 
+    "CallObjectMethodA", 
+    "CallBooleanMethod", 
+    "CallBooleanMethodV", 
+    "CallBooleanMethodA", 
+    "CallByteMethod", 
+    "CallByteMethodV", 
+    "CallByteMethodA", 
+    "CallCharMethod", 
+    "CallCharMethodV", 
+    "CallCharMethodA", 
+    "CallShortMethod", 
+    "CallShortMethodV", 
+    "CallShortMethodA", 
+    "CallIntMethod", 
+    "CallIntMethodV", 
+    "CallIntMethodA", 
+    "CallLongMethod", 
+    "CallLongMethodV", 
+    "CallLongMethodA", 
+    "CallFloatMethod", 
+    "CallFloatMethodV", 
+    "CallFloatMethodA", 
+    "CallDoubleMethod", 
+    "CallDoubleMethodV", 
+    "CallDoubleMethodA", 
+    "CallVoidMethod", 
+    "CallVoidMethodV", 
+    "CallVoidMethodA", 
+
+    "CallNonvirtualObjectMethod", 
+
+    "CallNonvirtualObjectMethodV", 
+
+    "CallNonvirtualObjectMethodA", 
+
+    "CallNonvirtualBooleanMethod", 
+
+    "CallNonvirtualBooleanMethodV", 
+
+    "CallNonvirtualBooleanMethodA", 
+
+    "CallNonvirtualByteMethod", 
+
+    "CallNonvirtualByteMethodV", 
+
+    "CallNonvirtualByteMethodA", 
+
+    "CallNonvirtualCharMethod", 
+
+    "CallNonvirtualCharMethodV", 
+
+    "CallNonvirtualCharMethodA", 
+
+    "CallNonvirtualShortMethod", 
+
+    "CallNonvirtualShortMethodV", 
+
+    "CallNonvirtualShortMethodA", 
+
+    "CallNonvirtualIntMethod", 
+
+    "CallNonvirtualIntMethodV", 
+
+    "CallNonvirtualIntMethodA", 
+
+    "CallNonvirtualLongMethod", 
+
+    "CallNonvirtualLongMethodV", 
+
+    "CallNonvirtualLongMethodA", 
+
+    "CallNonvirtualFloatMethod", 
+
+    "CallNonvirtualFloatMethodV", 
+
+    "CallNonvirtualFloatMethodA", 
+
+    "CallNonvirtualDoubleMethod", 
+
+    "CallNonvirtualDoubleMethodV", 
+
+    "CallNonvirtualDoubleMethodA", 
+
+    "CallNonvirtualVoidMethod", 
+
+    "CallNonvirtualVoidMethodV", 
+
+    "CallNonvirtualVoidMethodA", 
+
+
+    "GetFieldID", 
+
+    "GetObjectField", 
+    "GetBooleanField", 
+    "GetByteField", 
+    "GetCharField", 
+    "GetShortField", 
+    "GetIntField", 
+    "GetLongField", 
+    "GetFloatField", 
+    "GetDoubleField", 
+
+    "SetObjectField", 
+    "SetBooleanField", 
+    "SetByteField", 
+    "SetCharField", 
+    "SetShortField", 
+    "SetIntField", 
+    "SetLongField", 
+    "SetFloatField", 
+    "SetDoubleField", 
+
+    "GetStaticMethodID", 
+
+    "CallStaticObjectMethod", 
+    "CallStaticObjectMethodV", 
+    "CallStaticObjectMethodA", 
+    "CallStaticBooleanMethod", 
+    "CallStaticBooleanMethodV", 
+
+    "CallStaticBooleanMethodA", 
+
+    "CallStaticByteMethod", 
+    "CallStaticByteMethodV", 
+    "CallStaticByteMethodA", 
+    "CallStaticCharMethod", 
+    "CallStaticCharMethodV", 
+    "CallStaticCharMethodA", 
+    "CallStaticShortMethod", 
+    "CallStaticShortMethodV", 
+    "CallStaticShortMethodA", 
+    "CallStaticIntMethod", 
+    "CallStaticIntMethodV", 
+    "CallStaticIntMethodA", 
+    "CallStaticLongMethod", 
+    "CallStaticLongMethodV", 
+    "CallStaticLongMethodA", 
+    "CallStaticFloatMethod", 
+    "CallStaticFloatMethodV", 
+    "CallStaticFloatMethodA", 
+    "CallStaticDoubleMethod", 
+    "CallStaticDoubleMethodV", 
+    "CallStaticDoubleMethodA", 
+    "CallStaticVoidMethod", 
+    "CallStaticVoidMethodV", 
+    "CallStaticVoidMethodA", 
+
+    "GetStaticFieldID", 
+
+
+    "GetStaticObjectField", 
+    "GetStaticBooleanField", 
+    "GetStaticByteField", 
+    "GetStaticCharField", 
+    "GetStaticShortField", 
+    "GetStaticIntField", 
+    "GetStaticLongField", 
+    "GetStaticFloatField", 
+    "GetStaticDoubleField", 
+
+    "SetStaticObjectField", 
+    "SetStaticBooleanField", 
+    "SetStaticByteField", 
+    "SetStaticCharField", 
+    "SetStaticShortField", 
+    "SetStaticIntField", 
+    "SetStaticLongField", 
+    "SetStaticFloatField", 
+    "SetStaticDoubleField", 
+
+    "NewString", 
+    "GetStringLength", 
+    "GetStringChars", 
+    "ReleaseStringChars", 
+    "NewStringUTF", 
+    "GetStringUTFLength", 
+    /* JNI spec says this returns const jbyte*, but that's inconsistent */
+    "GetStringUTFChars", 
+    "ReleaseStringUTFChars", 
+    "GetArrayLength", 
+    "NewObjectArray", 
+    "GetObjectArrayElement", 
+    "SetObjectArrayElement", 
+
+    "NewBooleanArray", 
+    "NewByteArray", 
+    "NewCharArray", 
+    "NewShortArray", 
+    "NewIntArray", 
+    "NewLongArray", 
+    "NewFloatArray", 
+    "NewDoubleArray", 
+
+    "GetBooleanArrayElements", 
+    "GetByteArrayElements", 
+    "GetCharArrayElements", 
+    "GetShortArrayElements", 
+    "GetIntArrayElements", 
+    "GetLongArrayElements", 
+    "GetFloatArrayElements", 
+    "GetDoubleArrayElements", 
+
+    "ReleaseBooleanArrayElements", 
+
+    "ReleaseByteArrayElements", 
+
+    "ReleaseCharArrayElements", 
+
+    "ReleaseShortArrayElements", 
+
+    "ReleaseIntArrayElements", 
+
+    "ReleaseLongArrayElements", 
+
+    "ReleaseFloatArrayElements", 
+
+    "ReleaseDoubleArrayElements", 
+
+
+    "GetBooleanArrayRegion", 
+
+    "GetByteArrayRegion", 
+
+    "GetCharArrayRegion", 
+
+    "GetShortArrayRegion", 
+
+    "GetIntArrayRegion", 
+
+    "GetLongArrayRegion", 
+
+    "GetFloatArrayRegion", 
+
+    "GetDoubleArrayRegion", 
+
+
+    /* spec shows these without const; some jni.h do, some don't */
+    "SetBooleanArrayRegion", 
+
+    "SetByteArrayRegion", 
+
+    "SetCharArrayRegion", 
+
+    "SetShortArrayRegion", 
+
+    "SetIntArrayRegion", 
+
+    "SetLongArrayRegion", 
+
+    "SetFloatArrayRegion", 
+
+    "SetDoubleArrayRegion", 
+
+
+    "RegisterNatives", 
+
+    "UnregisterNatives", 
+    "MonitorEnter", 
+    "MonitorExit", 
+    "GetJavaVM", 
+
+    "GetStringRegion", 
+    "GetStringUTFRegion", 
+
+    "GetPrimitiveArrayCritical", 
+    "ReleasePrimitiveArrayCritical", 
+
+    "GetStringCritical", 
+    "ReleaseStringCritical", 
+
+    "NewWeakGlobalRef", 
+    "DeleteWeakGlobalRef", 
+
+    "ExceptionCheck", 
+
+    "NewDirectByteBuffer", 
+    "GetDirectBufferAddress", 
+    "GetDirectBufferCapacity", 
+
+    /* added in JNI 1.6 */
+    "GetObjectRefType", 
+};
+
+const char *vmnames[] = 
+{
+    "reserved0",
+    "reserved1",
+    "reserved2",
+
+    "DestroyJavaVM",
+    "AttachCurrentThread",
+    "DetachCurrentThread",
+    "GetEnv",
+    "AttachCurrentThreadAsDaemon",
+};
+
 static int
 check_obj(JNIEnv *env, const void *obj, const char *varname, const char *func)
 {

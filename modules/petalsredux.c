@@ -107,12 +107,32 @@ static void mix_audio(void *user_data, void *stream, int len)
 {
     struct SupportModule *self = (struct SupportModule *)user_data;
 
-    struct dummy_array array;
-    array.data = stream;
-    array.length = len / 2;
-    array.element_size = 1;
+    JNIEnv *thread_env;
+    JNIEnv ref_env;
 
-    petalsredux_priv.native_mix(ENV_M, GLOBAL_M, &array);
+    jarray *array;
+    (*VM(global))->AttachCurrentThread(VM(global), &thread_env, NULL);
+
+    /* here we need the original NewGlobalRef */
+    if(global->use_dvm)
+    {
+        ref_env = &(global->dalvik_copy_env);
+    }
+    else ref_env = *thread_env;
+
+    array = (*thread_env)->NewShortArray(thread_env, len / 2);
+
+    jobject *ref = ref_env->NewGlobalRef(thread_env, array);
+    petalsredux_priv.native_mix(ENV_M, GLOBAL_M, ref);
+    ref_env->DeleteGlobalRef(thread_env, ref);
+
+    jshort *elements = (*thread_env)->GetShortArrayElements(thread_env, array, 0);
+    memcpy(stream, elements, len);
+    (*thread_env)->ReleaseShortArrayElements(thread_env, array, elements, JNI_ABORT);
+
+    (*thread_env)->DeleteLocalRef(thread_env, array);
+
+    (*VM(global))->DetachCurrentThread(VM(global));
 }
 
 static void
