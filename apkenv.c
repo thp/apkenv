@@ -357,7 +357,11 @@ int init_dvm(struct GlobalState *global, void *libdvm_handle)
     if(NULL == CreateJavaVM) {
         return 0; // failed
     }
-    if(0 == CreateJavaVM(&(global->vm), &(global->env), global->apk_filename)) return 0; // failed
+    if(0 == CreateJavaVM(&(global->_vm), &(global->_env), global->apk_filename)) return 0; // failed
+
+    global->vm = global->_vm->functions;
+    global->env = global->_env->functions;
+
     return 1; // success
 }
 
