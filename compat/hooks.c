@@ -52,6 +52,8 @@ char my___sF[SIZEOF_SF * 3];
 
 #define HOOKS_MAX 1024
 
+static void no_hook(void);
+
 static struct _hook hooks[HOOKS_MAX] = {
 #include "libc_mapping.h"
 #include "liblog_mapping.h"
@@ -246,3 +248,10 @@ void hooks_init(void)
 
     libc_wrappers_init();
 }
+
+static void no_hook(void)
+{
+    fprintf(stderr, "called a function for which no hook is available");
+    exit(6);
+}
+

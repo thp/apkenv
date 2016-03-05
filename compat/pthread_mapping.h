@@ -72,4 +72,6 @@
 {"pthread_rwlock_timedrdlock", apkenv_my_pthread_rwlock_timedrdlock},
 {"pthread_rwlock_timedwrlock", apkenv_my_pthread_rwlock_timedwrlock},
 {"pthread_sigmask", pthread_sigmask},
-
+{"__pthread_gettid", no_hook},
+{"__pthread_cleanup_push", no_hook},
+{"__pthread_cleanup_pop", no_hook},
