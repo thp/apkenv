@@ -84,6 +84,12 @@ debug/wrappers/%_arm.o: debug/wrappers/%_arm.c
 	$(SILENTMSG) -e "\tCC\t$@"
 	$(SILENTCMD)$(CC) $(CFLAGS) -c -o $@ $<
 
+modules/%.d: modules/%.c
+	$(SILENTMSG) -e "\tDEP\t$@"
+	$(SILENTCMD)$(CC) $(CFLAGS) -MF $@.tmp -MM $<
+	$(SILENTCMD)sed -e 's|.*:|$*.o:|' < $@.tmp | sed -e 's|\.o|\.apkenv\.so|' > $@
+	$(SILENTCMD)rm -rf modules/$*.d.tmp
+
 %.d: %.c
 	$(SILENTMSG) -e "\tDEP\t$@"
 	$(SILENTCMD)$(CC) $(CFLAGS) -MF $@.tmp -MM $<
