@@ -56,7 +56,7 @@
 #define ANDROID_PTHREAD_RWLOCK_INITIALIZER           0
 
 /* Debug */
-#define LOGD(message, ...) WRAPPERS_DEBUG_PRINTF(message, ##__VA_ARGS__)
+#define LOGD(message, ...) WRAPPERS_DEBUG_PRINTF(message "\n", ##__VA_ARGS__)
 
 #include "hooks_shm.h"
 

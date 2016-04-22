@@ -251,7 +251,7 @@ void hooks_init(void)
 
 static void no_hook(void)
 {
-    fprintf(stderr, "called a function for which no hook is available");
+    fprintf(stderr, "called a function for which no hook is available\n");
     exit(6);
 }
 

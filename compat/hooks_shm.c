@@ -31,8 +31,14 @@
 #include <sys/shm.h>
 #include <sys/mman.h>
 
+#ifdef APKENV_DEBUG
+#  define SHM_DEBUG_PRINTF(...) printf(__VA_ARGS__)
+#else
+#  define SHM_DEBUG_PRINTF(...)
+#endif
+
 /* Debug */
-#define LOGD(message, ...) printf(message, ##__VA_ARGS__)
+#define LOGD(message, ...) SHM_DEBUG_PRINTF(message "\n", ##__VA_ARGS__)
 
 #define APKENV_DATA_SIZE    4000
 #define APKENV_SHM_MASK     0xFF000000UL
