@@ -6,3 +6,5 @@
 {"statfs", statfs},
 {"getpwuid_r", getpwuid_r},
 {"fork", fork},
+{"getpriority", getpriority},
+{"madvise", madvise},

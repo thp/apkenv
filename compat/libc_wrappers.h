@@ -30,6 +30,7 @@
 #include <wctype.h>
 #include <wchar.h>
 #include <dirent.h>
+#include <malloc.h>
 
 #include <zlib.h>
 

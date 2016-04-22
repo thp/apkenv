@@ -274,3 +274,4 @@
 
 {"property_get", my_property_get},
 
+{"dlmalloc_trim", malloc_trim},
