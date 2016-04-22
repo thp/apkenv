@@ -75,3 +75,5 @@
 {"__pthread_gettid", no_hook},
 {"__pthread_cleanup_push", no_hook},
 {"__pthread_cleanup_pop", no_hook},
+{"pthread_getcpuclockid", no_hook},
+

@@ -38,6 +38,8 @@
 extern int my___isthreaded;
 int*
 my___errno() SOFTFP;
+int
+my___set_errno() SOFTFP;
 void
 my_abort() SOFTFP;
 double
@@ -294,5 +296,7 @@ int my_munmap(void *__addr, size_t __len);
 
 long
 my_sysconf(int name) SOFTFP;
+
+int my_property_get(const char *key, char *value, const char *default_value) SOFTFP;
 
 void libc_wrappers_init(void);

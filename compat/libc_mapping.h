@@ -91,6 +91,7 @@
 {"gethostbyname", gethostbyname},
 
 {"__errno", my___errno},
+{"__set_errno", my___set_errno},
 
 {"gmtime", gmtime},
 {"localtime", localtime},
@@ -270,4 +271,6 @@
  *
  */
 {"__isthreaded", &my___isthreaded},
+
+{"property_get", my_property_get},
 

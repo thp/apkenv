@@ -1,5 +1,8 @@
 #include <signal.h>
 #include <string.h>
+#include <sys/vfs.h>
+#include <sys/types.h>
+#include <pwd.h>
 
 #include "../apkenv.h"
 

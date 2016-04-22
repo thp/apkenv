@@ -31,6 +31,11 @@ my___errno()
     WRAPPERS_DEBUG_PRINTF("__errno()\n");
     return &errno;
 }
+int my___set_errno(int n)
+{
+    errno = n;
+    return -1;
+}
 void
 my_abort()
 {
@@ -783,9 +788,13 @@ my_clearerr(FILE *stream)
 {
     WRAPPERS_DEBUG_PRINTF("clearerr(%p)\n", stream);
     if (IS_STDIO_FILE(stream))
+    {
         clearerr(TO_STDIO_FILE(stream));
+    }
     else
+    {
         clearerr(stream);
+    }
 }
 int
 my_ungetc(int __c, FILE *__stream)
@@ -1050,4 +1059,17 @@ void libc_wrappers_init(void)
     stdio_files[0] = stdin;
     stdio_files[1] = stdout;
     stdio_files[2] = stderr;
+}
+
+int my_property_get(const char *key, char *value, const char *default_value)
+{
+    int len = 0;
+
+    if(default_value)
+    {
+        len = strlen(default_value);
+        memcpy(value, default_value, len + 1);
+    }
+
+    return len;
 }
