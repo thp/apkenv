@@ -33,3 +33,4 @@ make PLATFORM=sailfish DESTDIR=%{buildroot} install
 %defattr(-,root,root,-)
 %{_bindir}/%{name}
 %{_libdir}/%{name}/modules/*.%{name}.so
+%{_libdir}/%{name}/bionic/libdvm_compat.so

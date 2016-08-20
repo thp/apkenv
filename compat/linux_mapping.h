@@ -3,3 +3,8 @@
 {"mprotect", mprotect},
 {"access", access},
 {"clock_getres", clock_getres},
+{"statfs", statfs},
+{"getpwuid_r", getpwuid_r},
+{"fork", fork},
+{"getpriority", getpriority},
+{"madvise", madvise},

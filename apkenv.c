@@ -88,20 +88,36 @@ read_file_impl(const char *filename, char **buffer, size_t *size)
 static void *
 read_file_to_jni_array_impl(const char *filename)
 {
-    struct dummy_array *array = NULL;
     char *buffer = NULL;
     size_t size = 0;
 
     if (apk_read_file(global.apklib_handle, filename, &buffer, &size) == APK_OK) {
-        array = malloc(sizeof(*array));
-        if (array == NULL)
-            return NULL;
-        array->data = buffer;
-        array->length = size;
-        array->element_size = 1;
+        if(!global.use_dvm)
+        {
+            struct dummy_array *array = NULL;
+            array = malloc(sizeof(*array));
+            if (array == NULL)
+                return NULL;
+            array->data = buffer;
+            array->length = size;
+            array->element_size = 1;
+
+            return array;
+        }
+        else
+        {
+            const struct JNINativeInterface *env = global._env->functions;
+            jarray *array = env->NewByteArray(ENV((&global)), size);
+            jbyte *elements = env->GetByteArrayElements(ENV((&global)), array, 0);
+            memcpy(elements, buffer, size);
+            free(buffer);
+            env->ReleaseByteArrayElements(ENV((&global)), array, elements, JNI_ABORT);
+
+            return array;
+        }
     }
 
-    return array;
+    return NULL;
 }
 
 static const char *
@@ -225,6 +241,82 @@ install_overrides(struct SupportModule *module)
             fake[i] = override[i];
         }
     }
+}
+
+void
+dalvikvm_JNIEnv_DeleteLocalRef(JNIEnv* p0, jobject p1)
+{
+#ifdef APKENV_DEBUG
+    printf("dalvikvm_JNIEnv_DeleteLocalRef(%x)\n", p1);
+#endif
+    global.dalvik_copy_env.DeleteLocalRef(p0, p1);
+    (*p0)->ExceptionClear(p0);
+}
+
+
+static void
+install_default_dalvik_overrides()
+{
+    struct JNINativeInterface *dalvik_env = (struct JNINativeInterface *)global._env->functions;
+
+    int pagesize = sysconf(_SC_PAGESIZE);
+    mprotect((char*)((int)dalvik_env & ~(pagesize-1)), pagesize*2, PROT_READ | PROT_WRITE);
+
+    dalvik_env->NewGlobalRef = JNIEnv_NewGlobalRef;
+    dalvik_env->DeleteGlobalRef = JNIEnv_DeleteGlobalRef;
+
+    dalvik_env->GetObjectClass = JNIEnv_GetObjectClass;
+
+    dalvik_env->FindClass = JNIEnv_FindClass;
+    dalvik_env->GetMethodID = JNIEnv_GetMethodID;
+    dalvik_env->GetFieldID = JNIEnv_GetFieldID;
+    dalvik_env->GetStaticFieldID = JNIEnv_GetStaticFieldID;
+    dalvik_env->GetStaticObjectField = JNIEnv_GetStaticObjectField;
+    dalvik_env->GetStaticMethodID = JNIEnv_GetStaticMethodID;
+    dalvik_env->GetObjectField = JNIEnv_GetObjectField;
+
+    dalvik_env->DeleteLocalRef = dalvikvm_JNIEnv_DeleteLocalRef;
+
+    dalvik_env->RegisterNatives = JNIEnv_RegisterNatives;
+
+    mprotect((char*)((int)dalvik_env & ~(pagesize-1)), pagesize*2, PROT_READ);
+}
+
+static void
+install_dalvik_overrides(struct SupportModule *module)
+{
+    int i;
+    void **dalvik, **override;
+
+    int pagesize = sysconf(_SC_PAGESIZE);
+
+    /* Install overrides for JNIEnv */
+    dalvik = (void**)(global._env->functions);
+    mprotect((char*)((int)dalvik & ~(pagesize-1)), pagesize*2, PROT_READ | PROT_WRITE);
+    override = (void**)(&(module->override_env));
+    for (i=0; i<sizeof(*global._env->functions)/sizeof(void*); i++) {
+        if (override[i]) {
+            dalvik[i] = override[i];
+        }
+        else {
+            dalvik[i] = create_wrapper(envnames[i], dalvik[i], WRAPPER_DALVIK);
+        }
+    }
+    mprotect((char*)((int)dalvik & ~(pagesize-1)), pagesize*2, PROT_READ);
+
+    /* Install overrides for JavaVM */
+    dalvik = (void**)(global._vm->functions);
+    mprotect((char*)((int)dalvik & ~(pagesize-1)), pagesize, PROT_READ | PROT_WRITE);
+    override = (void**)(&(module->override_vm));
+    for (i=0; i<sizeof(*global._vm->functions)/sizeof(void*); i++) {
+        if (override[i]) {
+            dalvik[i] = override[i];
+        }
+        else {
+            dalvik[i] = create_wrapper(vmnames[i], dalvik[i], WRAPPER_DALVIK);
+        }
+    }
+    mprotect((char*)((int)dalvik & ~(pagesize-1)), pagesize, PROT_READ);
 }
 
 static void
@@ -352,12 +444,23 @@ system_init(int gles_version)
 
 int init_dvm(struct GlobalState *global, void *libdvm_handle)
 {
+    printf("initializing dalvikvm\n");
+
     int (*CreateJavaVM)(JavaVM *vm, JNIEnv *env, const char *apk_filename);
     CreateJavaVM = apkenv_android_dlsym(libdvm_handle, "compat_CreateJavaVM");
     if(NULL == CreateJavaVM) {
         return 0; // failed
     }
-    if(0 == CreateJavaVM(&(global->vm), &(global->env), global->apk_filename)) return 0; // failed
+    if(0 == CreateJavaVM((const struct JNIInvokeInterface**)&(global->_vm), (const struct JNINativeInterface**)&(global->_env), global->apk_filename)) return 0; // failed
+
+    global->vm = global->_vm->functions;
+    global->env = global->_env->functions;
+
+    memcpy(&global->dalvik_copy_env, global->env, sizeof(struct JNINativeInterface));
+
+    // some must overrides
+    install_default_dalvik_overrides();
+
     return 1; // success
 }
 
@@ -768,7 +871,8 @@ int main(int argc, char **argv)
 
     global.active_module = module;
     printf("Using module: %s\n", module->filename);
-    install_overrides(module);
+    if(global.use_dvm) install_dalvik_overrides(module);
+    else install_overrides(module);
 
     char data_directory[PATH_MAX];
     strcpy(data_directory, main_data_dir);

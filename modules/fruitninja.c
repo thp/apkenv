@@ -109,8 +109,10 @@ fruitninja_jnienv_CallStaticObjectMethodV(JNIEnv*env, jclass p1, jmethodID p2, v
 
     if( strcmp( p2->name, "SFXPlayInternal" ) == 0 )
     {
-        struct dummy_jstring *str = va_arg(p3,struct dummy_jstring*); //Sound file?
-        char* soundname = strdup(str->data);
+        char *soundname = NULL;
+
+        soundname = dup_jstring(global, va_arg(p3, jstring*));
+
         int i;
         for(i = 0; soundname[i]; i++) {
             soundname[i] = tolower(soundname[i]); // LowerCase soundname
@@ -123,10 +125,13 @@ fruitninja_jnienv_CallStaticObjectMethodV(JNIEnv*env, jclass p1, jmethodID p2, v
                 /* Play some sweet sounds? */
                 MODULE_DEBUG_PRINTF("module: Play sound: %s\n", SFX[i].name);
                 apkenv_mixer_play_sound(SFX[i].sound, 0);
+                free(soundname);
                 return NULL;
             }
         }
         MODULE_DEBUG_PRINTF("module: Sound not found: %s\n", soundname);
+
+        free(soundname);
 
     }
     else
@@ -163,7 +168,7 @@ extract_files_callback(const char *filename, char *buffer, size_t size)
 }
 
 void
-fruitninja_jnienv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_list p3)
+fruitninja_jnienv_CallStaticVoidMethodV(JNIEnv* env, jclass p1, jmethodID p2, va_list p3)
 {
     struct dummy_jclass *jcl = p1;
 
@@ -172,14 +177,15 @@ fruitninja_jnienv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_
 
     if( strcmp( p2->name, "SongPlay" ) == 0 ) // Play some sweet backround music?
     {
-        struct dummy_jstring *str = va_arg(p3,struct dummy_jstring*); //Music file?
+        char *musicname = NULL;
+
+        musicname = dup_jstring(global, va_arg(p3, jstring*));
 
         if (music) {
             apkenv_mixer_stop_music(music);
             apkenv_mixer_free_music(music);
         }
 
-        char* musicname = strdup(str->data);
         int i;
         for(i = 0; musicname[i]; i++) {
             musicname[i] = tolower(musicname[i]); // LowerCase musicname
@@ -193,6 +199,8 @@ fruitninja_jnienv_CallStaticVoidMethodV(JNIEnv* p0, jclass p1, jmethodID p2, va_
 
         music = apkenv_mixer_load_music(Music_Path);
         apkenv_mixer_play_music(music, 1);
+
+        free(musicname);
     } else if( strcmp( p2->name, "SetMusicVolume" ) == 0 ){
         double musicvol = va_arg(p3, double);
         MODULE_DEBUG_PRINTF("module: SetMusicVolume: %.2f\n", musicvol);

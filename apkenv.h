@@ -169,6 +169,12 @@ struct GlobalState {
     struct JNIInvokeInterface fake_vm;
     JavaVM vm;
 
+    // dalvikvm
+    struct _JavaVM *_vm;
+    struct _JNIEnv *_env;
+
+    struct JNINativeInterface dalvik_copy_env;
+
     struct ConfigOption *config;
     int config_count;
     int config_size;
@@ -212,8 +218,8 @@ struct GlobalState {
     image_loader_t image_loader;
 };
 
-#define VM(global_ptr) (&((global_ptr)->vm))
-#define ENV(global_ptr) (&((global_ptr)->env))
+#define VM(global_ptr) ((global_ptr)->_vm ? (JavaVM*)((global_ptr)->_vm) : &((global_ptr->vm)))
+#define ENV(global_ptr) ((global_ptr)->_env ? (JNIEnv*)((global_ptr)->_env) : &((global_ptr->env)))
 
 
 /* Android MotionEvent/KeyEvent */

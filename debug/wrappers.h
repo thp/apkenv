@@ -34,8 +34,9 @@
 #define WRAPPER_DYNHOOK             2
 #define WRAPPER_ARM_INJECTION       3
 #define WRAPPER_THUMB_INJECTION     4
+#define WRAPPER_DALVIK              5
 
-void *create_wrapper(char *symbol, void *function, int wrapper_type);
+void *create_wrapper(const char * const symbol, void *function, int wrapper_type);
 void release_all_wrappers();
 
 #endif

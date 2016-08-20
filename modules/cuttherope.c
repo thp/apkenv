@@ -196,35 +196,36 @@ static jobject
 cuttherope_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 {
     MODULE_DEBUG_PRINTF("cuttherope_CallObjectMethodV %s (%s)\n",p2->name,p2->sig);
-    struct dummy_array *array;
+    void *array;
 
     if (strcmp(p2->name, "loadData") == 0) {
-        struct dummy_jstring *arg;
-        arg = va_arg(p3, struct dummy_jstring*);
+        char *arg_data = dup_jstring(cuttherope_priv.global, va_arg(p3, jstring*));
         jboolean flag = va_arg(p3, jint);
         (void)flag;
 
-        char *filename = malloc(strlen(arg->data) + strlen("assets/") + 1);
-        sprintf(filename, "assets/%s", arg->data);
+        char *filename = malloc(strlen(arg_data) + strlen("assets/") + 1);
+        sprintf(filename, "assets/%s", arg_data);
 
-        MODULE_DEBUG_PRINTF("   data=%s\n",arg->data);
+        MODULE_DEBUG_PRINTF("   data=%s\n",arg_data);
 
-        if ((array = GLOBAL_J(env)->read_file_to_jni_array(filename))) {
+        if ((array = cuttherope_priv.global->read_file_to_jni_array(filename))) {
 
-            MODULE_DEBUG_PRINTF("   data=%s size=%d\n", arg->data, array->length);
+            MODULE_DEBUG_PRINTF("   data=%s\n", arg_data);
 
             // Process input to prevent "not responding" message
             cuttherope_priv.global->platform->input_update(cuttherope_priv.global->active_module);
 
+            free(arg_data);
             return array;
         } else {
-            MODULE_DEBUG_PRINTF("   data=%s not found\n",arg->data);
+            MODULE_DEBUG_PRINTF("   data=%s not found\n",arg_data);
+            free(arg_data);
             return GLOBAL_J(env);
         }
     }
     else if (strcmp(p2->name, "getBytesOfBitmap") == 0) {
 
-        if ((array = GLOBAL_J(env)->read_file_to_jni_array("assets/zeptolab.png"))) {
+        if ((array = cuttherope_priv.global->read_file_to_jni_array("assets/zeptolab.png"))) {
             return array;
         }
     }
@@ -274,7 +275,7 @@ cuttherope_loadImage(JNIEnv *env, const char *filename )
     size_t buf_size;
     char filepath[PATH_MAX]; sprintf(filepath,"assets/%s",filename);
 
-    if (GLOBAL_J(env)->read_file(filepath, &buf, &buf_size)) {
+    if (cuttherope_priv.global->read_file(filepath, &buf, &buf_size)) {
 
         imageloadersettings_t loadsettings =
         {
@@ -284,7 +285,7 @@ cuttherope_loadImage(JNIEnv *env, const char *filename )
             .swaprb = 1,
         };
 
-        img->image = GLOBAL_J(env)->image_loader(buf, buf_size, loadsettings);
+        img->image = cuttherope_priv.global->image_loader(buf, buf_size, loadsettings);
     }
 
     return img->image;
@@ -300,40 +301,42 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
 
     if (strcmp(p2->name,"loadImage")==0) {//public void loadImage(String paramString, int paramInt)
 
-        struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
+        char *filename_data = dup_jstring(cuttherope_priv.global, va_arg(p3, jstring*));
         jint fileId =  va_arg(p3, jint);
 
-        MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): filename=%s fileId=%d\n",p2->name,filename->data,fileId);
+        MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): filename=%s fileId=%d\n",p2->name,filename_data,fileId);
 
-        image_t *image = cuttherope_loadImage(env,filename->data);
+        image_t *image = cuttherope_loadImage(env,filename_data);
         if (image!=NULL) {
-            MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): imageLoaded=%s (%d,%d,%d) (%x)\n",p2->name,filename->data,image->width,image->height,image->bpp,image);
+            MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): imageLoaded=%s (%d,%d,%d) (%x)\n",p2->name,filename_data,image->width,image->height,image->bpp,image);
             cuttherope_priv.imageLoaded(ENV(cuttherope_priv.global),cuttherope_priv.global,fileId,image,image->width,image->height);
         }
+        free(filename_data);
     }
     else
     if (strcmp(p2->name,"loadSound")==0) {
         char filepath[PATH_MAX];
-        struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
+        char *filename_data = dup_jstring(cuttherope_priv.global, va_arg(p3, jstring*));
         jint soundId =  va_arg(p3, jint);
 
-        MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): filename=%s id=%d\n",p2->name,filename->data,soundId);
+        MODULE_DEBUG_PRINTF("cuttherope_CallVoidMethodV(%s): filename=%s id=%d\n",p2->name,filename_data,soundId);
 
         if (soundId>=MAX_SOUNDS) {
             MODULE_DEBUG_PRINTF("loadSound id=%d exceeding limits \n",soundId,MAX_SOUNDS);
         }
         else
         if (cuttherope_priv.sounds[soundId].sound==0) {
-            sprintf(filepath,"assets/%s",filename->data);
+            sprintf(filepath,"assets/%s",filename_data);
 
             char* buffer;
             size_t size;
-            if (GLOBAL_J(env)->read_file(filepath,&buffer,&size)) {
+            if (cuttherope_priv.global->read_file(filepath,&buffer,&size)) {
                 struct MixerSound *sound = apkenv_mixer_load_sound_buffer(buffer, size);
                 cuttherope_priv.sounds[soundId].sound = sound;
                 MODULE_DEBUG_PRINTF("loadSound id=%d %s.\n",soundId,sound?"ok":"failed");
             }
         }
+        free(filename_data);
     }
     else
     if (strcmp(p2->name, "showBanner")==0) {
@@ -343,13 +346,14 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     else
     if (strcmp(p2->name,"playVideo")==0) {
 
-        struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring*);
+        char *filename_data = dup_jstring(cuttherope_priv.global, va_arg(p3, jstring*));
         jint paramInt =  va_arg(p3, jint);
-        MODULE_DEBUG_PRINTF("playVideo: filename=%s, param=%d\n", filename->data, paramInt);
+        MODULE_DEBUG_PRINTF("playVideo: filename=%s, param=%d\n", filename_data, paramInt);
 
         if (cuttherope_priv.nativePlaybackFinished)
             cuttherope_priv.nativePlaybackFinished(ENV(cuttherope_priv.global),
                     cuttherope_priv.global,paramInt);
+        free(filename_data);
     }
     else
     if (strcmp(p2->name,"playSoundLooped")==0) {
@@ -365,12 +369,12 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     }
     else
     if (strcmp(p2->name,"playMusic")==0) {
-        struct dummy_jstring *filename = va_arg(p3,struct dummy_jstring*);
-        MODULE_DEBUG_PRINTF("playMusic: filename=%s\n", filename->data);
+        char *filename_data = dup_jstring(cuttherope_priv.global, va_arg(p3, jstring*));
+        MODULE_DEBUG_PRINTF("playMusic: filename=%s\n", filename_data);
 
         char musicpath[PATH_MAX];
         strcpy(musicpath,cuttherope_priv.home);
-        strcat(musicpath,filename->data);
+        strcat(musicpath,filename_data);
 
         if (strcmp(cuttherope_priv.musicpath,musicpath)!=0) {
             if (cuttherope_priv.music!=NULL) {
@@ -380,6 +384,7 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
             cuttherope_priv.music = apkenv_mixer_load_music(musicpath);
             apkenv_mixer_play_music(cuttherope_priv.music, 1);
         }
+        free(filename_data);
     }
     else
     if (strcmp(p2->name,"stopMusic")==0) {
@@ -389,13 +394,14 @@ cuttherope_CallVoidMethodV(JNIEnv* env, jobject p1, jmethodID p2, va_list p3)
     }
     else
     if (strcmp(p2->name,"setIntforKey")==0 || strcmp(p2->name,"setBooleanforKey")==0) {
-        struct dummy_jstring *key = va_arg(p3,struct dummy_jstring*);
+        char *key_data = dup_jstring(cuttherope_priv.global, va_arg(p3, jstring*));
         jint value = va_arg(p3,jint);
-        KeyValue* kv = get_preference(key->data,1);
+        KeyValue* kv = get_preference(key_data,1);
         if (kv!=0) {
             kv->value = value;
         }
-        MODULE_DEBUG_PRINTF("set*forKey=%s value=%d\n",key->data, value);
+        MODULE_DEBUG_PRINTF("set*forKey=%s value=%d\n",key_data, value);
+        free(key_data);
     }
     else
     if (strcmp(p2->name,"exitApp")==0) {
@@ -428,15 +434,16 @@ cuttherope_CallIntMethodV(JNIEnv* p0, jobject p1, jmethodID p2, va_list p3)
     MODULE_DEBUG_PRINTF("cuttherope_CallIntMethodV(%s)\n",p2->name);
 
     if (strcmp(p2->name,"getIntForKey")==0) {
-        struct dummy_jstring *arg;
-        arg = va_arg(p3, struct dummy_jstring*);
-        MODULE_DEBUG_PRINTF("getIntForKey: key=%s\n",arg->data);
+        char *arg_data = dup_jstring(cuttherope_priv.global, va_arg(p3, jstring*));
+        MODULE_DEBUG_PRINTF("getIntForKey: key=%s\n",arg_data);
 
-        KeyValue *kv = get_preference(arg->data,0);
+        KeyValue *kv = get_preference(arg_data,0);
         if (kv!=0) {
-            MODULE_DEBUG_PRINTF("getIntForKey: key=%s -> %d\n",arg->data,kv->value);
+            MODULE_DEBUG_PRINTF("getIntForKey: key=%s -> %d\n",arg_data,kv->value);
+            free(arg_data);
             return kv->value;
         }
+        free(arg_data);
     }
     return 0;
 }
@@ -446,14 +453,15 @@ cuttherope_CallBooleanMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
     MODULE_DEBUG_PRINTF("cuttherope_CallBooleanMethodV(%s)\n",p2->name);
 
     if (strcmp(p2->name,"getBooleanForKey")==0) {
-        struct dummy_jstring *arg;
-        arg = va_arg(p3, struct dummy_jstring*);
-        MODULE_DEBUG_PRINTF("getBooleanForKey: key=%s\n",arg->data);
+        char *arg_data = dup_jstring(cuttherope_priv.global, va_arg(p3, jstring*));
+        MODULE_DEBUG_PRINTF("getBooleanForKey: key=%s\n",arg_data);
 
-        KeyValue *kv = get_preference(arg->data,0);
+        KeyValue *kv = get_preference(arg_data,0);
         if (kv!=0) {
+            free(arg_data);
             return kv->value;
         }
+        free(arg_data);
     }
 
     return 0;

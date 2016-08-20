@@ -76,6 +76,7 @@ struct SupportModulePriv {
     const char *app_name;
     char *home;
     int w, h;
+    struct GlobalState *global;
 };
 static struct SupportModulePriv openframeworks_priv;
 
@@ -101,6 +102,13 @@ openframeworks_jnienv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p
     object->class = p1;
     object->priv = NULL;
     return (jobject)object;
+}
+
+jboolean
+openframeworks_jnienv_CallBooleanMethodV(JNIEnv* p0, jobject p1, jmethodID p2, va_list p3)
+{
+    MODULE_DEBUG_PRINTF("module_openframeworks_jnienv_CallBooleanMethodV(%x, %s, %s)\n", p1, p2->name, p2->sig);
+    return 0;
 }
 
 void
@@ -131,14 +139,15 @@ openframeworks_jnienv_CallVoidMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_
 
     if (strcmp(p2->name, "loadSound") == 0)
     {
-        struct dummy_jstring *arg = va_arg(p3, struct dummy_jstring *);
-        MODULE_DEBUG_PRINTF("loadSound %s, obj %p\n", arg->data, obj);
+        char *arg_data = dup_jstring(openframeworks_priv.global, va_arg(p3, jstring*));
+        MODULE_DEBUG_PRINTF("loadSound %s, obj %p\n", arg_data, obj);
         struct player_sound *player = calloc(1, sizeof(*player));
-        const char *ext = arg->data + strlen(arg->data) - 3;
+        const char *ext = arg_data + strlen(arg_data) - 3;
         if (strcasecmp(ext, "wav") == 0)
-            player->chunk = apkenv_mixer_load_sound(arg->data);
+            player->chunk = apkenv_mixer_load_sound(arg_data);
         else
-            player->music = apkenv_mixer_load_music(arg->data);
+            player->music = apkenv_mixer_load_music(arg_data);
+        free(arg_data);
         player->loop = 0;
         obj->priv = player;
     }
@@ -272,6 +281,8 @@ openframeworks_try_init(struct SupportModule *self)
 {
     int failed_syms = 0;
 
+    self->priv->global = self->global;
+
     self->priv->JNI_OnLoad = (jni_onload_t)LOOKUP_M("JNI_OnLoad");
     LOOKUP_OF_SYM(setAppDataDir);
     LOOKUP_OF_SYM(init);
@@ -294,6 +305,7 @@ openframeworks_try_init(struct SupportModule *self)
 
     self->override_env.NewObjectV = openframeworks_jnienv_NewObjectV;
     self->override_env.CallVoidMethodV = openframeworks_jnienv_CallVoidMethodV;
+    self->override_env.CallBooleanMethodV = openframeworks_jnienv_CallBooleanMethodV;
 
     return (self->priv->JNI_OnLoad != NULL) && !failed_syms;
 }

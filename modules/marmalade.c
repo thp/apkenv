@@ -345,6 +345,8 @@ static void my_audio_mixer(void *udata, void *stream, int len)
     short *mixbuf = (short *)stream;
     int vol;
     int i;
+    JNIEnv *thread_env;
+    JNIEnv ref_env;
 
     if (!sound_started || sound_volume == 0)
         return;
@@ -353,12 +355,31 @@ static void my_audio_mixer(void *udata, void *stream, int len)
         fprintf(stderr, "audio setup broken\n");
         exit(1);
     }
-    len /= 2;
-    arr.data = soundbuf;
-    arr.length = len;
-    arr.element_size = 2;
+
+    jarray *array;
+    (*VM(marmalade_priv.global))->AttachCurrentThread(VM(marmalade_priv.global), &thread_env, NULL);
+
+    /* here we need the original NewGlobalRef */
+    if(marmalade_priv.global->use_dvm)
+    {
+        ref_env = &(marmalade_priv.global->dalvik_copy_env);
+    }
+    else ref_env = *thread_env;
+
+    array = (*thread_env)->NewShortArray(thread_env, len / 2);
+
+    jobject *ref = ref_env->NewGlobalRef(thread_env, array);
     marmalade_priv.soundplayer.generateAudio(ENV(marmalade_priv.global),
-        VM(marmalade_priv.global), &arr, len);
+        VM(marmalade_priv.global), ref, len);
+    ref_env->DeleteGlobalRef(thread_env, ref);
+
+    jshort *elements = (*thread_env)->GetShortArrayElements(thread_env, array, 0);
+    memcpy(stream, elements, len);
+    (*thread_env)->ReleaseShortArrayElements(thread_env, array, elements, JNI_ABORT);
+
+    (*thread_env)->DeleteLocalRef(thread_env, array);
+
+    (*VM(marmalade_priv.global))->DetachCurrentThread(VM(marmalade_priv.global));
 
     // TODO: some NEON would be nice here
     vol = sound_volume * 128 / 100;
@@ -496,15 +517,16 @@ marmalade_CallIntMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
     else if(method_is(audioPlay))
     {
         // (Ljava/lang/String;IJJI)I
-        struct dummy_jstring *filename = va_arg(p3, struct dummy_jstring *);
+        char *filename_data = dup_jstring(marmalade_priv.global, va_arg(p3, struct jstring*));
         int repeats = va_arg(p3, int);
         long long file_offset = va_arg(p3, long long);
         long long file_size = va_arg(p3, long long);
         int channel = va_arg(p3, int);
 
         MODULE_DEBUG_PRINTF("audioPlay '%s', %d, %lld, %lld, %d\n",
-            filename->data, repeats, file_offset, file_size, channel);
-        audioPlay(filename->data, repeats, file_offset, file_size, channel);
+            filename_data, repeats, file_offset, file_size, channel);
+        audioPlay(filename_data, repeats, file_offset, file_size, channel);
+        free(filename_data);
         return 0;
     }
     else if(method_is(soundInit))
@@ -590,29 +612,6 @@ marmalade_GetObjectField(JNIEnv* p0, jobject p1, jfieldID p2)
     }
 
     return NULL;
-}
-
-jobject
-marmalade_NewGlobalRef(JNIEnv* p0, jobject p1)
-{
-    if (p1 == NULL)
-    {
-        // from other module, isn't actually needed here (at least in PvZ not)
-        struct dummy_jclass* cls = malloc(sizeof(struct dummy_jclass));
-        cls->name = "null";
-
-        dummy_jobject* obj = malloc(sizeof(dummy_jobject));
-        obj->clazz = cls;
-        obj->field = NULL;
-        MODULE_DEBUG_PRINTF("marmalade_NewGlobalRef(%x) -> %x\n", p1, obj);
-        return obj;
-    }
-    else
-    {
-        dummy_jobject *obj = p1;
-        MODULE_DEBUG_PRINTF("marmalade_NewGlobalRef(%x)\n", ((jmethodID)obj->field));
-        return p1; // is this correct?
-    }
 }
 
 void
@@ -872,7 +871,7 @@ marmalade_try_init(struct SupportModule *self)
     self->override_env.GetStaticIntField = marmalade_GetStaticIntField;
     self->override_env.GetStaticFieldID = marmalade_GetStaticFieldID;
     self->override_env.ExceptionOccurred = marmalade_ExceptionOccurred;
-    self->override_env.NewGlobalRef = marmalade_NewGlobalRef;
+//    self->override_env.NewGlobalRef = marmalade_NewGlobalRef;
     self->override_env.GetObjectField = marmalade_GetObjectField;
     self->override_env.GetObjectClass = marmalade_GetObjectClass;
     self->override_env.CallStaticObjectMethodV = marmalade_CallStaticObjectMethodV;

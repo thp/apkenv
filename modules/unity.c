@@ -109,7 +109,7 @@ jobject unity_jnienv_CallObjectMethod(JNIEnv* env, jobject p1, jmethodID p2, ...
     jmethodID method = p2;
 
     if (strcmp(method->name,"getPackageCodePath")==0)
-        return (*env)->NewStringUTF(env, GLOBAL_J(env)->apk_filename);
+        return (*env)->NewStringUTF(env, global->apk_filename);
 
     return NULL;
 }
@@ -127,11 +127,11 @@ unity_jnienv_CallStaticObjectMethod(JNIEnv* env, jclass p1, jmethodID p2, ...)
         //const char* prop = (*env)->
         //dummy_jobject* obj = malloc(sizeof(dummy_jobject));
         //return obj;
-        return (*env)->NewStringUTF(env, GLOBAL_J(env)->apk_filename);
+        return (*env)->NewStringUTF(env, global->apk_filename);
     }
     else
     if (strcmp(method->name,"getPackageCodePath")==0) {
-        return (*env)->NewStringUTF(env, GLOBAL_J(env)->apk_filename);
+        return (*env)->NewStringUTF(env, global->apk_filename);
     }
 
     return NULL;

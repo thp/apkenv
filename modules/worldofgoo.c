@@ -69,6 +69,8 @@ struct ZipFileIndex {
 static struct ZipFileIndex apk_index[4096];
 static int apk_index_pos;
 
+struct GlobalState *global;
+
 void
 build_apk_index(const char *filename)
 {
@@ -248,7 +250,7 @@ worldofgoo_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
 {
     MODULE_DEBUG_PRINTF("worldofgoo_CallObjectMethodV %x %s\n", p1, p2->name);
     if (strcmp(p2->name, "getApkPath") == 0) {
-        return (*env)->NewStringUTF(env, GLOBAL_J(env)->apk_filename);
+        return (*env)->NewStringUTF(env, global->apk_filename);
     } else if (strcmp(p2->name, "getExternalStoragePath") == 0) {
         return (*env)->NewStringUTF(env, worldofgoo_priv.home_directory);
     } else if (strcmp(p2->name, "getInternalStoragePath") == 0) {
@@ -256,13 +258,14 @@ worldofgoo_CallObjectMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
     } else if (strcmp(p2->name, "getLanguage") == 0) {
         return (*env)->NewStringUTF(env, "");
     } else if (strcmp(p2->name, "playSound") == 0) {
-        struct dummy_jstring *name = va_arg(p3, struct dummy_jstring *);
+        char *name_data = dup_jstring(global, va_arg(p3, jstring*));
         int loop = va_arg(p3, int);
         double volume = va_arg(p3, double);
         void *ret;
-        MODULE_DEBUG_PRINTF("playSound '%s', %d, %f\n", name->data, loop, volume);
-        ret = play_sound(name->data, loop, volume);
+        MODULE_DEBUG_PRINTF("playSound '%s', %d, %f\n", name_data, loop, volume);
+        ret = play_sound(name_data, loop, volume);
         MODULE_DEBUG_PRINTF(" = %p\n", ret);
+        free(name_data);
         return ret;
     } else {
         fprintf(stderr, "Do not know what to do: %s\n", p2->name);
@@ -276,10 +279,11 @@ worldofgoo_CallVoidMethodV(JNIEnv *env, jobject p1, jmethodID p2, va_list p3)
     MODULE_DEBUG_PRINTF("worldofgoo_CallVoidMethodV(%x, %s, %s)\n", p1, p2->name, p2->sig);
 
     if (strcmp(p2->name, "loadSound") == 0) {
-        struct dummy_jstring *arg = va_arg(p3, struct dummy_jstring *);
+        char *arg_data = dup_jstring(global, va_arg(p3, jstring*));
         int boo = va_arg(p3, int);
-        MODULE_DEBUG_PRINTF("loadSound %s, %d\n", arg->data, boo);
-        load_sound(arg->data);
+        MODULE_DEBUG_PRINTF("loadSound %s, %d\n", arg_data, boo);
+        load_sound(arg_data);
+        free(arg_data);
     } else if (strcmp(p2->name, "setSoundVolume") == 0) {
         struct player_sound *sound = va_arg(p3, struct player_sound *);
         double volume = va_arg(p3, double);
@@ -308,27 +312,33 @@ jlong
 worldofgoo_CallLongMethodV(JNIEnv *p0, jobject p1, jmethodID p2, va_list p3)
 {
     MODULE_DEBUG_PRINTF("worldofgoo_CallLongMethodV %s\n", p2->name);
-    struct dummy_jstring *str = va_arg(p3, struct dummy_jstring*);
+    char *str_data = dup_jstring(global, va_arg(p3, jstring*));
     int i;
     if (strcmp(p2->name, "getAssetFileOffset") == 0) {
         for (i = 0; i < apk_index_pos; i++) {
-            if (strstr(apk_index[i].filename, str->data) != NULL) {
+            if (strstr(apk_index[i].filename, str_data) != NULL) {
+                free(str_data);
                 return apk_index[i].offset;
             }
         }
-        fprintf(stderr, "not found: %s\n", str->data);
+        fprintf(stderr, "not found: %s\n", str_data);
+        free(str_data);
         return -1;
     } else if (strcmp(p2->name, "getAssetFileLength") == 0) {
         for (i = 0; i < apk_index_pos; i++) {
-            if (strstr(apk_index[i].filename, str->data) != NULL) {
+            if (strstr(apk_index[i].filename, str_data) != NULL) {
+                free(str_data);
                 return apk_index[i].length;
             }
         }
-        fprintf(stderr, "not found: %s\n", str->data);
+        fprintf(stderr, "not found: %s\n", str_data);
+        free(str_data);
         return -1;
     } else {
         fprintf(stderr, "Do not know what to do: %s\n", p2->name);
+        free(str_data);
     }
+    free(str_data);
     return 0;
 }
 
@@ -347,20 +357,79 @@ worldofgoo_CallBooleanMethodV(JNIEnv* p0, jobject p1, jmethodID p2, va_list p3)
     return 0;
 }
 
-jint
-worldofgoo_AttachCurrentThread(JavaVM *vm, JNIEnv **env, void *args)
+jstring ref = NULL;
+jstring str = NULL;
+
+jstring
+worldofgoo_NewStringUTF(JNIEnv* p0, const char* p1)
 {
-    MODULE_DEBUG_PRINTF("worldofgoo_AttachCurrentThread()\n");
-    struct GlobalState *global = (*vm)->reserved0;
-    *env = ENV(global);
-    return 0;
+    MODULE_DEBUG_PRINTF("worldofgoo_NewStringUTF(%x)\n", p1);
+    jstring ref_tmp;
+    jstring str_tmp;
+
+    str_tmp = global->dalvik_copy_env.NewStringUTF(p0, p1);
+    ref_tmp = global->dalvik_copy_env.NewGlobalRef(p0, str_tmp);
+
+    if(!ref_tmp)
+    {
+        return str_tmp;
+    }
+
+    jboolean iscopy;
+    const char *thestring = global->dalvik_copy_env.GetStringUTFChars(p0, ref_tmp, &iscopy);
+
+    if(thestring && strncmp(thestring, "res/", 4) == 0)
+    {
+        global->dalvik_copy_env.ReleaseStringUTFChars(p0, ref_tmp, thestring);
+        if(str != NULL)
+        {
+            fprintf(stderr, "worldofgoo NewStringUTF/NewGlobalRef hack is bad\n");
+        }
+
+        str = str_tmp;
+        ref = ref_tmp;
+        return ref;
+    }
+    else
+    {
+        // global ref not needed
+        global->dalvik_copy_env.ReleaseStringUTFChars(p0, ref_tmp, thestring);
+        global->dalvik_copy_env.DeleteGlobalRef(p0, ref_tmp);
+        return str_tmp;
+    }
+
+    return NULL;
 }
 
-jint
-worldofgoo_DetachCurrentThread(JavaVM *vm)
+void
+worldofgoo_DeleteLocalRef(JNIEnv* p0, jobject p1)
 {
-    MODULE_DEBUG_PRINTF("worldofgoo_DetachCurrentThread()\n");
-    return 0;
+    MODULE_DEBUG_PRINTF("worldofgoo_DeleteLocalRef(%x)\n", p1);
+    if(p1 == ref)
+    {
+        global->dalvik_copy_env.DeleteGlobalRef(p0, ref);
+        ref = NULL;
+    }
+    global->dalvik_copy_env.DeleteLocalRef(p0, str);
+    str = NULL;
+}
+
+jobject
+worldofgoo_NewGlobalRef(JNIEnv* p0, jobject p1)
+{
+    MODULE_DEBUG_PRINTF("worldofgoo_NewGlobalRef(%x)\n", p1);
+    if(p1 == ref)
+    {
+        return global->dalvik_copy_env.NewGlobalRef(p0, str);
+    }
+    return p1;
+}
+
+void
+worldofgoo_DeleteGlobalRef(JNIEnv* p0, jobject p1)
+{
+    MODULE_DEBUG_PRINTF("worldofgoo_DeleteGlobalRef()\n");
+    global->dalvik_copy_env.DeleteGlobalRef(p0, p1);
 }
 
 
@@ -378,8 +447,14 @@ worldofgoo_try_init(struct SupportModule *self)
     self->override_env.CallVoidMethodV = worldofgoo_CallVoidMethodV;
     self->override_env.CallLongMethodV = worldofgoo_CallLongMethodV;
     self->override_env.CallBooleanMethodV = worldofgoo_CallBooleanMethodV;
-    self->override_vm.AttachCurrentThread = worldofgoo_AttachCurrentThread;
-    self->override_vm.DetachCurrentThread = worldofgoo_DetachCurrentThread;
+
+    if(global->use_dvm)
+    {
+        self->override_env.NewGlobalRef = worldofgoo_NewGlobalRef;
+        self->override_env.DeleteGlobalRef = worldofgoo_DeleteGlobalRef;
+        self->override_env.NewStringUTF = worldofgoo_NewStringUTF;
+        self->override_env.DeleteLocalRef = worldofgoo_DeleteLocalRef;
+    }
 
     return (self->priv->nativeOnCreate != NULL &&
             self->priv->nativeOnSurfaceCreated != NULL &&
@@ -392,6 +467,8 @@ worldofgoo_try_init(struct SupportModule *self)
 static void
 worldofgoo_init(struct SupportModule *self, int width, int height, const char *home)
 {
+    global = self->global;
+
     GLOBAL_M->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
     GLOBAL_M->module_hacks->glOrthof_rotation_hack = 1;
     GLOBAL_M->module_hacks->gles_viewport_hack = 1;
