@@ -91,7 +91,7 @@ sdl_mixer_load_music_buffer(struct Mixer *mixer, const char *buffer, size_t size
 {
     struct MixerMusic *music = calloc(1, sizeof(struct MixerMusic));
     SDL_RWops *rw = SDL_RWFromConstMem(buffer, size);
-#if SDL_VERSION_ATLEAST(2,0,0)
+#if !defined(APKENV_POCKETCHIP) && SDL_VERSION_ATLEAST(2,0,0)
     music->music = Mix_LoadMUS_RW(rw, 0);
 #else
     music->music = Mix_LoadMUS_RW(rw);
