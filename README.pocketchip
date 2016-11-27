@@ -13,3 +13,8 @@ Needs a checkout and build of the Eglo library:
 Build with:
 
     make PLATFORM=pocketchip
+
+For games that don't work well with the low resolution, you can try to
+enable Eglo's experimental screen scaling feature (needs eglo 0.0.2):
+
+    env EGLO_SCALE=2 ./apkenv <...>
