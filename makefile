@@ -37,6 +37,8 @@ endif
 CFLAGS += $(SDL_CFLAGS)
 LDFLAGS += $(SDL_LDLIBS)
 
+SHELL := bash
+
 # Build configuration
 include config.mk
 
