@@ -433,8 +433,12 @@ system_init(int gles_version)
     }
 
     gles_extensions_init();
+#if defined(APKENV_GLES)
     gles1_init();
+#endif
+#if defined(APKENV_GLES2)
     gles2_init();
+#endif
 
     /* SDL loads some libs.. */
     apkenv_notify_gdb_of_libraries();
