@@ -5,10 +5,9 @@ Install dependencies:
 
     sudo apt-get install build-essential chip-mali-userspace libpng12-dev libjpeg62-turbo-dev libsdl1.2-dev libsdl-mixer1.2-dev
 
-Needs a checkout and build of the Eglo library:
+Needs build of the Eglo library:
 
-    git clone https://github.com/thp/eglo.git ../eglo
-    make -C ../eglo
+    make -C platform/pocketchip/eglo
 
 Build with:
 

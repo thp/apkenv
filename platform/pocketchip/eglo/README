@@ -1,0 +1,26 @@
+eglo -- Minimalistic X11/EGL abstraction for Pocket C.H.I.P
+===========================================================
+
+This is a minimalistic library to abstract away X11 and EGL API calls
+for applications and games intended to run on the Pocket C.H.I.P, so
+that one can simply link against libGLESv1_CM or libGLESv2 and start
+coding. No utilities, no audio functions, no toys.
+
+Build dependencies:
+
+    sudo apt-get install build-essential libx11-dev chip-mali-userspace
+
+How to build the library and example app:
+
+    make
+
+How to run the example:
+
+    ./egloapp
+
+For apps that don't work well with the small screen (480x272), you can
+set the environment variable EGLO_SCALE to enable the experimental FBO
+scaling code, for example:
+
+    env EGLO_SCALE=2 ./egloapp    # Uses virtual screen size 960x544
+    env EGLO_SCALE=4 ./egloapp    # Uses virtual screen size 1920x1088

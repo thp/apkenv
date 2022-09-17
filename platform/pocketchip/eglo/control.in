@@ -1,0 +1,9 @@
+Package: eglo
+Description: EGL/X11 Abstraction Library for Pocket C.H.I.P
+Homepage: https://github.com/thp/eglo
+Maintainer: Thomas Perl <m@thp.io>
+Priority: optional
+Architecture: armhf
+Installed-Size: --SIZE--
+Version: --VERSION--
+Depends: libx11-6, libstdc++6, chip-mali-userspace
