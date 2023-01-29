@@ -1,0 +1,49 @@
+Tested with Ubuntu 22.04.
+
+This is VERY slow (OSMesa software rendering inside QEMU userspace emulation),
+but it provides a way to test/run apkenv from a x86_64 GNU/Linux system.
+
+Install cross-compiler and qemu userspace emulation:
+
+    sudo apt install -y g++-12-arm-linux-gnueabihf qemu-user-binfmt
+
+Make sure the loader can be found:
+
+    sudo ln -s /usr/arm-linux-gnueabihf/lib/ld-linux-armhf.so.3 /usr/lib/ld-linux-armhf.so.3
+
+Prepare Mesa off-screen OpenGL renderer build:
+
+    mkdir -p deps
+    cd deps
+    wget https://archive.mesa3d.org/mesa-22.3.4.tar.xz
+    tar xvf mesa-22.3.4.tar.xz
+    cd mesa-22.3.4
+    patch -p1 < ../../platform/osmesa/mesa-22.3.4-disable-kms-drm.patch
+
+Build and install Mesa (in deps/mesa-22.3.4):
+
+    env LD_LIBRARY_PATH=/usr/arm-linux-gnueabihf/lib meson builddir \
+        -Dosmesa=true -Dgallium-drivers=swrast -Dvulkan-drivers=[] \
+        -Ddri3=disabled -Dprefix=$PWD/builddir/install \
+        -Dplatforms=[] -Dglx=disabled -Degl-native-platform=surfaceless \
+        --cross-file ../../platform/osmesa/cross.txt
+    ninja -C builddir install
+
+Prepare and build zlib (starting from the checkout dir again):
+
+    mkdir -p deps
+    cd deps
+    wget https://www.zlib.net/zlib-1.2.13.tar.gz
+    tar xvf zlib-1.2.13.tar.gz
+    cd zlib-1.2.13
+    env CC=arm-linux-gnueabihf-gcc-12 ./configure --prefix=$(pwd)/install/
+    make install
+
+Build apkenv:
+
+    make PLATFORM=osmesa V=1
+
+Run it:
+
+    LD_LIBRARY_PATH=deps/mesa-22.3.4/builddir/install/lib:/usr/arm-linux-gnueabihf/lib \
+        ./apkenv io.thp.trg2.android-1.apk

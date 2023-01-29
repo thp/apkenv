@@ -1,0 +1,21 @@
+[binaries]
+c = '/usr/bin/arm-linux-gnueabihf-gcc-12'
+cpp = '/usr/bin/arm-linux-gnueabihf-g++-12'
+ar = '/usr/bin/arm-linux-gnueabihf-ar'
+strip = '/usr/bin/arm-linux-gnueabihf-strip'
+#pkgconfig = '/usr/bin/x86_64-w64-mingw32-pkg-config'
+#windres = '/usr/bin/x86_64-w64-mingw32-windres'
+exe_wrapper = 'qemu-arm'
+
+[properties]
+# Directory that contains 'bin', 'lib', etc
+root = '/usr/arm-linux-gnueabihf/'
+# Directory that contains 'bin', 'lib', etc for the toolchain and system libraries
+# 2019-11-16: Modified by thp: Needed to set this to / to get include paths to work
+sys_root = '/'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'arm'
+cpu = 'arm'
+endian = 'little'

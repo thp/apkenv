@@ -1,0 +1,12 @@
+diff -ru mesa-22.3.4/meson.build mesa-22.3.4.patched/meson.build
+--- mesa-22.3.4/meson.build	2023-01-26 18:07:55.000000000 +0100
++++ mesa-22.3.4.patched/meson.build	2023-01-29 15:15:58.518396227 +0100
+@@ -173,7 +173,7 @@
+ # Only build shared_glapi if at least one OpenGL API is enabled
+ with_shared_glapi = with_shared_glapi and with_any_opengl
+ 
+-system_has_kms_drm = ['openbsd', 'netbsd', 'freebsd', 'gnu/kfreebsd', 'dragonfly', 'linux', 'sunos', 'android'].contains(host_machine.system())
++system_has_kms_drm = false #['openbsd', 'netbsd', 'freebsd', 'gnu/kfreebsd', 'dragonfly', 'linux', 'sunos', 'android'].contains(host_machine.system())
+ 
+ with_freedreno_kgsl = get_option('freedreno-kgsl')
+ if with_freedreno_kgsl

@@ -204,6 +204,9 @@ load_modules(const char *dirname)
     strcat(tmp, "/");
     char *filename = tmp + strlen(dirname) + 1;
 
+    // For 32-bit qemu userspace emulation on 64-bit hosts and ext4:
+    // https://gitlab.com/qemu-project/qemu/-/issues/263
+    // Can be worked around by mounting "staging/" as a tmpfs
     struct dirent *ent;
     while ((ent = readdir(dir)) != NULL) {
         int len = strlen(ent->d_name) - strlen(APKENV_MODULE_SUFFIX);

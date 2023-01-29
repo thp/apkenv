@@ -59,11 +59,15 @@ modules: $(MODULES)
 
 $(TARGET): $(OBJS)
 	$(SILENTMSG) -e "\tLINK\t$@"
-	$(SILENTCMD)$(CC) $(LDFLAGS) $(OBJS) -o $@
+	$(SILENTCMD)$(CC) $(OBJS) $(LDFLAGS) -o $@
 
 debug/wrappers/%_thumb.o: debug/wrappers/%_thumb.c
 	$(SILENTMSG) -e "\tCC (TH)\t$@"
+ifeq ($(PLATFORM),osmesa)
+	$(SILENTCMD)$(CC) -O0 -c -o $@ $<
+else
 	$(SILENTCMD)$(CC) -mthumb -march=armv7-a -O0 -c -o $@ $<
+endif
 
 debug/wrappers/%_arm.o: debug/wrappers/%_arm.c
 	$(SILENTMSG) -e "\tCC\t$@"

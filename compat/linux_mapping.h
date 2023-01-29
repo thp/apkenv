@@ -1,4 +1,6 @@
+#if !defined(APKENV_OSMESA)
 {"bsd_signal", bsd_signal},
+#endif /* APKENV_OSMESA */
 {"strcasecmp", my_strcasecmp},
 {"mprotect", mprotect},
 {"access", access},

@@ -19,6 +19,9 @@ V ?= 0
 # Default linker flags
 LDFLAGS += -fPIC -rdynamic -pthread -ldl -lz
 
+# Default preprocessor defines
+CFLAGS += -D_GNU_SOURCE
+
 # world of goo workaround
 ifeq ($(PLATFORM),sailfish)
 	CFLAGS += -DPLATFORM_SAILFISH

@@ -18,8 +18,6 @@
 
 #include "hooks_shm.h"
 
-#define _GNU_SOURCE
-
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>

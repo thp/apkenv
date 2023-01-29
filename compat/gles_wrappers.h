@@ -524,8 +524,12 @@ my_glMultiDrawElementsEXT(GLenum mode, const GLsizei *count, GLenum type, const 
 void
 gles_extensions_init();
 
+void gles1_init(void);
+
 #else
 
 #define gles_extensions_init()
+
+#define gles1_init()
 
 #endif /* APKENV_GLES */

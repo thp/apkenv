@@ -36,6 +36,12 @@
 
 #include "../apkenv.h"
 
+#if defined(APKENV_OSMESA)
+typedef struct timezone *__timezone_ptr_t;
+#include <sys/uio.h>
+#endif /* APKENV_OSMESA */
+
+
 extern int my___isthreaded;
 int*
 my___errno() SOFTFP;
