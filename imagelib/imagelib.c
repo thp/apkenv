@@ -35,6 +35,13 @@
 #include <stdio.h>
 #include <string.h>
 
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_NO_STDIO
+#define STBI_ONLY_JPEG
+#define STBI_ONLY_PNG
+
+#include "stb_image.h"
+
 
 image_t *
 imagelib_load_from_disk(const char *filename, const imageloadersettings_t settings)
@@ -58,11 +65,12 @@ imagelib_load_from_disk(const char *filename, const imageloadersettings_t settin
 image_t *
 imagelib_load_from_mem(char *buf, size_t size, const imageloadersettings_t settings)
 {
-    const unsigned char png_magic[] = { 0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A };
+    image_t *result = malloc(sizeof(image_t));
+    memset(result, 0, sizeof(*result));
 
-    if (memcmp(buf, png_magic, sizeof(png_magic)) == 0) {
-        return imagelib_load_png_from_mem(buf, size, settings);
-    } else {
-        return imagelib_load_jpeg_from_mem(buf, size, settings);
-    }
+    // TODO: settings is currently ignored
+
+    result->data = stbi_load_from_memory(buf, size, &result->width, &result->height, &result->bpp, 4);
+
+    return result;
 }

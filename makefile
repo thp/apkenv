@@ -8,19 +8,6 @@ ifeq ($(shell which $(PKG_CONFIG) 2>/dev/null),)
   $(error $(PKG_CONFIG) not found)
 endif
 
-LIBPNG_MOD_VERSION := $(shell $(PKG_CONFIG) --modversion libpng | grep -o "[0-9]\.[0-9]" 2>/dev/null)
-ifeq ($(shell $(PKG_CONFIG) --modversion libpng 2>/dev/null),)
-  $(error No libpng development libraries found!)
-else
-  LIBPNG_CFLAGS ?= $(shell $(PKG_CONFIG) --cflags libpng)
-  LIBPNG_LDLIBS ?=  $(shell $(PKG_CONFIG) --libs libpng)
-endif
-ifeq ($(LIBPNG_MOD_VERSION),1.2)
-  LIBPNG_CFLAGS += -DLIBPNG_LEGACY
-endif
-CFLAGS += $(LIBPNG_CFLAGS)
-LDFLAGS += $(LIBPNG_LDLIBS)
-
 ifeq ($(origin SDL_CFLAGS) $(origin SDL_LDLIBS), undefined undefined)
   SDL_CONFIG = $(CROSS_COMPILE)sdl2-config
   ifeq ($(shell which $(SDL_CONFIG) 2>/dev/null),)

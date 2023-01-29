@@ -118,6 +118,10 @@ apklib/ioapi_mem.c:
     Copyright (C) 1998-2003 Gilles Vollant
     Copyright (C) 2003 Justin Fletcher
 
+imagelib/stb_image.h:
+    stb_image - v2.27 - public domain image loader - http://nothings.org/stb
+    Copyright (c) 2017 Sean Barrett
+
 linker/*:
     The Android Bionic Linker + The Android Bionic C Library
     Copyright (c) 2005-2008, The Android Open Source Project

@@ -37,7 +37,4 @@
 image_t *imagelib_load_from_disk(const char *filename, const imageloadersettings_t settings);
 image_t *imagelib_load_from_mem(char *buf, size_t size, const imageloadersettings_t settings);
 
-image_t *imagelib_load_png_from_mem(char* buf, size_t size, const imageloadersettings_t settings);
-image_t *imagelib_load_jpeg_from_mem(char* buf, size_t size, const imageloadersettings_t settings);
-
 #endif /* APKENV_IMAGELIB_PRIV_H */

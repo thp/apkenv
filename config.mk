@@ -17,7 +17,7 @@ PLATFORM ?= harmattan
 V ?= 0
 
 # Default linker flags
-LDFLAGS += -fPIC -rdynamic -pthread -ldl -lz -lpng -ljpeg
+LDFLAGS += -fPIC -rdynamic -pthread -ldl -lz
 
 # world of goo workaround
 ifeq ($(PLATFORM),sailfish)
