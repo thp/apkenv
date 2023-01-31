@@ -39,21 +39,71 @@ parser.add_argument('outfile', type=str, help='Output file')
 args = parser.parse_args()
 
 IMPLEMENTED_FUNCS = """
+glAlphaFunc
+glClearColor
+glClearDepthf
+#glClipPlanef
+glColor4f
+glDepthRangef
+glFogf
+#glFogfv
+glFrustumf
+#glGetClipPlanef
+#glGetFloatv
+#glGetLightfv
+#glGetMaterialfv
+#glGetTexEnvfv
+#glGetTexParameterfv
+glLightModelf
+glLightModelfv
+glLightf
+glLightfv
+glLineWidth
+glLoadMatrixf
+glMaterialf
+glMaterialfv
+glMultMatrixf
+glMultiTexCoord4f
+glNormal3f
+glOrthof
+glPointParameterf
+#glPointParameterfv
+glPointSize
+glPolygonOffset
+glRotatef
+glScalef
+glTexEnvf
+#glTexEnvfv
+glTexParameterf
+#glTexParameterfv
+glTranslatef
+glActiveTexture
+glAlphaFuncx
 glBindBuffer
 glBindTexture
 glBlendFunc
 glBufferData
 glBufferSubData
 glClear
-glClearColor
-glClearDepthf
+glClearColorx
+glClearDepthx
+glClearStencil
 glClientActiveTexture
-glColor4f
+#glClipPlanex
+glColor4ub
+glColor4x
+glColorMask
 glColorPointer
+#glCompressedTexImage2D
+#glCompressedTexSubImage2D
+#glCopyTexImage2D
+#glCopyTexSubImage2D
 glCullFace
 glDeleteBuffers
 glDeleteTextures
+glDepthFunc
 glDepthMask
+glDepthRangex
 glDisable
 glDisableClientState
 glDrawArrays
@@ -62,25 +112,78 @@ glEnable
 glEnableClientState
 glFinish
 glFlush
+glFogx
+#glFogxv
+glFrontFace
+glFrustumx
+#glGetBooleanv
+#glGetBufferParameteriv
+#glGetClipPlanex
 glGenBuffers
 glGenTextures
 glGetError
-glLightfv
-glLightModelfv
+#glGetFixedv
+#glGetIntegerv
+#glGetLightxv
+#glGetMaterialxv
+#glGetPointerv
+#glGetString
+#glGetTexEnviv
+#glGetTexEnvxv
+#glGetTexParameteriv
+#glGetTexParameterxv
+glHint
+glIsBuffer
+glIsEnabled
+glIsTexture
+glLightModelx
+#glLightModelxv
+glLightx
+#glLightxv
+glLineWidthx
 glLoadIdentity
-glLoadMatrixf
-glMaterialf
-glMaterialfv
+#glLoadMatrixx
+glLogicOp
+glMaterialx
+#glMaterialxv
 glMatrixMode
-glMultMatrixf
+#glMultMatrixx
+glMultiTexCoord4x
+glNormal3x
 glNormalPointer
+glOrthox
+glPixelStorei
+glPointParameterx
+#glPointParameterxv
+glPointSizex
+glPolygonOffsetx
 glPopMatrix
 glPushMatrix
+#glReadPixels
+glRotatex
+glSampleCoverage
+glSampleCoveragex
+glScalex
+glScissor
+glShadeModel
+glStencilFunc
+glStencilMask
+glStencilOp
 glTexCoordPointer
+glTexEnvi
+glTexEnvx
+#glTexEnviv
+#glTexEnvxv
 glTexImage2D
 glTexParameteri
+glTexParameterx
+#glTexParameteriv
+#glTexParameterxv
+glTexSubImage2D
+glTranslatex
 glVertexPointer
 glViewport
+#glPointSizePointerOES
 """.strip().split()
 
 DELAYED_FUNCTIONS = {
@@ -102,6 +205,10 @@ HOOK_FUNCTIONS = {
 func_re = re.compile(r'\s*(.*) \(\*(\w+)\)\((.*)\);$')
 
 def parse_arg(arg):
+    m = re.match(r'GLfloat (\w+)(\[\d+\])', arg)
+    if m is not None:
+        return ('GLfloat *', 'emit_float_array...', 'read_float_array...', m.group(1))
+
     m = re.match(r'(?:GLenum|GLclampx|GLuint|GLsizeiptr|GLintptr|GLbitfield|GLubyte|GLboolean|GLsizei) (\w+)', arg)
     if m is not None:
         return ('uint32_t', 'emit_uint32', 'read_uint32', m.group(1))
@@ -120,7 +227,7 @@ def parse_arg(arg):
 
     m = re.match(r'GLboolean \*(\w+)', arg)
     if m is not None:
-        return ('bool', 'emit_bool...', 'read_bool...', m.group(1))
+        return ('GLboolean', 'emit_uint32', 'read_uint32', m.group(1))
 
     m = re.match(r'(?:GLclampf|GLfloat) (\w+)', arg)
     if m is not None:

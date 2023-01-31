@@ -102,11 +102,33 @@ static void
 emit_pointer_glTexImage2D_pixels(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const GLvoid *pixels)
 {
     size_t size = get_texture_image_size(width, height, format, type);
-    emit_bytes(pixels, size);
+    if (pixels == NULL) {
+        uint8_t *tmp = malloc(size);
+        memset(tmp, 0, size);
+        emit_bytes(tmp, size);
+        free(tmp);
+    } else {
+        emit_bytes(pixels, size);
+    }
 }
 
 static const void *
 read_pointer_glTexImage2D_pixels(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type)
+{
+    size_t size = get_texture_image_size(width, height, format, type);
+
+    return read_bytes(size);
+}
+
+static void
+emit_pointer_glTexSubImage2D_pixels(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type, const GLvoid *pixels)
+{
+    size_t size = get_texture_image_size(width, height, format, type);
+    emit_bytes(pixels, size);
+}
+
+static const void *
+read_pointer_glTexSubImage2D_pixels(GLenum target, GLint level, GLint xoffset, GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type)
 {
     size_t size = get_texture_image_size(width, height, format, type);
 
