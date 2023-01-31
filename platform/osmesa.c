@@ -30,17 +30,21 @@
 
 
 #include "../apkenv.h"
+#include "../compat/gles_wrappers.h"
+#include "../mixer/mixer.h"
 
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <inttypes.h>
 #include <sys/wait.h>
 #include <sys/errno.h>
 
 #include <GL/osmesa.h>
 #include <EGL/egl.h>
 
+extern struct GlobalState global;
 
 struct PlatformPriv {
     OSMesaContext ctx;
@@ -68,6 +72,7 @@ hostui_rpc(const char *cmd)
         if (res < 0) {
             fprintf(stderr, "Could not write to host UI: %s\n", strerror(errno));
             exit(1);
+            return NULL;
         }
 
         pos += res;
@@ -77,6 +82,7 @@ hostui_rpc(const char *cmd)
     if (TEMP_FAILURE_RETRY(write(priv.hostui.write_fd, &nl, 1)) != 1) {
         fprintf(stderr, "Could not write to host UI: %s\n", strerror(errno));
         exit(1);
+        return NULL;
     }
 
     static char tmp[1024];
@@ -89,6 +95,7 @@ hostui_rpc(const char *cmd)
         if (res < 0) {
             fprintf(stderr, "Could not read from host UI: %s\n", strerror(errno));
             exit(1);
+            return NULL;
         }
 
         if (tmp[pos] == '\n') {
@@ -101,6 +108,19 @@ hostui_rpc(const char *cmd)
     tmp[pos] = '\0';
 
     return tmp;
+}
+
+static const char *
+hostui_rpc_printf(const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    char *tmp;
+    vasprintf(&tmp, fmt, args);
+    const char *result = hostui_rpc(tmp);
+    free(tmp);
+    va_end(args);
+    return result;
 }
 
 static void
@@ -131,6 +151,170 @@ hostui_rpc_scanf(const char *cmd, const char *fmt, ...)
 
     return res;
 }
+
+static void
+osmesa_data_sink_gles1(const void *data, size_t len, void *user_data)
+{
+    hostui_rpc_printf("gles1 %zu", len);
+    hostui_tx_bytes(data, len);
+}
+
+struct MixerSound {
+    uint64_t handle;
+};
+
+struct MixerMusic {
+    uint64_t handle;
+};
+
+static int
+hostui_mixer_open(struct Mixer *mixer)
+{
+    const char *result = hostui_rpc_printf("mixer open %d %d %d %d",
+            mixer->config.frequency, mixer->config.format,
+            mixer->config.channels, mixer->config.buffer);
+
+    return strcmp(result, "ok") == 0;
+}
+
+static void
+hostui_mixer_close(struct Mixer *mixer)
+{
+    hostui_rpc("mixer close");
+}
+
+static struct MixerMusic *
+hostui_mixer_load_music(struct Mixer *mixer, const char *filename)
+{
+    const char *ptr = hostui_rpc_printf("mixer load-music %s", filename);
+
+    struct MixerMusic *music = malloc(sizeof(struct MixerMusic));
+    music->handle = strtoull(ptr, NULL, 16);
+    return music;
+}
+
+static struct MixerMusic *
+hostui_mixer_load_music_buffer(struct Mixer *mixer,
+        const char *buffer, size_t size)
+{
+    fprintf(stderr, "stub load music buffer %p %zu\n", buffer, size);
+    return NULL;
+}
+
+static struct MixerSound *
+hostui_mixer_load_sound(struct Mixer *mixer, const char *filename)
+{
+    fprintf(stderr, "stub load sound %s\n", filename);
+    return NULL;
+}
+
+static struct MixerSound *
+hostui_mixer_load_sound_buffer(struct Mixer *mixer,
+            const char *buffer, size_t size)
+{
+    hostui_rpc_printf("mixer load-sound-buffer %d", (int)size);
+    hostui_tx_bytes(buffer, size);
+
+    const char *ptr = hostui_rpc("retrieve-pointer");
+
+    struct MixerSound *sound = malloc(sizeof(struct MixerSound));
+
+    sound->handle = strtoull(ptr, NULL, 16);
+    return sound;
+}
+
+static void
+hostui_mixer_free_music(struct Mixer *mixer, struct MixerMusic *music)
+{
+    hostui_rpc_printf("mixer free-music %" PRIx64, music->handle);
+    free(music);
+}
+
+static void
+hostui_mixer_free_sound(struct Mixer *mixer, struct MixerSound *sound)
+{
+    hostui_rpc_printf("mixer free-sound %" PRIx64, sound->handle);
+    free(sound);
+}
+
+static void
+hostui_mixer_play_music(struct Mixer *mixer, struct MixerMusic *music, int do_loop)
+{
+    hostui_rpc_printf("mixer play-music %" PRIx64 " %d", music->handle, do_loop);
+}
+
+static void
+hostui_mixer_play_sound(struct Mixer *mixer, struct MixerSound *sound, int do_loop)
+{
+    hostui_rpc_printf("mixer play-sound %" PRIx64 " %d", sound->handle, do_loop);
+}
+
+static void
+hostui_mixer_stop_music(struct Mixer *mixer, struct MixerMusic *music)
+{
+    hostui_rpc_printf("mixer stop-music %" PRIx64, music->handle);
+}
+
+static void
+hostui_mixer_stop_sound(struct Mixer *mixer, struct MixerSound *sound)
+{
+    hostui_rpc_printf("mixer stop-sound %" PRIx64, sound->handle);
+}
+
+#define HOSTUI_MIXER_NOT_IMPLEMENTED() fprintf(stderr, "%s: Not implemented\n", __func__); exit(1)
+
+static int
+hostui_mixer_get_sound_channel(struct Mixer *mixer, struct MixerSound *sound)
+{
+    HOSTUI_MIXER_NOT_IMPLEMENTED();
+}
+
+static void
+hostui_mixer_set_sound_channel(struct Mixer *mixer, struct MixerSound *sound, int channel)
+{
+    HOSTUI_MIXER_NOT_IMPLEMENTED();
+}
+
+static void
+hostui_mixer_volume_music(struct Mixer *mixer, struct MixerMusic *music, float volume)
+{
+    hostui_rpc_printf("mixer volume-music %" PRIx64 " %d", music->handle, (int)(100.f * volume));
+}
+
+static void
+hostui_mixer_volume_sound(struct Mixer *mixer, struct MixerSound *sound, float volume)
+{
+    hostui_rpc_printf("mixer volume-sound %" PRIx64 " %d", sound->handle, (int)(100.f * volume));
+}
+
+static void
+hostui_mixer_lame_resample_44100_32000(struct Mixer *mixer, struct MixerSound *sound)
+{
+    HOSTUI_MIXER_NOT_IMPLEMENTED();
+}
+
+static struct Mixer
+hostui_mixer = {
+    hostui_mixer_open,
+    hostui_mixer_close,
+    hostui_mixer_load_music,
+    hostui_mixer_load_music_buffer,
+    hostui_mixer_load_sound,
+    hostui_mixer_load_sound_buffer,
+    hostui_mixer_free_music,
+    hostui_mixer_free_sound,
+    hostui_mixer_play_music,
+    hostui_mixer_play_sound,
+    hostui_mixer_stop_music,
+    hostui_mixer_stop_sound,
+    hostui_mixer_get_sound_channel,
+    hostui_mixer_set_sound_channel,
+    hostui_mixer_volume_music,
+    hostui_mixer_volume_sound,
+    hostui_mixer_lame_resample_44100_32000,
+    { 0 },
+};
+
 
 static int
 osmesa_init(int gles_version)
@@ -194,7 +378,13 @@ osmesa_init(int gles_version)
 
     OSMesaMakeCurrent(priv.ctx, priv.pixels, GL_UNSIGNED_BYTE, priv.width, priv.height);
 
-    // TODO: apkenv_audio_register(), apkenv_mixer_register()
+    if (global.use_gles_serialize) {
+        gles_serialize_set_sink(osmesa_data_sink_gles1, NULL);
+    }
+
+    // TODO: apkenv_audio_register()
+
+    apkenv_mixer_register(&hostui_mixer);
 
     return 1;
 }
@@ -273,11 +463,13 @@ osmesa_request_text_input(int is_password, const char *text,
 static void
 osmesa_update()
 {
-    glFinish();
-    glFlush();
+    if (!global.use_gles_serialize) {
+        glFinish();
+        glFlush();
 
-    hostui_rpc("blit");
-    hostui_tx_bytes(priv.pixels, sizeof(uint32_t) * priv.width * priv.height);
+        hostui_rpc("blit");
+        hostui_tx_bytes(priv.pixels, sizeof(uint32_t) * priv.width * priv.height);
+    }
 
     hostui_rpc("swap");
 }

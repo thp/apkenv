@@ -7,3 +7,4 @@ apkenv
 *.apkenv.so
 libdvm_compat.so
 hostui
+compat/gen/gles_serialize.c

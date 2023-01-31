@@ -216,6 +216,7 @@ struct GlobalState {
     recursive_mkdir_t recursive_mkdir;
     lookup_resource_t lookup_resource;
     image_loader_t image_loader;
+    int use_gles_serialize;
 };
 
 #define VM(global_ptr) ((global_ptr)->_vm ? (JavaVM*)((global_ptr)->_vm) : &((global_ptr->vm)))

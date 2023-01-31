@@ -7,7 +7,7 @@ SOURCES += platform/osmesa.c
 
 CFLAGS += -DAPKENV_OSMESA -DAPKENV_GLES -DAPKENV_GLES2 -Iplatform/osmesa
 
-LDFLAGS += -lGLESv1_CM -lGLESv2 -lm
+LDFLAGS += -lm
 LDFLAGS += -lrt -Wl,-rpath,.
 LDFLAGS += -Wl,-rpath,/usr/arm-linux-gnueabihf/lib
 
@@ -26,7 +26,7 @@ BIONIC_LIBS := $(wildcard libs/harmattan/*.so)
 CFLAGS += -DAPKENV_LOCAL_BIONIC_PATH=\"./libs/harmattan/\"
 
 hostui: hostui.c
-	$(HOSTCC) -o $@ -D_GNU_SOURCE $< $(shell sdl2-config --libs --cflags) -lGL
+	$(HOSTCC) -o $@ -D_GNU_SOURCE $< $(shell sdl2-config --libs --cflags) -lSDL2_mixer -lGL
 
 PLATFORM_TARGETS += hostui
 

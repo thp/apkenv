@@ -44,6 +44,9 @@ SOURCES += $(wildcard accelerometer/*.c)
 SOURCES += $(wildcard audio/*.c)
 SOURCES += $(wildcard mixer/*.c)
 
+GENERATED_FILES += compat/gen/gles_serialize.c
+SOURCES += $(GENERATED_FILES)
+
 # Platform-specific targets and configuration
 PLATFORM_INSTALL_TARGETS :=
 include platform/$(PLATFORM).mk
@@ -65,6 +68,11 @@ platform_targets: $(PLATFORM_TARGETS)
 $(TARGET): $(OBJS)
 	$(SILENTMSG) -e "\tLINK\t$@"
 	$(SILENTCMD)$(CC) $(OBJS) $(LDFLAGS) -o $@
+
+compat/gen/gles_serialize.c: compat/wrapgen2.py compat/gles_vtable.h
+	$(SILENTMSG) -e "\tGEN\t$@"
+	$(SILENTCMD)mkdir -p $(dir $@)
+	$(SILENTCMD)python3 $+ $@
 
 debug/wrappers/%_thumb.o: debug/wrappers/%_thumb.c
 	$(SILENTMSG) -e "\tCC (TH)\t$@"
@@ -108,7 +116,7 @@ install: $(TARGET) $(MODULES) $(PLATFORM_INSTALL_TARGETS)
 
 clean:
 	$(SILENTMSG) -e "\tCLEAN"
-	$(SILENTCMD)rm -rf $(TARGET) $(OBJS) $(MODULES) $(DEPS) hostui
+	$(SILENTCMD)rm -rf $(TARGET) $(OBJS) $(MODULES) $(DEPS) hostui $(GENERATED_FILES)
 
 distclean: clean
 

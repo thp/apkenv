@@ -343,6 +343,9 @@ usage()
     printf("\t--trace-all|-ta\t\t\t\tTrace all functions.\n");
     printf("\t--use-dvm <path/to/android>\t\tUse the dalvikvm instead of our fake vm.\n");
     printf("\t--load <module.apkenv.so>\t\tLoad support module directly\n");
+#if defined(APKENV_OSMESA)
+    printf("\t--serialize-gles\t\t\tUse GLES serialization acceleration (EXPERIMENTAL)\n");
+#endif /* APKENV_OSMESA */
     printf("\t--help|-h\t\t\t\tPrint this help.\n");
     
     exit(1);
@@ -600,6 +603,7 @@ int main(int argc, char **argv)
     global.trace_arm_injection = 0;
     global.trace_thumb_injection = 0; 
     global.functions_to_trace = NULL;
+    global.use_gles_serialize = 0;
     
     global.use_dvm = 0;
 
@@ -673,6 +677,9 @@ int main(int argc, char **argv)
                     last->next->name = argv[i];
                     last->next->next = NULL;
                 }
+            }
+            else if (strcmp(argv[i], "--serialize-gles") == 0) {
+                global.use_gles_serialize = 1;
             }
             else if (strcmp(argv[i], "--load") == 0) {
                 i++;
