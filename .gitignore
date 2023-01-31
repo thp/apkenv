@@ -6,3 +6,4 @@ out
 apkenv
 *.apkenv.so
 libdvm_compat.so
+hostui

@@ -32,6 +32,11 @@
 #include "../apkenv.h"
 
 #include <stdio.h>
+#include <string.h>
+#include <stdarg.h>
+#include <stdbool.h>
+#include <sys/wait.h>
+#include <sys/errno.h>
 
 #include <GL/osmesa.h>
 #include <EGL/egl.h>
@@ -43,18 +48,147 @@ struct PlatformPriv {
     uint32_t *pixels;
     int width;
     int height;
+
+    struct {
+        int pid;
+        int write_fd;
+        int read_fd;
+    } hostui;
 };
 
 static struct PlatformPriv priv;
 
+static const char *
+hostui_rpc(const char *cmd)
+{
+    size_t len = strlen(cmd);
+    size_t pos = 0;
+    while (pos < len) {
+        ssize_t res = TEMP_FAILURE_RETRY(write(priv.hostui.write_fd, cmd + pos, len - pos));
+        if (res < 0) {
+            fprintf(stderr, "Could not write to host UI: %s\n", strerror(errno));
+            exit(1);
+        }
+
+        pos += res;
+    }
+
+    char nl = '\n';
+    if (TEMP_FAILURE_RETRY(write(priv.hostui.write_fd, &nl, 1)) != 1) {
+        fprintf(stderr, "Could not write to host UI: %s\n", strerror(errno));
+        exit(1);
+    }
+
+    static char tmp[1024];
+
+    memset(tmp, 0, sizeof(tmp));
+    pos = 0;
+
+    while (pos < sizeof(tmp) - 1) {
+        ssize_t res = TEMP_FAILURE_RETRY(read(priv.hostui.read_fd, tmp + pos, 1));
+        if (res < 0) {
+            fprintf(stderr, "Could not read from host UI: %s\n", strerror(errno));
+            exit(1);
+        }
+
+        if (tmp[pos] == '\n') {
+            break;
+        }
+
+        ++pos;
+    }
+
+    tmp[pos] = '\0';
+
+    return tmp;
+}
+
+static void
+hostui_tx_bytes(const char *data, size_t len)
+{
+    size_t pos = 0;
+    while (pos < len) {
+        ssize_t res = TEMP_FAILURE_RETRY(write(priv.hostui.write_fd, data + pos, len - pos));
+        if (res < 0) {
+            fprintf(stderr, "Could not write to host UI: %s\n", strerror(errno));
+            exit(1);
+        }
+
+        pos += res;
+    }
+}
+
+static int
+hostui_rpc_scanf(const char *cmd, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+
+    const char *reply = hostui_rpc(cmd);
+    int res = vsscanf(reply, fmt, args);
+
+    va_end(args);
+
+    return res;
+}
 
 static int
 osmesa_init(int gles_version)
 {
-    priv.ctx = OSMesaCreateContextExt(OSMESA_RGBA, 16, 0, 0, NULL);
+    // Create Host UI connection
 
-    priv.width = 960;
-    priv.height = 540;
+    int to_host_fds[2];
+
+    int res = pipe(to_host_fds);
+    if (res != 0) {
+        fprintf(stderr, "Could not create pipe\n");
+        exit(1);
+    }
+
+    int from_host_fds[2];
+    res = pipe(from_host_fds);
+    if (res != 0) {
+        fprintf(stderr, "Could not create pipe\n");
+        exit(1);
+    }
+
+    int pid = fork();
+    if (pid == 0) {
+        // in child
+        close(to_host_fds[1]);
+        close(from_host_fds[0]);
+
+        int res = dup2(to_host_fds[0], STDIN_FILENO);
+        if (res == -1) {
+            printf("child could not dup2() -> stdin (%s)\n", strerror(errno));
+            exit(1);
+        }
+
+        res = dup2(from_host_fds[1], STDOUT_FILENO);
+        if (res == -1) {
+            printf("child could not dup2() -> stdout (%s)\n", strerror(errno));
+            exit(1);
+        }
+
+        res = execl("./hostui", "./hostui", NULL);
+        printf("exec failed\n");
+        exit(1);
+    } else {
+        // in parent
+        close(to_host_fds[0]);
+        close(from_host_fds[1]);
+
+        priv.hostui.pid = pid;
+        priv.hostui.write_fd = to_host_fds[1];
+        priv.hostui.read_fd = from_host_fds[0];
+    }
+
+    if (hostui_rpc_scanf("size", "%d %d", &priv.width, &priv.height) != 2) {
+        fprintf(stderr, "Could not get window size\n");
+        exit(1);
+    }
+
+    priv.ctx = OSMesaCreateContextExt(OSMESA_RGBA, 16, 0, 0, NULL);
 
     priv.pixels = malloc(sizeof(uint32_t) * priv.width * priv.height);
 
@@ -91,11 +225,31 @@ osmesa_get_size(int *width, int *height)
     }
 }
 
+static bool
+starts_with(const char *haystack, const char *prefix)
+{
+    return strncmp(haystack, prefix, strlen(prefix)) == 0;
+}
+
 static int
 osmesa_input_update(struct SupportModule *module)
 {
-    // TODO: Call module->input(module, ...);
-    fprintf(stderr, "TODO: Input update\n");
+    while (true) {
+        const char *reply = hostui_rpc("poll");
+
+        int action, x, y;
+        if (strcmp(reply, "none") == 0) {
+            break;
+        } else if (strcmp(reply, "quit") == 0) {
+            return 1;
+        } else if (sscanf(reply, "mouse %d %d %d", &action, &x, &y) == 3) {
+            module->input(module, action, x, y, 0);
+        } else {
+            printf("reply: >%s<\n", reply);
+            fprintf(stderr, "unhandled: >%s<\n", reply);
+            exit(1);
+        }
+    }
 
     return 0;
 }
@@ -119,30 +273,32 @@ osmesa_request_text_input(int is_password, const char *text,
 static void
 osmesa_update()
 {
-    printf("- SWAP -\n");
     glFinish();
     glFlush();
 
-    FILE *fp = fopen("screen.ppm", "wb");
-    if (fp != NULL) {
-        fprintf(fp, "P6\n%d %d\n255\n", priv.width, priv.height);
+    hostui_rpc("blit");
+    hostui_tx_bytes(priv.pixels, sizeof(uint32_t) * priv.width * priv.height);
 
-        const uint8_t *src = (const uint8_t *)priv.pixels;
-        for (int y=0; y<priv.height; ++y) {
-            int base = priv.width * (priv.height - 1 - y);
-            for (int x=0; x<priv.width; ++x) {
-                fputc(src[(base+x)*4+0], fp);
-                fputc(src[(base+x)*4+1], fp);
-                fputc(src[(base+x)*4+2], fp);
-            }
-        }
-        fclose(fp);
-    }
+    hostui_rpc("swap");
 }
 
 static void
 osmesa_exit()
 {
+    hostui_rpc("exit");
+
+    close(priv.hostui.write_fd);
+    close(priv.hostui.read_fd);
+
+    printf("Waiting for Host UI to close...\n");
+    int status;
+    if (waitpid(priv.hostui.pid, &status, 0) != -1 && WIFEXITED(status)) {
+        printf("Host UI exit status: %d\n", WEXITSTATUS(status));
+    } else {
+        printf("waitpid() on hostui failed: %s\n", strerror(errno));
+        exit(1);
+    }
+
     free(priv.pixels);
 
     OSMesaDestroyContext(priv.ctx);

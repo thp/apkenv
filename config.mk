@@ -11,7 +11,7 @@ DESTDIR ?= /
 PREFIX ?= /usr
 
 # Target platform
-PLATFORM ?= harmattan
+PLATFORM ?= osmesa
 
 # Set to 1 for verbose compile output
 V ?= 0

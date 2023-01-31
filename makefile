@@ -1,7 +1,7 @@
 TARGET := apkenv
 
 # Default target, make sure this is always first
-all: $(TARGET) modules
+all: $(TARGET) modules platform_targets
 
 PKG_CONFIG ?= $(CROSS_COMPILE)pkg-config
 ifeq ($(shell which $(PKG_CONFIG) 2>/dev/null),)
@@ -25,6 +25,9 @@ CFLAGS += $(SDL_CFLAGS)
 LDFLAGS += $(SDL_LDLIBS)
 
 SHELL := bash
+
+HOSTCC ?= cc
+PLATFORM_TARGETS :=
 
 # Build configuration
 include config.mk
@@ -56,6 +59,8 @@ MODULES := $(patsubst modules/%.c,%.apkenv.so,$(MODULES_SOURCES))
 DEPS := $(patsubst %.c,%.d,$(SOURCES)) $(patsubst %.c,%.d,$(MODULES_SOURCES))
 
 modules: $(MODULES)
+
+platform_targets: $(PLATFORM_TARGETS)
 
 $(TARGET): $(OBJS)
 	$(SILENTMSG) -e "\tLINK\t$@"
@@ -103,7 +108,7 @@ install: $(TARGET) $(MODULES) $(PLATFORM_INSTALL_TARGETS)
 
 clean:
 	$(SILENTMSG) -e "\tCLEAN"
-	$(SILENTCMD)rm -rf $(TARGET) $(OBJS) $(MODULES) $(DEPS)
+	$(SILENTCMD)rm -rf $(TARGET) $(OBJS) $(MODULES) $(DEPS) hostui
 
 distclean: clean
 
@@ -112,4 +117,4 @@ ifneq ($(MAKECMDGOALS),clean)
 endif
 
 .DEFAULT: all
-.PHONY: all modules install clean distclean
+.PHONY: all modules install clean distclean platform_targets

@@ -13,17 +13,22 @@ LDFLAGS += -Wl,-rpath,/usr/arm-linux-gnueabihf/lib
 
 # OSMesa
 LDFLAGS += -lOSMesa -L$(OSMESA_PATH)/lib
-LDFLAGS += -Wl,-rpath,$(ZLIB_PATH)/lib
+LDFLAGS += -Wl,-rpath,$(OSMESA_PATH)/lib
 CFLAGS += -I$(OSMESA_PATH)/include
 
 # zlib
 LDFLAGS += -L$(ZLIB_PATH)/lib -lz
-LDFLAGS += -Wl,-rpath,$(OSMESA_PATH)/lib
+LDFLAGS += -Wl,-rpath,$(ZLIB_PATH)/lib
 CFLAGS += -I$(ZLIB_PATH)/include
 
 BIONIC_LIBS := $(wildcard libs/harmattan/*.so)
 
 CFLAGS += -DAPKENV_LOCAL_BIONIC_PATH=\"./libs/harmattan/\"
+
+hostui: hostui.c
+	$(HOSTCC) -o $@ -D_GNU_SOURCE $< $(shell sdl2-config --libs --cflags) -lGL
+
+PLATFORM_TARGETS += hostui
 
 SDL_CFLAGS :=
 SDL_LDLIBS :=

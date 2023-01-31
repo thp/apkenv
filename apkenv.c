@@ -207,6 +207,7 @@ load_modules(const char *dirname)
     // For 32-bit qemu userspace emulation on 64-bit hosts and ext4:
     // https://gitlab.com/qemu-project/qemu/-/issues/263
     // Can be worked around by mounting "staging/" as a tmpfs
+    // Alternatively, just specify the support module using "--load"
     struct dirent *ent;
     while ((ent = readdir(dir)) != NULL) {
         int len = strlen(ent->d_name) - strlen(APKENV_MODULE_SUFFIX);
@@ -341,6 +342,7 @@ usage()
     printf("\t--trace-function|-tf <function>\t\tTrace the specified function.\n");
     printf("\t--trace-all|-ta\t\t\t\tTrace all functions.\n");
     printf("\t--use-dvm <path/to/android>\t\tUse the dalvikvm instead of our fake vm.\n");
+    printf("\t--load <module.apkenv.so>\t\tLoad support module directly\n");
     printf("\t--help|-h\t\t\t\tPrint this help.\n");
     
     exit(1);
@@ -605,6 +607,8 @@ int main(int argc, char **argv)
         printf("ERROR: too few arguments\n");
         usage();
     }
+
+    const char *load_module_cmdline = NULL;
     
     if(argc >= 2) {
         int i;
@@ -669,6 +673,14 @@ int main(int argc, char **argv)
                     last->next->name = argv[i];
                     last->next->next = NULL;
                 }
+            }
+            else if (strcmp(argv[i], "--load") == 0) {
+                i++;
+                if (i >= argc) {
+                    printf("ERROR: Missing argument to %s\n", argv[i-1]);
+                    usage();
+                }
+                load_module_cmdline = argv[i];
             }
             else if(0 == strcmp(argv[i], "--use-dvm"))
             {
@@ -807,8 +819,13 @@ int main(int argc, char **argv)
 
     global.libraries = head;
 
-    load_modules(".");
-    load_modules(global.platform->get_path(PLATFORM_PATH_MODULE_DIRECTORY));
+    if (load_module_cmdline) {
+        load_module(load_module_cmdline);
+    } else {
+        load_modules(".");
+        load_modules(global.platform->get_path(PLATFORM_PATH_MODULE_DIRECTORY));
+    }
+
     apkenv_notify_gdb_of_libraries();
 
     if (global.support_modules == NULL) {
