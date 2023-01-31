@@ -1,0 +1,30 @@
+
+ apkenv Compatibility Wrapper Generator
+ ======================================
+
+Scripts to auto-generate C wrapper functions for libc and OpenGL ES (1.x for
+now) library functions to be used by apkenv.
+
+License of the scripts: See the COPYING file.
+
+You might need:
+
+    The Android NDK (set paths in environment.sh)
+    The Harmattan Platform SDK (Scratchbox)
+    cproto (Debian/Ubuntu: apt-get install cproto)
+    manpages - at least for libc, ideally others too
+
+On your host:
+
+    bash shlib_extract.sh examples/*.so
+    bash find_headers.sh output/*.required
+
+In Harmattan Scratchbox:
+
+    bash preprocess_includes.sh output/*.includes
+
+On your host:
+
+    bash function_prototype.sh output/*.harmattan
+    for file in output/*.harmattan.h; do python generate_wrappers.py $file; done
+
