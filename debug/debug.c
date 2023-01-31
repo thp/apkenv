@@ -72,6 +72,16 @@ void crit_err_hdlr(int sig_num, siginfo_t * info, void * ucontext)
 
     fprintf(stderr, "signal %d (%s), address is %p from %p\n",sig_num, strsignal(sig_num), info->si_addr,(void *)caller_address);
 
+    // Output memory map if possible
+    FILE *fp = fopen("/proc/self/maps", "r");
+    if (fp) {
+        char line[512];
+        while (fgets(line, 512, fp) != NULL) {
+            fprintf(stderr, "maps: %s", line);
+        }
+        fclose(fp);
+    }
+
     size = backtrace(array, 50);
 
     /* overwrite sigaction with caller's address */
