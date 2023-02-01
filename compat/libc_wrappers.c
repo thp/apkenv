@@ -224,13 +224,6 @@ my_free(void *__ptr)
     WRAPPERS_DEBUG_PRINTF("free()\n", __ptr);
     free(__ptr);
 }
-void
-my_freeaddrinfo(struct addrinfo *__ai)
-{
-    WRAPPERS_DEBUG_PRINTF("freeaddrinfo()\n", __ai);
-    swap((void**)&(__ai->ai_canonname), (void**)&(__ai->ai_addr));
-    freeaddrinfo(__ai);
-}
 FILE *
 my_freopen(__const char *__restrict __filename, __const char *__restrict __modes, FILE *__restrict __stream)
 {
@@ -298,29 +291,71 @@ my_fwrite(__const void *__restrict __ptr, size_t __size, size_t __n, FILE *__res
     else
         return fwrite(__ptr, __size, __n, __s);
 }
+
+static struct addrinfo *
+dup_addrinfo(const struct addrinfo *ai)
+{
+    struct addrinfo *result = NULL;
+    struct addrinfo **ptr = &result;
+
+    while (ai != NULL) {
+        *ptr = (struct addrinfo *)malloc(sizeof(struct addrinfo));
+        memcpy(*ptr, ai, sizeof(struct addrinfo));
+
+        ptr = &((*ptr)->ai_next);
+        ai = ai->ai_next;
+    }
+
+    return result;
+}
+
+static void
+convert_addrinfo(struct addrinfo *ai)
+{
+    struct addrinfo *cur = ai;
+
+    while (cur != NULL) {
+        swap((void**)&(cur->ai_canonname), (void**)&(cur->ai_addr));
+        cur = cur->ai_next;
+    }
+}
+
 int
 my_getaddrinfo(const char *hostname, const char *servname,
     const struct addrinfo *hints, struct addrinfo **res)
 {
     WRAPPERS_DEBUG_PRINTF("getaddrinfo(%s,%s,%p,%p)\n", hostname, servname, hints, res);
+
     // make a local copy of hints
-    struct addrinfo *fixed_hints = (struct addrinfo*)malloc(sizeof(struct addrinfo));
-    memcpy(fixed_hints, hints, sizeof(struct addrinfo));
-    // fix bionic -> glibc missmatch
-    swap((void**)&(fixed_hints->ai_canonname), (void**)&(fixed_hints->ai_addr));
+    struct addrinfo *fixed_hints = dup_addrinfo(hints);
+    convert_addrinfo(fixed_hints);
+
     // do glibc getaddrinfo
     int result = getaddrinfo(hostname, servname, fixed_hints, res);
+
     // release the copy of hints
-    free(fixed_hints);
-    // fix bionic <- glibc missmatch
-    struct addrinfo *it = *res;
-    while(NULL != it)
-    {
-        swap((void**)&(it->ai_canonname), (void**)&(it->ai_addr));
-        it = it->ai_next;
+    if (fixed_hints != NULL) {
+        freeaddrinfo(fixed_hints);
     }
+
+    if (result == 0) {
+        // convert from glibc to bionic
+        convert_addrinfo(*res);
+    }
+
     return result;
 }
+
+void
+my_freeaddrinfo(struct addrinfo *__ai)
+{
+    WRAPPERS_DEBUG_PRINTF("freeaddrinfo()\n", __ai);
+
+    convert_addrinfo(__ai);
+
+    freeaddrinfo(__ai);
+}
+
 char *
 my_getenv(__const char *__name)
 {
