@@ -75,9 +75,22 @@ alloc_and_read_from_stdin(size_t len)
     return data;
 }
 
+static void (*glOrtho_ptr)(GLdouble, GLdouble, GLdouble, GLdouble, GLdouble, GLdouble) = NULL;
+
+static void
+my_glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat nearVal, GLfloat farVal)
+{
+    glOrtho_ptr(left, right, bottom, top, nearVal, farVal);
+}
+
 static void *
 get_proc_address(const char *name)
 {
+    if (strcmp(name, "glOrthof") == 0) {
+        glOrtho_ptr = SDL_GL_GetProcAddress("glOrtho");
+        return my_glOrthof;
+    }
+
     void *result = SDL_GL_GetProcAddress(name);
     if (!result) {
         fprintf(stderr, "Missing GL function in host GL: %s\n", name);
