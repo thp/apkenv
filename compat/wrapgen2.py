@@ -184,6 +184,33 @@ glTranslatex
 glVertexPointer
 glViewport
 #glPointSizePointerOES
+
+glIsRenderbufferOES
+glBindRenderbufferOES
+glDeleteRenderbuffersOES
+glGenRenderbuffersOES
+glRenderbufferStorageOES
+#glGetRenderbufferParameterivOES
+glIsFramebufferOES
+glBindFramebufferOES
+glDeleteFramebuffersOES
+glGenFramebuffersOES
+glCheckFramebufferStatusOES
+glFramebufferRenderbufferOES
+glFramebufferTexture2DOES
+#glGetFramebufferAttachmentParameterivOES
+glGenerateMipmapOES
+
+#glCurrentPaletteMatrixOES
+#glLoadPaletteFromModelViewMatrixOES
+#glMatrixIndexPointerOES
+#glWeightPointerOES
+
+#glQueryMatrixxOES
+
+#glMapBufferOES
+#glUnmapBufferOES
+#glGetBufferPointervOES
 """.strip().split()
 
 DELAYED_FUNCTIONS = {
@@ -237,11 +264,11 @@ def parse_arg(arg):
     if m is not None:
         return ('float *', 'emit_float...', 'read_float...', m.group(1))
 
-    m = re.match(r'(?:GLvoid|const GLvoid) \*(\w+)', arg)
+    m = re.match(r'(?:GLvoid|const GLvoid|const void) \*(\w+)', arg)
     if m is not None:
         return ('void *', 'emit_pointer...', 'read_pointer...', m.group(1))
 
-    m = re.match(r'(?:GLvoid|const GLvoid) \*\*(\w+)', arg)
+    m = re.match(r'(?:GLvoid|const GLvoid|void) \*\*(\w+)', arg)
     if m is not None:
         return ('void **', 'emit_pointer2pointer...', 'read_pointer2pointer...', m.group(1))
 
@@ -388,21 +415,28 @@ with open(args.outfile, 'w') as ofp:
             elif inside and line == '};':
                 inside = False
             elif inside:
-                return_type, function_name, args = func_re.match(line).groups()
-                arglist = args
-                if args == 'void':
-                    args = []
+                m = func_re.match(line)
+                if m is not None:
+                    return_type, function_name, args = m.groups()
+                    arglist = args
+                    if args == 'void':
+                        args = []
+                    else:
+                        args = [parse_arg(arg) for arg in args.split(', ')]
+
+                    index += 1
+
+                    function_names.append(function_name)
+
+                    if function_name in IMPLEMENTED_FUNCS:
+                        function_bodies.append(generate_function(ofp, index, return_type, function_name, args, arglist))
+                        switches.append(f'case {index}: decode_{function_name}(); break;')
+                        assignments.append(f'dst->{function_name} = encode_{function_name};')
+                elif not line.strip() or line.strip().startswith('/*') and line.strip().endswith('*/'):
+                    ...  # empty line or comment line
                 else:
-                    args = [parse_arg(arg) for arg in args.split(', ')]
+                    raise ValueError(line)
 
-                index += 1
-
-                function_names.append(function_name)
-
-                if function_name in IMPLEMENTED_FUNCS:
-                    function_bodies.append(generate_function(ofp, index, return_type, function_name, args, arglist))
-                    switches.append(f'case {index}: decode_{function_name}(); break;')
-                    assignments.append(f'dst->{function_name} = encode_{function_name};')
 
     print('#include "../gles_serialize_helper.h"', file=ofp)
 

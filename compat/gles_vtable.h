@@ -153,4 +153,35 @@ struct gles1_functions {
     void (*glVertexPointer)(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer);
     void (*glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
     void (*glPointSizePointerOES)(GLenum type, GLsizei stride, const GLvoid *pointer);
+
+    /* GL_OES_framebuffer_object */
+    GLboolean (*glIsRenderbufferOES)(GLuint renderbuffer);
+    void (*glBindRenderbufferOES)(GLenum target, GLuint renderbuffer);
+    void (*glDeleteRenderbuffersOES)(GLsizei n, const GLuint *renderbuffers);
+    void (*glGenRenderbuffersOES)(GLsizei n, GLuint *renderbuffers);
+    void (*glRenderbufferStorageOES)(GLenum target, GLenum internalformat, GLsizei width, GLsizei height);
+    void (*glGetRenderbufferParameterivOES)(GLenum target, GLenum pname, GLint *params);
+    GLboolean (*glIsFramebufferOES)(GLuint framebuffer);
+    void (*glBindFramebufferOES)(GLenum target, GLuint framebuffer);
+    void (*glDeleteFramebuffersOES)(GLsizei n, const GLuint *framebuffers);
+    void (*glGenFramebuffersOES)(GLsizei n, GLuint *framebuffers);
+    GLenum (*glCheckFramebufferStatusOES)(GLenum target);
+    void (*glFramebufferRenderbufferOES)(GLenum target, GLenum attachment, GLenum renderbuffertarget, GLuint renderbuffer);
+    void (*glFramebufferTexture2DOES)(GLenum target, GLenum attachment, GLenum textarget, GLuint texture, GLint level);
+    void (*glGetFramebufferAttachmentParameterivOES)(GLenum target, GLenum attachment, GLenum pname, GLint *params);
+    void (*glGenerateMipmapOES)(GLenum target);
+
+    /* GL_OES_matrix_palette */
+    void (*glCurrentPaletteMatrixOES)(GLuint matrixpaletteindex);
+    void (*glLoadPaletteFromModelViewMatrixOES)(void);
+    void (*glMatrixIndexPointerOES)(GLint size, GLenum type, GLsizei stride, const void *pointer);
+    void (*glWeightPointerOES)(GLint size, GLenum type, GLsizei stride, const void *pointer);
+
+    /* GL_OES_query_matrix */
+    GLbitfield (*glQueryMatrixxOES)(GLfixed *mantissa, GLint *exponent);
+
+    /* GL_OES_mapbuffer */
+    void * (*glMapBufferOES)(GLenum target, GLenum access);
+    GLboolean (*glUnmapBufferOES)(GLenum target);
+    void (*glGetBufferPointervOES)(GLenum target, GLenum pname, void **params);
 };
