@@ -26,7 +26,7 @@ BIONIC_LIBS := $(wildcard libs/harmattan/*.so)
 CFLAGS += -DAPKENV_LOCAL_BIONIC_PATH=\"./libs/harmattan/\"
 
 hostui: hostui.c
-	$(HOSTCC) -o $@ -D_GNU_SOURCE $< $(shell sdl2-config --libs --cflags) -lSDL2_mixer -lGL
+	$(HOSTCC) -o $@ -D_GNU_SOURCE $< $(shell sdl2-config --libs --cflags) -lSDL2_mixer -lGL -lao
 
 PLATFORM_TARGETS += hostui
 

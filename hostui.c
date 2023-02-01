@@ -33,9 +33,11 @@
 #include <stdbool.h>
 #include <unistd.h>
 #include <sys/errno.h>
+#include <pthread.h>
 
 #include <SDL.h>
 #include <SDL_opengl.h>
+#include <ao/ao.h>
 
 #include "platform/common/sdl_mixer_impl.h"
 
@@ -64,6 +66,11 @@ alloc_and_read_from_stdin(size_t len)
     size_t pos = 0;
     while (pos < len) {
         ssize_t res = TEMP_FAILURE_RETRY(read(STDIN_FILENO, data + pos, len - pos));
+        if (res == 0) {
+            free(data);
+            return NULL;
+        }
+
         if (res < 0) {
             fprintf(stderr, "Could not read data from stdin: %s\n", strerror(errno));
             exit(1);
@@ -99,6 +106,114 @@ get_proc_address(const char *name)
     return result;
 }
 
+static void *
+audio_thread_proc(void *user_data)
+{
+    bool *running = user_data;
+
+    const int audio_fd = 3;
+    const int audio_ack_fd = 4;
+
+    char cmd[1024];
+
+    memset(cmd, 0, sizeof(cmd));
+    int pos = 0;
+
+    while (pos < sizeof(cmd)) {
+        ssize_t res = TEMP_FAILURE_RETRY(read(audio_fd, cmd + pos, 1));
+        if (res == 0) {
+            // EOF
+            cmd[0] = '\0';
+            break;
+        } else if (res < 0) {
+            fprintf(stderr, "Could not read from audio fd: %s\n", strerror(errno));
+            exit(1);
+        }
+
+        if (cmd[pos] == '\n') {
+            cmd[pos] = '\0';
+            break;
+        }
+
+        ++pos;
+
+        if (pos == sizeof(cmd)) {
+            fprintf(stderr, "Command too long\n");
+            exit(1);
+        }
+    }
+
+    if (strlen(cmd) == 0) {
+        return;
+    }
+
+    int frequency, format, channels, buffer_size;
+    int res = sscanf(cmd, "configure %d %d %d %d", &frequency, &format, &channels, &buffer_size);
+    if (res != 4) {
+        fprintf(stderr, "audio thread command fail: >%s<\n", cmd);
+        exit(1);
+    }
+
+    ao_initialize();
+    ao_sample_format fmt;
+    memset(&fmt, 0, sizeof(fmt));
+
+    if (format == AudioFormat_S16SYS) {
+        fmt.bits = 16;
+        fmt.byte_format = AO_FMT_NATIVE;
+    } else {
+        fprintf(stderr, "Unhandled format: %d\n", format);
+        exit(1);
+    }
+
+    fmt.channels = channels;
+    fmt.rate = frequency;
+
+    ao_device *aodev = ao_open_live(ao_default_driver_id(), &fmt, NULL);
+    if (!aodev) {
+        fprintf(stderr, "Could not open libao device\n");
+        exit(1);
+    }
+
+    size_t buffer_len = sizeof(int16_t) * channels * buffer_size;
+    char *buffer = malloc(buffer_len);
+
+    while (*running) {
+        size_t buffer_pos = 0;
+        while (buffer_pos < buffer_len) {
+            ssize_t res = TEMP_FAILURE_RETRY(read(audio_fd, buffer + buffer_pos, buffer_len - buffer_pos));
+
+            if (res == 0) {
+                // EOF
+                break;
+            } else if (res < 0) {
+                fprintf(stderr, "Could not read from audio fd: %s\n", strerror(errno));
+                exit(1);
+            }
+
+            buffer_pos += res;
+        }
+
+        if (buffer_pos == buffer_len) {
+            ao_play(aodev, buffer, buffer_pos);
+
+            char ack = 42;
+            ssize_t res = TEMP_FAILURE_RETRY(write(audio_ack_fd, &ack, 1));
+            if (res != 1) {
+                fprintf(stderr, "Could not ACK audio playback.\n");
+                exit(1);
+            }
+        }
+    }
+
+    ao_close(aodev);
+    ao_shutdown();
+
+    free(buffer);
+
+    return NULL;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -121,6 +236,10 @@ main(int argc, char *argv[])
     void *pointer_mailbox = NULL;
 
     bool running = true;
+
+    pthread_t audio_thread;
+    int res = pthread_create(&audio_thread, NULL, audio_thread_proc, &running);
+
     while (running) {
         char cmd[1024];
 
@@ -158,6 +277,9 @@ main(int argc, char *argv[])
 
             size_t len = sizeof(uint32_t) * width * height;
             uint32_t *pixels = alloc_and_read_from_stdin(len);
+            if (pixels == NULL) {
+                continue;
+            }
 
             GLuint tex;
             glGenTextures(1, &tex);
@@ -226,6 +348,9 @@ main(int argc, char *argv[])
             }
 
             uint32_t *data = alloc_and_read_from_stdin(len);
+            if (data == NULL) {
+                continue;
+            }
 
             gles_serialize_decode(data, len);
 
@@ -369,6 +494,9 @@ main(int argc, char *argv[])
                 apkenv_reply("ok");
 
                 void *buf = alloc_and_read_from_stdin(len);
+                if (buf == NULL) {
+                    continue;
+                }
 
                 pointer_mailbox = sdl_mixer->load_sound_buffer(sdl_mixer, buf, len);
 
@@ -390,6 +518,8 @@ main(int argc, char *argv[])
             exit(1);
         }
     }
+
+    pthread_join(audio_thread, NULL);
 
     SDL_GL_DeleteContext(ctx);
 

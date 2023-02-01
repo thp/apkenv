@@ -32,6 +32,7 @@
 #include "../apkenv.h"
 #include "../compat/gles_wrappers.h"
 #include "../mixer/mixer.h"
+#include "../audio/audio.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -40,6 +41,7 @@
 #include <inttypes.h>
 #include <sys/wait.h>
 #include <sys/errno.h>
+#include <pthread.h>
 
 #include <GL/osmesa.h>
 #include <EGL/egl.h>
@@ -57,6 +59,8 @@ struct PlatformPriv {
         int pid;
         int write_fd;
         int read_fd;
+        int audio_fd;
+        int audio_ack_fd;
     } hostui;
 };
 
@@ -315,6 +319,127 @@ hostui_mixer = {
     { 0 },
 };
 
+static pthread_t
+audio_playback_thread;
+
+static struct AudioConfig
+audio_playback_config;
+
+static bool
+audio_playback_thread_running = false;
+
+static bool
+audio_playback_paused = false;
+
+static void *
+audio_playback_thread_proc(void *)
+{
+    char *cmd;
+    asprintf(&cmd, "configure %d %d %d %d\n",
+            audio_playback_config.frequency, audio_playback_config.format,
+            audio_playback_config.channels, audio_playback_config.buffer);
+
+    size_t len = strlen(cmd);
+    size_t pos = 0;
+    while (pos < len) {
+        ssize_t res = TEMP_FAILURE_RETRY(write(priv.hostui.audio_fd, cmd + pos, len - pos));
+        if (res < 0) {
+            fprintf(stderr, "Could not write to host UI: %s\n", strerror(errno));
+            exit(1);
+            return NULL;
+        }
+
+        pos += res;
+    }
+
+    free(cmd);
+
+    size_t buffer_len = sizeof(uint16_t) * audio_playback_config.buffer * audio_playback_config.channels;
+    char *buffer = malloc(buffer_len);
+
+    while (audio_playback_thread_running) {
+        if (!audio_playback_paused) {
+            audio_playback_config.callback(audio_playback_config.user_data, buffer, buffer_len);
+
+            size_t len = buffer_len;
+            size_t pos = 0;
+            while (pos < len) {
+                ssize_t res = TEMP_FAILURE_RETRY(write(priv.hostui.audio_fd, buffer + pos, len - pos));
+                if (res == 0) {
+                    // EOF
+                    break;
+                } else if (res < 0) {
+                    fprintf(stderr, "Could not write to host UI: %s\n", strerror(errno));
+                    exit(1);
+                    return NULL;
+                }
+
+                pos += res;
+            }
+
+            char tmp;
+            ssize_t res = TEMP_FAILURE_RETRY(read(priv.hostui.audio_ack_fd, &tmp, 1));
+            if (res != 1) {
+                fprintf(stderr, "Could not wait for audio ack\n");
+                exit(1);
+            }
+        } else {
+            // TODO: Block and wait for condition variable
+            usleep(100000);
+        }
+    }
+
+    free(buffer);
+
+    return NULL;
+}
+
+
+static int
+hostui_audio_open(struct Audio *audio)
+{
+    audio_playback_config = audio->config;
+    audio_playback_thread_running = true;
+
+    return (pthread_create(&audio_playback_thread, NULL, audio_playback_thread_proc, NULL) == 0);
+}
+
+static void
+hostui_audio_close(struct Audio *audio)
+{
+    if (audio_playback_thread_running) {
+        audio_playback_thread_running = false;
+
+        void *retval = NULL;
+        int res = pthread_join(audio_playback_thread, &retval);
+        if (res != 0) {
+            fprintf(stderr, "pthread_join() -> %d\n", res);
+            exit(1);
+        }
+    }
+}
+
+static void
+hostui_audio_play(struct Audio *audio)
+{
+    audio_playback_paused = false;
+}
+
+static void
+hostui_audio_pause(struct Audio *audio)
+{
+    audio_playback_paused = true;
+}
+
+static struct Audio
+hostui_audio = {
+    hostui_audio_open,
+    hostui_audio_close,
+    hostui_audio_play,
+    hostui_audio_pause,
+    { 0 },
+};
+
 
 static int
 osmesa_init(int gles_version)
@@ -336,11 +461,28 @@ osmesa_init(int gles_version)
         exit(1);
     }
 
+    int audio_fds[2];
+    res = pipe(audio_fds);
+    if (res != 0) {
+        fprintf(stderr, "Could not create pipe\n");
+        exit(1);
+    }
+
+    int audio_ack_fds[2];
+    res = pipe(audio_ack_fds);
+    if (res != 0) {
+        fprintf(stderr, "Could not create pipe\n");
+        exit(1);
+    }
+
     int pid = fork();
     if (pid == 0) {
         // in child
         close(to_host_fds[1]);
         close(from_host_fds[0]);
+
+        close(audio_fds[1]);
+        close(audio_ack_fds[0]);
 
         int res = dup2(to_host_fds[0], STDIN_FILENO);
         if (res == -1) {
@@ -354,6 +496,18 @@ osmesa_init(int gles_version)
             exit(1);
         }
 
+        res = dup2(audio_fds[0], 3);
+        if (res == -1) {
+            printf("child could not dup2() -> audio (%s)\n", strerror(errno));
+            exit(1);
+        }
+
+        res = dup2(audio_ack_fds[1], 4);
+        if (res == -1) {
+            printf("child could not dup2() -> audio (%s)\n", strerror(errno));
+            exit(1);
+        }
+
         res = execl("./hostui", "./hostui", NULL);
         printf("exec failed\n");
         exit(1);
@@ -362,9 +516,14 @@ osmesa_init(int gles_version)
         close(to_host_fds[0]);
         close(from_host_fds[1]);
 
+        close(audio_fds[0]);
+        close(audio_ack_fds[1]);
+
         priv.hostui.pid = pid;
         priv.hostui.write_fd = to_host_fds[1];
         priv.hostui.read_fd = from_host_fds[0];
+        priv.hostui.audio_fd = audio_fds[1];
+        priv.hostui.audio_ack_fd = audio_ack_fds[0];
     }
 
     if (hostui_rpc_scanf("size", "%d %d", &priv.width, &priv.height) != 2) {
@@ -382,8 +541,7 @@ osmesa_init(int gles_version)
         gles_serialize_set_sink(osmesa_data_sink_gles1, NULL);
     }
 
-    // TODO: apkenv_audio_register()
-
+    apkenv_audio_register(&hostui_audio);
     apkenv_mixer_register(&hostui_mixer);
 
     return 1;
@@ -481,6 +639,8 @@ osmesa_exit()
 
     close(priv.hostui.write_fd);
     close(priv.hostui.read_fd);
+    close(priv.hostui.audio_fd);
+    close(priv.hostui.audio_ack_fd);
 
     printf("Waiting for Host UI to close...\n");
     int status;
