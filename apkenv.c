@@ -440,7 +440,6 @@ system_init(int gles_version)
         return 0;
     }
 
-    gles_extensions_init();
 #if defined(APKENV_GLES)
     gles1_init();
 #endif

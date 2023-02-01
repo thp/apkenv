@@ -522,18 +522,12 @@ void
 my_glMultiDrawElementsEXT(GLenum mode, const GLsizei *count, GLenum type, const GLvoid **indices, GLsizei primcount) SOFTFP;
 
 
-///
-void
-gles_extensions_init();
-
 void gles1_init(void);
 
 void gles_serialize_install_encoders(struct gles1_functions *dst);
 void gles_serialize_set_sink(void (*func)(const void *, size_t, void *), void *user_data);
 
 #else
-
-#define gles_extensions_init()
 
 #define gles1_init()
 

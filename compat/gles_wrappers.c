@@ -249,6 +249,8 @@ void gles1_init(void)
     GET_FUNC(glViewport);
     GET_FUNC(glPointSizePointerOES);
 
+    gles_extensions_init();
+
     if (global.use_gles_serialize) {
         fprintf(stderr, "Enabling experimental GLES 1.1 serialization.\n");
         gles_serialize_install_encoders(&functions);
