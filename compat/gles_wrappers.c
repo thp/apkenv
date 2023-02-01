@@ -408,7 +408,7 @@ my_glNormal3f(GLfloat nx, GLfloat ny, GLfloat nz)
 void
 my_glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zNear, GLfloat zFar)
 {
-    WRAPPERS_DEBUG_PRINTF("glOrthof()\n", left, right, bottom, top, zNear, zFar);
+    WRAPPERS_DEBUG_PRINTF("glOrthof(left=%f, right=%f, bottom=%f, top=%f, zNear=%f, zFar=%f)\n", left, right, bottom, top, zNear, zFar);
     if(global_module_hacks.glOrthof_rotation_hack)
     {
         if(global.platform->get_orientation() != global_module_hacks.current_orientation) {
@@ -674,7 +674,7 @@ my_glDisableClientState(GLenum array)
 void
 my_glDrawArrays(GLenum mode, GLint first, GLsizei count)
 {
-    WRAPPERS_DEBUG_PRINTF("glDrawArrays()\n", mode, first, count);
+    WRAPPERS_DEBUG_PRINTF("glDrawArrays(mode=0x%04x, first=%d, count=%d)\n", mode, first, count);
     if(global_module_hacks.glDrawArrays_rotation_hack) {
         if(global.platform->get_orientation() != global_module_hacks.current_orientation) {
             functions.glMatrixMode(GL_PROJECTION);
@@ -936,7 +936,7 @@ my_glMaterialxv(GLenum face, GLenum pname, const GLfixed *params)
 void
 my_glMatrixMode(GLenum mode)
 {
-    WRAPPERS_DEBUG_PRINTF("glMatrixMode()\n", mode);
+    WRAPPERS_DEBUG_PRINTF("glMatrixMode(mode=0x%04x)\n", mode);
     matrix_mode = mode;
     functions.glMatrixMode(mode);
 }
@@ -1082,7 +1082,7 @@ my_glStencilOp(GLenum fail, GLenum zfail, GLenum zpass)
 void
 my_glTexCoordPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
-    WRAPPERS_DEBUG_PRINTF("glTexCoordPointer()\n", size, type, stride, pointer);
+    WRAPPERS_DEBUG_PRINTF("glTexCoordPointer(size=%d, type=0x%04x, stride=%d, pointer=%p)\n", size, type, stride, pointer);
     functions.glTexCoordPointer(size, type, stride, pointer);
 }
 void
@@ -1209,7 +1209,7 @@ my_glTranslatex(GLfixed x, GLfixed y, GLfixed z)
 void
 my_glVertexPointer(GLint size, GLenum type, GLsizei stride, const GLvoid *pointer)
 {
-    WRAPPERS_DEBUG_PRINTF("glVertexPointer()\n", size, type, stride, pointer);
+    WRAPPERS_DEBUG_PRINTF("glVertexPointer(size=%d, type=0x%04x, stride=%d, pointer=%p)\n", size, type, stride, pointer);
     functions.glVertexPointer(size, type, stride, pointer);
 }
 void
