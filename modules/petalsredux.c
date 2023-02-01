@@ -40,8 +40,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 
-#define ASSET_FILE_PETALS3D_TNX "assets/petals3d.tnx"
-
 jobject CallStaticObjectMethodV(JNIEnv *env, jclass klass, jmethodID method, va_list args) SOFTFP;
 
 typedef void (*petalsredux_init_t)(JNIEnv *env, jobject obj) SOFTFP;
@@ -72,7 +70,7 @@ struct SupportModulePriv {
 
     petalsredux_mix_t native_mix;
 
-    int is_petalsredux;
+    char *filename;
 };
 static struct SupportModulePriv petalsredux_priv;
 
@@ -81,13 +79,14 @@ CallStaticObjectMethodV(JNIEnv *env, jclass klass, jmethodID method, va_list arg
 {
     jstring path = va_arg(args, jstring);
     const char *filename = (*env)->GetStringUTFChars(env, path, 0);
-    return global->read_file_to_jni_array(ASSET_FILE_PETALS3D_TNX);
+    return global->read_file_to_jni_array(petalsredux_priv.filename);
 }
 
 void
 check_petalsredux(const char *filename, char *buffer, size_t size)
 {
-    petalsredux_priv.is_petalsredux = 1;
+    free(petalsredux_priv.filename);
+    petalsredux_priv.filename = strdup(filename);
 }
 
 static int
@@ -97,10 +96,11 @@ petalsredux_try_init(struct SupportModule *self)
 
     self->priv->JNI_OnLoad = (jni_onload_t)LOOKUP_M("JNI_OnLoad");
 
-    GLOBAL_M->foreach_file(ASSET_FILE_PETALS3D_TNX, check_petalsredux);
+    GLOBAL_M->foreach_file("assets/petals3d.tnx", check_petalsredux);
+    GLOBAL_M->foreach_file("assets/petals3d.wad", check_petalsredux);
     self->override_env.CallStaticObjectMethodV = CallStaticObjectMethodV;
 
-    return (self->priv->JNI_OnLoad != NULL && self->priv->is_petalsredux);
+    return (self->priv->JNI_OnLoad != NULL && self->priv->filename != NULL);
 }
 
 static void mix_audio(void *user_data, void *stream, int len)
