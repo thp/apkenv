@@ -447,7 +447,7 @@ osmesa_input_update(struct SupportModule *module)
 static int
 osmesa_get_orientation(void)
 {
-    return ORIENTATION_LANDSCAPE;
+    return (priv.width > priv.height) ? ORIENTATION_LANDSCAPE : ORIENTATION_PORTRAIT;
 }
 
 static void
