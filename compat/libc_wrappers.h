@@ -36,10 +36,10 @@
 
 #include "../apkenv.h"
 
-#if defined(APKENV_OSMESA)
+#if defined(APKENV_OSMESA) || defined(APKENV_RPI3)
 typedef struct timezone *__timezone_ptr_t;
 #include <sys/uio.h>
-#endif /* APKENV_OSMESA */
+#endif /* APKENV_OSMESA || APKENV_RPI3 */
 
 
 extern int my___isthreaded;

@@ -1,6 +1,20 @@
+Raspberry Pi 3 Support
+======================
 
-How to obtain Bionic libraries for the Raspberry Pi
----------------------------------------------------
+Tested with Raspbian GNU/Linux 11 (bullseye), which uses hard-float ABI.
+
+Needs (list might be incomplete):
+
+    libegl-dev libsdl1.2-dev libgles-dev libgles2-mesa-dev libsdl-mixer1.2-dev
+
+Build with:
+
+    make PLATFORM=rpi3
+
+
+
+How to obtain Bionic libraries for the OG Raspberry Pi 1
+--------------------------------------------------------
 
 Download the image from http://androidpi.wikia.com/wiki/Android_Pi_Wiki
 

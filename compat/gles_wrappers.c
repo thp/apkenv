@@ -8,6 +8,11 @@
 
 #include <dlfcn.h>
 
+#if defined(APKENV_RPI3)
+/* for glOrtho() redirection */
+#include <GL/gl.h>
+#endif /* APKENV_RPI3 */
+
 #ifdef APKENV_DEBUG
 #  define WRAPPERS_DEBUG_PRINTF(...) printf(__VA_ARGS__)
 #  define GL_TEST_ERROR if (glGetError()!=GL_NO_ERROR) { printf("GL ERROR near %s\n", __FUNCTION__); }
@@ -421,7 +426,11 @@ my_glOrthof(GLfloat left, GLfloat right, GLfloat bottom, GLfloat top, GLfloat zN
             }
         }
     }
+#if defined(APKENV_RPI3)
+    glOrtho(left, right, bottom, top, zNear, zFar);
+#else
     functions.glOrthof(left, right, bottom, top, zNear, zFar);
+#endif
 }
 void
 my_glPointParameterf(GLenum pname, GLfloat param)
