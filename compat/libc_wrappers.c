@@ -1115,3 +1115,21 @@ int my_property_get(const char *key, char *value, const char *default_value)
 
     return len;
 }
+
+size_t
+my__strlen_chk(const char *s, size_t s_len)
+{
+    return strlen(s);
+}
+
+void
+my__FD_SET_chk(int fd, fd_set *set)
+{
+    FD_SET(fd, set);
+}
+
+void *
+my__memcpy_chk(void * dest, const void * src, size_t len, size_t destlen)
+{
+    return __memcpy_chk(dest, src, len, destlen);
+}

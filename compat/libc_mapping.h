@@ -275,3 +275,12 @@
 {"property_get", my_property_get},
 
 {"dlmalloc_trim", malloc_trim},
+
+{"__strlen_chk", my__strlen_chk},
+{"__vsprintf_chk", __vsprintf_chk},
+{"__FD_SET_chk", my__FD_SET_chk},
+{"__memcpy_chk", my__memcpy_chk},
+{"posix_memalign", posix_memalign},
+{"wcstoll", wcstoll},
+{"wcstoull", wcstoull},
+{"wcstof", wcstof},
