@@ -84,7 +84,8 @@ jni_shlib_find_methods(const char *filename)
                     //JNISHLIB_DEBUG_PRINTF("[SHLIB] %s\n",tmp);
 
                     if ((memcmp(tmp, "Java_", 5) == 0) ||
-                            (memcmp(tmp, "JNI_", 4) == 0)) {
+                            (memcmp(tmp, "JNI_", 4) == 0) ||
+                            (strcmp(tmp, "android_main") == 0)) {
                         method_table[method_table_offset++] = strdup(tmp);
                         if (method_table_offset == method_table_size) {
                             method_table_size *= 2;
