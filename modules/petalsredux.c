@@ -211,7 +211,7 @@ petalsredux_resume(struct SupportModule *self)
 }
 
 static int
-petalsredux_requests_exit()
+petalsredux_requests_exit(struct SupportModule *self)
 {
     return 0;
 }

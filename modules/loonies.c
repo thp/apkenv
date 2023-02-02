@@ -164,9 +164,9 @@ loonies_resume(struct SupportModule *self)
 }
 
 static int
-loonies_requests_exit()
+loonies_requests_exit(struct SupportModule *self)
 {
-    return loonies_priv.requests_exit;
+    return self->priv->requests_exit;
 }
 
 APKENV_MODULE(loonies, MODULE_PRIORITY_GAME)

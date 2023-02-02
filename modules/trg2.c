@@ -120,7 +120,7 @@ trg2_resume(struct SupportModule *self)
 }
 
 static int
-trg2_requests_exit()
+trg2_requests_exit(struct SupportModule *self)
 {
     return 0;
 }
