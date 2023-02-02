@@ -229,6 +229,13 @@ HOOK_FUNCTIONS = {
     'glBindBuffer',
 }
 
+GEN_FUNCTIONS = {
+    'glGenBuffers',
+    'glGenTextures',
+    'glGenRenderbuffersOES',
+    'glGenFramebuffersOES',
+}
+
 func_re = re.compile(r'\s*(.*) \(\*(\w+)\)\((.*)\);$')
 
 def parse_arg(arg):
@@ -278,8 +285,10 @@ def generate_function(ofp, index, return_type, function_name, args, arglist):
     result = []
 
     argcall = ', '.join(argname for _, _, _, argname in args)
+    realcall_args = [argname for _, _, _, argname in args]
 
     decode_lines = []
+    post_lines = []
 
     if function_name in DELAYED_FUNCTIONS:
         function_name_encode = function_name + '_delayed'
@@ -307,6 +316,13 @@ def generate_function(ofp, index, return_type, function_name, args, arglist):
             read_func = read_func[:-3]
             result.append(f'    {emit_func}_{function_name}_{argname}({argcall});')
             decode_lines.append(f'    const {argtype} {argname} = {read_func}_{function_name}_{argname}({", ".join(upargs)});')
+            if function_name in GEN_FUNCTIONS:
+                # for gen-style functions, the first argument is the "n" parameter
+                argname_n = args[0][-1]
+                decode_lines.append(f'    {argtype} {argname}_mutable = malloc(sizeof(*{argname}) * {argname_n});')
+                post_lines.append(f'    /* TODO: Could associate IDs in {argname} with {argname}_mutable */')
+                post_lines.append(f'    free({argname}_mutable);')
+                realcall_args = [x + '_mutable' if x == argname else x for x in realcall_args]
         else:
             assert not read_func.endswith('...')
             result.append(f'    {emit_func}({argname});')
@@ -323,7 +339,8 @@ def generate_function(ofp, index, return_type, function_name, args, arglist):
     {{"""))
 
     result.extend(decode_lines)
-    result.append(f'    decoder_functions.{function_name}({argcall});')
+    result.append(f'    decoder_functions.{function_name}({", ".join(realcall_args)});')
+    result.extend(post_lines)
     result.append('}')
 
     return '\n'.join(result)
