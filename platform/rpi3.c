@@ -77,12 +77,18 @@ rpi3_get_path(enum PlatformPath which)
     switch (which) {
         case PLATFORM_PATH_INSTALL_DIRECTORY:
             if (!priv.install_directory) {
-                asprintf(&priv.install_directory, "%s/.local/share/applications/", getenv("HOME") ?: ".");
+                if (asprintf(&priv.install_directory, "%s/.local/share/applications/", getenv("HOME") ?: ".") == -1) {
+                    fprintf(stderr, "Could not format install directory.\n");
+                    exit(1);
+                }
             }
             return priv.install_directory;
         case PLATFORM_PATH_DATA_DIRECTORY:
             if (!priv.data_directory) {
-                asprintf(&priv.data_directory, "%s/.apkenv/", getenv("HOME") ?: ".");
+                if (asprintf(&priv.data_directory, "%s/.apkenv/", getenv("HOME") ?: ".") == -1) {
+                    fprintf(stderr, "Coudl not format data directory.\n");
+                    exit(1);
+                }
             }
             return priv.data_directory;
         case PLATFORM_PATH_MODULE_DIRECTORY:

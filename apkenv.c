@@ -371,7 +371,11 @@ operation(const char *operation, const char *filename)
         char apkenv_absolute[PATH_MAX];
         char apk_absolute[PATH_MAX];
 
-        readlink("/proc/self/exe", apkenv_absolute, sizeof(apkenv_absolute));
+        if (readlink("/proc/self/exe", apkenv_absolute, sizeof(apkenv_absolute)) == -1) {
+            fprintf(stderr, "Could not get absolute path to apkenv.\n");
+            exit(1);
+        }
+
         /* On Linux, realpath(3) always returns an absolute path */
         assert(realpath(filename, apk_absolute) != NULL);
 
@@ -585,7 +589,10 @@ int main(int argc, char **argv)
     recursive_mkdir(main_data_dir);
 
     char *config_path;
-    asprintf(&config_path, "%s/config", main_data_dir);
+    if (asprintf(&config_path, "%s/config", main_data_dir) == -1) {
+        fprintf(stderr, "Could not format config path.\n");
+        exit(1);
+    }
     read_config(config_path);
     free(config_path);
 

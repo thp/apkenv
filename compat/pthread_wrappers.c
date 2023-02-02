@@ -42,7 +42,7 @@
 /* Base address to check for Android specifics */
 #define ANDROID_TOP_ADDR_VALUE_MUTEX  0xFFFF
 #define ANDROID_TOP_ADDR_VALUE_COND   0xFFFF
-#define ANDROID_TOP_ADDR_VALUE_RWLOCK 0xFFFF
+#define ANDROID_TOP_ADDR_VALUE_RWLOCK (void *)0xFFFF
 
 #define ANDROID_MUTEX_SHARED_MASK      0x2000
 #define ANDROID_COND_SHARED_MASK       0x0001
@@ -139,7 +139,7 @@ int apkenv_my_pthread_create(pthread_t *thread, const pthread_attr_t *__attr,
 
     if (__attr != NULL)
         realattr = (pthread_attr_t *) *(unsigned int *) __attr;
-    printf("%x %x %x\n",thread,__attr, arg);
+    printf("pthread_create(thread=%p, attr=%p, start_routine=%p, arg=%p)\n",thread, __attr, start_routine, arg);
     return pthread_create(thread, realattr, start_routine, arg);
 }
 
@@ -225,13 +225,23 @@ int apkenv_my_pthread_attr_getstacksize(pthread_attr_t const *__attr, size_t *st
 int apkenv_my_pthread_attr_setstackaddr(pthread_attr_t *__attr, void *stack_addr)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
+#if defined(APKENV_DEPRECATED)
     return pthread_attr_setstackaddr(realattr, stack_addr);
+#else
+    fprintf(stderr, "Application uses pthread_attr_setstackaddr(), compile with DEPRECATED=1 to enable.\n");
+    return -1;
+#endif /* APKENV_DEPRECATED */
 }
 
 int apkenv_my_pthread_attr_getstackaddr(pthread_attr_t const *__attr, void **stack_addr)
 {
     pthread_attr_t *realattr = (pthread_attr_t *) *(unsigned int *) __attr;
+#if defined(APKENV_DEPRECATED)
     return pthread_attr_getstackaddr(realattr, stack_addr);
+#else
+    fprintf(stderr, "Application uses pthread_attr_getstackaddr(), compile with DEPRECATED=1 to enable.\n");
+    return -1;
+#endif /* APKENV_DEPRECATED */
 }
 
 int apkenv_my_pthread_attr_setstack(pthread_attr_t *__attr, void *stack_base, size_t stack_size)
@@ -774,7 +784,7 @@ pthread_rwlock_t* apkenv_set_realrwlock(pthread_rwlock_t *rwlock)
     if (apkenv_is_pointer_in_shm((void*)value))
         realrwlock = (pthread_rwlock_t *)apkenv_get_shmpointer((apkenv_shm_pointer_t)value);
 
-    if (realrwlock <= ANDROID_TOP_ADDR_VALUE_RWLOCK) {
+    if ((void *)realrwlock <= ANDROID_TOP_ADDR_VALUE_RWLOCK) {
         realrwlock = apkenv_alloc_init_rwlock();
         *((unsigned int *)rwlock) = (unsigned int) realrwlock;
     }
@@ -822,7 +832,7 @@ int apkenv_my_pthread_rwlock_timedwrlock(pthread_rwlock_t *__rwlock,
 int apkenv_my_pthread_rwlock_unlock(pthread_rwlock_t *__rwlock)
 {
     unsigned int value = (*(unsigned int *) __rwlock);
-    if (value <= ANDROID_TOP_ADDR_VALUE_RWLOCK) {
+    if ((void *)value <= ANDROID_TOP_ADDR_VALUE_RWLOCK) {
         LOGD("Trying to unlock a rwlock that's not locked/initialized"
                " by Hybris, not unlocking.");
         return 0;

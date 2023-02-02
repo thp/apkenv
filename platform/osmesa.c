@@ -120,7 +120,10 @@ hostui_rpc_printf(const char *fmt, ...)
     va_list args;
     va_start(args, fmt);
     char *tmp;
-    vasprintf(&tmp, fmt, args);
+    if (vasprintf(&tmp, fmt, args) == -1) {
+        fprintf(stderr, "Could not format RPC request.\n");
+        exit(1);
+    }
     const char *result = hostui_rpc(tmp);
     free(tmp);
     va_end(args);
@@ -335,9 +338,13 @@ static void *
 audio_playback_thread_proc(void *)
 {
     char *cmd;
-    asprintf(&cmd, "configure %d %d %d %d\n",
+    int res = asprintf(&cmd, "configure %d %d %d %d\n",
             audio_playback_config.frequency, audio_playback_config.format,
             audio_playback_config.channels, audio_playback_config.buffer);
+    if (res == -1) {
+        fprintf(stderr, "Could not format audio configure request.\n");
+        exit(1);
+    }
 
     size_t len = strlen(cmd);
     size_t pos = 0;
@@ -626,7 +633,7 @@ osmesa_update()
         glFlush();
 
         hostui_rpc("blit");
-        hostui_tx_bytes(priv.pixels, sizeof(uint32_t) * priv.width * priv.height);
+        hostui_tx_bytes((const char *)priv.pixels, sizeof(uint32_t) * priv.width * priv.height);
     }
 
     hostui_rpc("swap");

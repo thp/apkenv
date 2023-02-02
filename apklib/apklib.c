@@ -145,7 +145,7 @@ apk_uncompress_internal(AndroidApk *apk, char **buffer, size_t *size)
     fill_memory_filefunc(&filefunc);
     char *old_buffer = *buffer;
     char path[1024];
-    sprintf(path, "%x+%x", *buffer, *size);
+    sprintf(path, "%p+%zu", *buffer, *size);
 
     /* Decompress a single file in a .zip from memory */
     unz_file_info info;

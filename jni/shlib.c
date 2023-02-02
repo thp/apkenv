@@ -33,6 +33,7 @@
 #include <elf.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include "../apkenv.h"
 
@@ -58,11 +59,17 @@ jni_shlib_find_methods(const char *filename)
     Elf32_Shdr section;
 
     fseek(fp, 0, SEEK_SET);
-    fread(&header, sizeof(Elf32_Ehdr), 1, fp);
+    if (fread(&header, sizeof(Elf32_Ehdr), 1, fp) != 1) {
+        fprintf(stderr, "Could not read ELF header from '%s': %s\n", filename, strerror(errno));
+        exit(1);
+    }
     fseek(fp, header.e_shoff, SEEK_SET);
 
     for (i=0; i<header.e_shnum; i++) {
-        fread(&section, sizeof(Elf32_Shdr), 1, fp);
+        if (fread(&section, sizeof(Elf32_Shdr), 1, fp) != 1) {
+            fprintf(stderr, "Could not read ELF header from '%s': %s\n", filename, strerror(errno));
+            exit(1);
+        }
         if (section.sh_type == SHT_STRTAB) {
             remaining_bytes = section.sh_size;
             fseek(fp, section.sh_offset, SEEK_SET);

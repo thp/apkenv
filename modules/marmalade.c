@@ -34,6 +34,7 @@
 
 #include "common.h"
 #include "../mixer/mixer.h"
+#include "../accelerometer/accelerometer.h"
 
 #define ANDROID_ORIENTATION_LANDSCAPE 2
 #define ANDROID_ORIENTATION_PORTRAIT 1

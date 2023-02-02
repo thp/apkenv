@@ -1,6 +1,9 @@
 # Latehooks (experimental)
 LATEHOOKS ?= 1
 
+# Deprecated functions
+DEPRECATED ?= 0
+
 # Debug build (logging + debug symbols)
 DEBUG ?= 0
 
@@ -29,6 +32,12 @@ endif
 
 ifeq ($(LATEHOOKS),1)
     CFLAGS += -DAPKENV_LATEHOOKS
+endif
+
+ifeq ($(DEPRECATED),1)
+    CFLAGS += -DAPKENV_DEPRECATED
+else
+    CFLAGS += -Wno-deprecated-declarations
 endif
 
 ifeq ($(DEBUG),1)

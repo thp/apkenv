@@ -144,7 +144,10 @@ angrybirds_jnienv_NewObjectV(JNIEnv *env, jclass p1, jmethodID p2, va_list p3)
         apkenv_audio_open(freq, format, channels, samples, my_audio_callback, NULL);
     }
 
-    if(global->use_dvm) return 0x1;
+    if (global->use_dvm) {
+        return (jobject)0x1;
+    }
+
     return GLOBAL_J(env);
 }
 

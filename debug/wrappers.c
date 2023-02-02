@@ -41,7 +41,7 @@
 #include <assert.h>
 
 struct wrapper {
-    char *name;
+    const char *name;
     void *ptr;
     unsigned int size;
     int type;
@@ -214,7 +214,7 @@ void *create_wrapper(const char * const symbol, void *function, int wrapper_type
     
     if(MAP_FAILED == wrapper_addr)
     {
-        printf("ERROR: failed to create wrapper for %s@%x (mmap failed).\n", symbol, function);
+        printf("ERROR: failed to create wrapper for %s@%p (mmap failed).\n", symbol, function);
         return function;
     }
     

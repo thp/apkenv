@@ -230,7 +230,11 @@ unity_init(struct SupportModule *self, int width, int height, const char *home)
     global = GLOBAL_M;
     global->module_hacks->current_orientation = ORIENTATION_LANDSCAPE;
 
-    system("export MALLOC_CHECK_=0"); //<unit? or who? does something weird on the pandora ...
+    //<unit? or who? does something weird on the pandora ...
+    if (setenv("MALLOC_CHECK_", "0", 1) != 0) {
+        fprintf(stderr, "Could not set malloc check variable.\n");
+        exit(1);
+    }
 
     MODULE_DEBUG_PRINTF("JNI_OnLoad\n");
     self->priv->JNI_OnLoad_libunity(VM_M,0);

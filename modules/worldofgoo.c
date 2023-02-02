@@ -91,10 +91,10 @@ build_apk_index(const char *filename)
         if (fgetc(fp) != 4) break;
 
         fseek(fp, offset+18, SEEK_SET);
-        fread(&compressed_size, sizeof(int), 1, fp);
-        fread(&uncompressed_size, sizeof(int), 1, fp);
-        fread(&filename_length, sizeof(uint16_t), 1, fp);
-        fread(&extrafield_length, sizeof(uint16_t), 1, fp);
+        if (fread(&compressed_size, sizeof(int), 1, fp) != 1) break;
+        if (fread(&uncompressed_size, sizeof(int), 1, fp) != 1) break;
+        if (fread(&filename_length, sizeof(uint16_t), 1, fp) != 1) break;
+        if (fread(&extrafield_length, sizeof(uint16_t), 1, fp) != 1) break;
 
         if (compressed_size == uncompressed_size) {
             if (apk_index_pos >= sizeof(apk_index) / sizeof(apk_index[0])) {
@@ -102,7 +102,7 @@ build_apk_index(const char *filename)
                 exit(1);
             }
             fseek(fp, offset+30, SEEK_SET);
-            fread(apk_index[apk_index_pos].filename, sizeof(char), filename_length, fp);
+            if (fread(apk_index[apk_index_pos].filename, filename_length, 1, fp) != 1) break;
             apk_index[apk_index_pos].filename[filename_length] = '\0';
 
             apk_index[apk_index_pos].offset = offset+30+filename_length+extrafield_length;

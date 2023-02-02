@@ -39,6 +39,7 @@
 #include "../mixer/mixer.h"
 
 #include <string.h>
+#include <ctype.h>
 #include <limits.h>
 #include <unistd.h>
 

@@ -34,6 +34,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_NO_STDIO
@@ -56,7 +57,10 @@ imagelib_load_from_disk(const char *filename, const imageloadersettings_t settin
     fseek(fp,0,SEEK_SET);
 
     char* buf = malloc(sizeof(char)*size);
-    fread(buf,size,1,fp);
+    if (fread(buf,size,1,fp) != 1) {
+        fprintf(stderr, "Could not read from '%s': %s\n", filename, strerror(errno));
+        exit(1);
+    }
     fclose(fp);
 
     return imagelib_load_from_mem(buf, size, settings);

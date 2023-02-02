@@ -243,11 +243,14 @@ my_frexp(double __x, int *__exponent)
 int
 my_fscanf(FILE *__restrict __stream, __const char *__restrict __format, ...)
 {
-    WRAPPERS_DEBUG_PRINTF("fscanf(%p, %s)\n", __stream, __format);
-    if (IS_STDIO_FILE(__stream))
-        return fscanf(TO_STDIO_FILE(__stream), __format);
-    else
-        return fscanf(__stream, __format);
+    WRAPPERS_DEBUG_PRINTF("fscanf(%p, %s, ...)\n", __stream, __format);
+
+    va_list args;
+    va_start(args, __format);
+    int result = vfscanf(IS_STDIO_FILE(__stream) ? TO_STDIO_FILE(__stream) : __stream, __format, args);
+    va_end(args);
+
+    return result;
 }
 int
 my_fseek(FILE *__stream, long int __off, int __whence)
@@ -509,8 +512,12 @@ my_pow(double __x, double __y)
 int
 my_printf(__const char *__restrict __format, ...)
 {
+    va_list args;
+    va_start(args, __format);
     WRAPPERS_DEBUG_PRINTF("WRAPPERS_DEBUG_PRINTF()\n", __format);
-    return WRAPPERS_DEBUG_PRINTF(__format);
+    int result = vprintf(__format, args);
+    va_end(args);
+    return result;
 }
 int
 my_puts(__const char *__s)

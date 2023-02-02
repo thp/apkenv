@@ -21,6 +21,8 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <unistd.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <pthread.h>
@@ -128,7 +130,10 @@ static void _apkenv_shm_init()
 
             _apkenv_shm_fd = shm_open(APKENV_SHM_PATH, O_RDWR | O_CREAT, 0660);
             if (_apkenv_shm_fd >= 0) {
-                ftruncate( _apkenv_shm_fd, size_to_map );
+                if (ftruncate( _apkenv_shm_fd, size_to_map ) != 0) {
+                    fprintf(stderr, "Could not resize shared memory.\n");
+                    exit(1);
+                }
                 /* Map the memory object */
                 _apkenv_shm_data = (apkenv_shm_data_t *)mmap( NULL, size_to_map,
                                              PROT_READ | PROT_WRITE, MAP_SHARED,
@@ -164,7 +169,10 @@ static void _apkenv_shm_init()
  */
 static void _apkenv_shm_extend_region()
 {
-    ftruncate( _apkenv_shm_fd, apkenv__current_mapped_size + APKENV_DATA_SIZE );
+    if (ftruncate( _apkenv_shm_fd, apkenv__current_mapped_size + APKENV_DATA_SIZE ) != 0) {
+        fprintf(stderr, "Could not resize shared memory.\n");
+        exit(1);
+    }
     _apkenv_shm_data->max_offset += APKENV_DATA_SIZE;
 
     apkenv__sync_mmap_with_shm();

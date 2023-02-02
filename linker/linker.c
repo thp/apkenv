@@ -145,8 +145,11 @@ static char apkenv_tmp_err_buf[768];
 static char apkenv___linker_dl_err_buf[768];
 #define DL_ERR(fmt, x...)                                                     \
     do {                                                                      \
-        format_buffer(apkenv___linker_dl_err_buf, sizeof(apkenv___linker_dl_err_buf),            \
-                 "%s[%d]: " fmt, __func__, __LINE__, ##x);                    \
+        int res = format_buffer(apkenv___linker_dl_err_buf, sizeof(apkenv___linker_dl_err_buf),            \
+                 "%s[%d]: " fmt, __func__, __LINE__, ##x); \
+        if (res >= sizeof(apkenv___linker_dl_err_buf)) { \
+                apkenv___linker_dl_err_buf[sizeof(apkenv___linker_dl_err_buf)-1] = '\0'; \
+        }                    \
         ERROR(fmt "\n", ##x);                                                      \
     } while(0)
 
@@ -2353,8 +2356,8 @@ sanitize:
     }
     if(apkenv_link_image(si, 0)) {
         char errmsg[] = "CANNOT LINK EXECUTABLE\n";
-        write(2, apkenv___linker_dl_err_buf, strlen(apkenv___linker_dl_err_buf));
-        write(2, errmsg, sizeof(errmsg));
+        TEMP_FAILURE_RETRY(write(STDERR_FILENO, apkenv___linker_dl_err_buf, strlen(apkenv___linker_dl_err_buf)));
+        TEMP_FAILURE_RETRY(write(STDERR_FILENO, errmsg, sizeof(errmsg)));
         exit(-1);
     }
 

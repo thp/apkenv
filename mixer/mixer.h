@@ -99,6 +99,6 @@ int apkenv_mixer_get_sound_channel(struct MixerSound *sound);
 void apkenv_mixer_set_sound_channel(struct MixerSound *sound, int channel);
 void apkenv_mixer_volume_music(struct MixerMusic *music, float volume);
 void apkenv_mixer_volume_sound(struct MixerSound *sound, float volume);
-void apkenv_mixer_sound_lame_resample_44100_3200(struct MixerSound *sound);
+void apkenv_mixer_sound_lame_resample_44100_32000(struct MixerSound *sound);
 
 #endif /* APKENV_MIXER_H */

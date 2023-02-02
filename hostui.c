@@ -144,7 +144,7 @@ audio_thread_proc(void *user_data)
     }
 
     if (strlen(cmd) == 0) {
-        return;
+        return NULL;
     }
 
     int frequency, format, channels, buffer_size;
