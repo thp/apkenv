@@ -43,6 +43,7 @@
 #include "gles2_wrappers.h"
 #include "pthread_wrappers.h"
 #include "linux_wrappers.h"
+#include "android_wrappers.h"
 
 #include "../debug/wrappers.h"
 
@@ -60,6 +61,7 @@ static struct _hook hooks[HOOKS_MAX] = {
 #include "egl_mapping.h"
 #include "pthread_mapping.h"
 #include "linux_mapping.h"
+#include "android_mapping.h"
 
   {"__sF", my___sF},
 };
