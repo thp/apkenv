@@ -7,6 +7,11 @@ A compatibility layer for applications packaged as .apk.
 Support website: http://thp.io/2012/apkenv/
 
 
+If you want to run this no your Desktop Linux machine, see README.osmesa for
+how to build it with the necessary compatibility libraries. This is now the
+default build target.
+
+
 Example module and .apk
 =======================
 

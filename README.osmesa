@@ -1,7 +1,17 @@
-Tested with Ubuntu 22.04.
+Run apkenv on you Desktop Linux system
+======================================
+
+Tested with Ubuntu 22.04 and Ubuntu 24.04 (which has 64-bit time_t for armhf).
+
+Tested on Linux amd64, WSL2 amd64 (no sound, no MSAA), Linux aarch64.
 
 This is VERY slow (OSMesa software rendering inside QEMU userspace emulation),
 but it provides a way to test/run apkenv from a x86_64 GNU/Linux system.
+
+For GLES 1.1 games, there's now a --serialize-gles switch that will send
+the GL calls to the host UI process, so no software rasterization is involved
+there. This isn't implemented for GLES 2.0, and there's some shortcomings in
+general for GLES 1.1 games, but so far it works quite well.
 
 Install cross-compiler and qemu userspace emulation:
 
@@ -43,9 +53,9 @@ Prepare and build zlib (starting from the checkout dir again):
 
 Build apkenv:
 
-    make PLATFORM=osmesa V=1
+    make V=1
 
-Run it:
+Run it (use --serialize-gles for GLES 1.1 games to have acceptable performance):
 
     LD_LIBRARY_PATH=deps/mesa-22.3.4/builddir/install/lib:/usr/arm-linux-gnueabihf/lib \
-        ./apkenv io.thp.trg2.android-1.apk
+        qemu-arm ./apkenv --serialize-gles io.thp.trg2.android-1.apk
