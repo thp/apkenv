@@ -329,6 +329,11 @@ my_getaddrinfo(const char *hostname, const char *servname,
 {
     WRAPPERS_DEBUG_PRINTF("getaddrinfo(%s,%s,%p,%p)\n", hostname, servname, hints, res);
 
+    // Hack for AB Rio
+    if (hostname != NULL && strcmp(hostname, "cloud.rovio.com") == 0) {
+        return EAI_NONAME;
+    }
+
     // make a local copy of hints
     struct addrinfo *fixed_hints = dup_addrinfo(hints);
     convert_addrinfo(fixed_hints);
