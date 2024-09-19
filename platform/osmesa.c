@@ -515,6 +515,8 @@ osmesa_init(int gles_version)
             exit(1);
         }
 
+        setenv("APKENV_HOSTUI_FULLSCREEN", global.use_fullscreen ? "1": "0", 1);
+
         res = execl("./hostui", "./hostui", NULL);
         printf("exec failed\n");
         exit(1);

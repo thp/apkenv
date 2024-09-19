@@ -225,7 +225,13 @@ main(int argc, char *argv[])
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 1);
     SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 4);
 
-    SDL_Window *win = SDL_CreateWindow("apkenv", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, SDL_WINDOW_OPENGL);
+    int flags = SDL_WINDOW_OPENGL;
+    const char *fullscreen_env = getenv("APKENV_HOSTUI_FULLSCREEN");
+    if (fullscreen_env != NULL && strcmp(fullscreen_env, "1") == 0) {
+        flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    }
+
+    SDL_Window *win = SDL_CreateWindow("apkenv", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
 
     SDL_GetWindowSize(win, &width, &height);
 

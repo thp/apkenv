@@ -345,6 +345,7 @@ usage()
     printf("\t--load <module.apkenv.so>\t\tLoad support module directly\n");
 #if defined(APKENV_OSMESA)
     printf("\t--serialize-gles\t\t\tUse GLES serialization acceleration (EXPERIMENTAL)\n");
+    printf("\t--fullscreen\t\t\t\tFullscreen mode\n");
 #endif /* APKENV_OSMESA */
     printf("\t--help|-h\t\t\t\tPrint this help.\n");
     
@@ -691,6 +692,9 @@ int main(int argc, char **argv)
             }
             else if (strcmp(argv[i], "--serialize-gles") == 0) {
                 global.use_gles_serialize = 1;
+            }
+            else if (strcmp(argv[i], "--fullscreen") == 0) {
+                global.use_fullscreen = 1;
             }
             else if (strcmp(argv[i], "--load") == 0) {
                 i++;

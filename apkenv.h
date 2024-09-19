@@ -217,6 +217,7 @@ struct GlobalState {
     lookup_resource_t lookup_resource;
     image_loader_t image_loader;
     int use_gles_serialize;
+    int use_fullscreen;
 };
 
 #define VM(global_ptr) ((global_ptr)->_vm ? (JavaVM*)((global_ptr)->_vm) : &((global_ptr->vm)))
