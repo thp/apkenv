@@ -162,6 +162,12 @@ protected:
     GLint idx;
 };
 
+static PFNGLGENFRAMEBUFFERSOESPROC eglo_glGenFramebuffersOES;
+static PFNGLBINDFRAMEBUFFEROESPROC eglo_glBindFramebufferOES;
+static PFNGLFRAMEBUFFERTEXTURE2DOESPROC eglo_glFramebufferTexture2DOES;
+static PFNGLCHECKFRAMEBUFFERSTATUSOESPROC eglo_glCheckFramebufferStatusOES;
+static PFNGLDELETEFRAMEBUFFERSOESPROC eglo_glDeleteFramebuffersOES;
+
 EGLWindow::EGLWindow(int width, int height, int gles_version, const char *version, int scale)
     : X11Window(width, height, scale)
     , egl_display()
@@ -211,6 +217,16 @@ EGLWindow::EGLWindow(int width, int height, int gles_version, const char *versio
     }
 
     eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context);
+
+    if (gles_version == 1) {
+#define GET_PROC_ADDRESS(x) eglo_##x = (decltype(eglo_##x))eglGetProcAddress(#x)
+        GET_PROC_ADDRESS(glGenFramebuffersOES);
+        GET_PROC_ADDRESS(glBindFramebufferOES);
+        GET_PROC_ADDRESS(glFramebufferTexture2DOES);
+        GET_PROC_ADDRESS(glCheckFramebufferStatusOES);
+        GET_PROC_ADDRESS(glDeleteFramebuffersOES);
+#undef GET_PROC_ADDRESS
+    }
 
     if (scale != 1) {
         if (gles_version == 2) {
@@ -264,10 +280,10 @@ EGLWindow::EGLWindow(int width, int height, int gles_version, const char *versio
                 printf("Framebuffer not complete\n");
             }
         } else {
-            glGenFramebuffersOES(1, &fbo);
-            glBindFramebufferOES(GL_FRAMEBUFFER, fbo);
-            glFramebufferTexture2DOES(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
-            if (glCheckFramebufferStatusOES(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
+            eglo_glGenFramebuffersOES(1, &fbo);
+            eglo_glBindFramebufferOES(GL_FRAMEBUFFER, fbo);
+            eglo_glFramebufferTexture2DOES(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, tex, 0);
+            if (eglo_glCheckFramebufferStatusOES(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
                 printf("Framebuffer not complete\n");
             }
         }
@@ -283,7 +299,7 @@ EGLWindow::~EGLWindow()
         glDeleteFramebuffers(1, &fbo);
         glDeleteProgram(prg);
     } else {
-        glDeleteFramebuffersOES(1, &fbo);
+        eglo_glDeleteFramebuffersOES(1, &fbo);
     }
 
     eglDestroyContext(egl_display, egl_context);
@@ -351,7 +367,7 @@ EGLWindow::swap()
             glGetIntegerv(GL_TEXTURE_COORD_ARRAY_TYPE, &old_texture_coord_array_type);
             glGetIntegerv(GL_TEXTURE_COORD_ARRAY_STRIDE, &old_texture_coord_array_stride);
 
-            glBindFramebufferOES(GL_FRAMEBUFFER, 0);
+            eglo_glBindFramebufferOES(GL_FRAMEBUFFER, 0);
         }
 
         glViewport(0, 0, width, height);
@@ -424,7 +440,7 @@ EGLWindow::swap()
             glTexCoordPointer(old_texture_coord_array_size, old_texture_coord_array_type, old_texture_coord_array_stride,
                     old_texture_coord_array_ptr);
 
-            glBindFramebufferOES(GL_FRAMEBUFFER, fbo);
+            eglo_glBindFramebufferOES(GL_FRAMEBUFFER, fbo);
         }
 
         glBindBuffer(GL_ARRAY_BUFFER, old_old_buffer_binding);
@@ -436,8 +452,6 @@ EGLWindow::swap()
 const char *eglo_version_string =
 "@(#) eglo 0.0.3 (2018-02-21) -- Copyright (c) 2016, 2017, 2018 Thomas Perl";
 
-constexpr int DEFAULT_WIDTH = 480 + 1;
-constexpr int DEFAULT_HEIGHT = 272;
 constexpr int DEFAULT_SCALE = 1;
 
 EGLWindow *g_eglo_window = nullptr;
@@ -465,7 +479,15 @@ int eglo_init(int *width, int *height, int gles_version)
         }
     }
 
-    g_eglo_window = new EGLWindow(DEFAULT_WIDTH, DEFAULT_HEIGHT, gles_version, eglo_version_string, scale);
+    int default_width = 480;
+    int default_height = 272;
+
+    Display *dpy = XOpenDisplay(":0");
+    Screen *screen = XDefaultScreenOfDisplay(dpy);
+    default_width = XWidthOfScreen(screen);
+    default_height = XHeightOfScreen(screen);
+
+    g_eglo_window = new EGLWindow(default_width + 1, default_height, gles_version, eglo_version_string, scale);
 
     if (width != nullptr) {
         *width = g_eglo_window->get_width();

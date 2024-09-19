@@ -17,10 +17,13 @@
 
 #include <cstdio>
 #include <cstdlib>
+#include <cmath>
+#include <ctime>
 
 #include <unistd.h>
 
 #include <vector>
+#include <chrono>
 
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
@@ -200,7 +203,9 @@ int main(int argc, char *argv[])
     bool quit = false;
     while (!quit) {
         EgloEvent e;
+        bool any_event = false;
         while (eglo_next_event(&e)) {
+            any_event = true;
             switch (e.type) {
                 case EGLO_QUIT:
                     quit = true;
@@ -226,6 +231,18 @@ int main(int argc, char *argv[])
                 case EGLO_MOUSE_UP:
                     break;
             }
+        }
+
+        if (!any_event) {
+            static auto started = std::chrono::steady_clock::now();
+            float now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - started).count();
+            float x = fabsf(sinf(now*0.0007f));
+            float y = fabsf(cosf(now*0.001f));
+            vertices.emplace_back(v3{
+                    0.05f * (rnd() - 0.5f) + 2.f * x - 1.f,
+                    0.05f * (rnd() - 0.5f) + 1.f - 2.f * y,
+                    0.f,
+            }, base + v4{rnd(), rnd(), rnd(), 1.f} * 0.2f);
         }
 
         egloapp_render();

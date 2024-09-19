@@ -1,6 +1,6 @@
 TARGET := egloapp
 TARGET_OBJ := egloapp.o
-TARGET_LDFLAGS += -lGLESv2 -leglo -L. -Wl,-rpath .
+TARGET_LDFLAGS += -lEGL -lGLESv2 -leglo -L. -Wl,-rpath .
 
 SHARED := libeglo.so
 SHARED_OBJ := eglo.o
