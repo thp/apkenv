@@ -332,14 +332,23 @@ def generate_function(ofp, index, return_type, function_name, args, arglist):
     if function_name in DRAW_FUNCTIONS:
         result.append(f'    emit_draw_sync_end();')
     result.append('    emit_end();')
+    if return_type != 'void':
+        result.append(f'    /* TODO: Read return value from GL server */')
+        result.append(f'    return ({return_type})0;')
     result.append('}')
 
     result.append(textwrap.dedent(f"""
-    static {return_type} decode_{function_name}(void)
+    static void decode_{function_name}(void)
     {{"""))
 
     result.extend(decode_lines)
+    if return_type != 'void':
+        return_native_type, emit_func, read_func, return_name = parse_arg(f'{return_type} res')
+        result.append(f'    {return_native_type} {return_name} =')
     result.append(f'    decoder_functions.{function_name}({", ".join(realcall_args)});')
+    if return_type != 'void':
+        result.append(f'    /* TODO: Write return value to GL client */')
+        result.append(f'    // {emit_func}({return_name});')
     result.extend(post_lines)
     result.append('}')
 
