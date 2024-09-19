@@ -171,8 +171,7 @@ audio_thread_proc(void *user_data)
 
     ao_device *aodev = ao_open_live(ao_default_driver_id(), &fmt, NULL);
     if (!aodev) {
-        fprintf(stderr, "Could not open libao device\n");
-        exit(1);
+        fprintf(stderr, "Could not open libao device -- sound will be disabled\n");
     }
 
     size_t buffer_len = sizeof(int16_t) * channels * buffer_size;
@@ -232,6 +231,18 @@ main(int argc, char *argv[])
     }
 
     SDL_Window *win = SDL_CreateWindow("apkenv", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
+
+    if (win == NULL) {
+        fprintf(stderr, "Host GL driver doesn't seem to support multisampling -- disabling\n");
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+        SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+        win = SDL_CreateWindow("apkenv", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, flags);
+    }
+
+    if (win == NULL) {
+        fprintf(stderr, "Cannot create SDL2 window, giving up\n");
+        exit(1);
+    }
 
     SDL_GetWindowSize(win, &width, &height);
 
