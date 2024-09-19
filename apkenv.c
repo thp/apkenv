@@ -575,8 +575,13 @@ get_config_int(char *name, int fallback)
     return result;
 }
 
+void *
+apkenv_base_of_stack;
+
 int main(int argc, char **argv)
 {
+    intptr_t base = 0xdeadbeef;
+    apkenv_base_of_stack = &base;
     global.platform = &platform_support;
 
     debug_init();

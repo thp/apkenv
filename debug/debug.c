@@ -46,6 +46,10 @@
 #include <string.h>
 #include <ucontext.h>
 #include <unistd.h>
+#include <dlfcn.h>
+#include <stdint.h>
+
+#include "../apkenv.h"
 
 
 /* This structure mirrors the one found in /usr/include/asm/ucontext.h */
@@ -56,6 +60,35 @@ typedef struct _sig_ucontext {
  struct sigcontext uc_mcontext;
  sigset_t          uc_sigmask;
 } sig_ucontext_t;
+
+void
+apkenv_debug_dump_stack()
+{
+    intptr_t tmp = 0xcafebabe;
+    void **here = (void **)&tmp;
+
+    uint32_t stack_top = (intptr_t)here;
+    uint32_t stack_bot = (intptr_t)apkenv_base_of_stack;
+    while ((void *)here <= apkenv_base_of_stack) {
+        Dl_info out = {0};
+        dladdr(*here, &out);
+        uint32_t value = (uint32_t)(intptr_t)*here;
+        fprintf(stderr, "on stack 0x%08x: %08x", (uint32_t)(intptr_t)here, value);
+        if (value <= stack_bot && value >= stack_top) {
+            fprintf(stderr, " -> pointer to stack (offset = %d)", value - (uint32_t)(intptr_t)here);
+        }
+        if (out.dli_fname != NULL) {
+            fprintf(stderr, " (fname=%s +%x)", out.dli_fname, *here - out.dli_fbase);
+        }
+
+        if (out.dli_sname != NULL) {
+            fprintf(stderr, " (sname=%s +%x)", out.dli_sname, *here - out.dli_saddr);
+        }
+
+        fprintf(stderr, "\n");
+        ++here;
+    }
+}
 
 
 void crit_err_hdlr(int sig_num, siginfo_t * info, void * ucontext)
@@ -70,7 +103,42 @@ void crit_err_hdlr(int sig_num, siginfo_t * info, void * ucontext)
 
     caller_address = (void *) uc->uc_mcontext.arm_pc;
 
-    fprintf(stderr, "signal %d (%s), address is %p from %p\n",sig_num, strsignal(sig_num), info->si_addr,(void *)caller_address);
+    apkenv_debug_dump_stack();
+
+    Dl_info out = {0};
+    dladdr(info->si_addr, &out);
+    Dl_info outa = {0};
+    apkenv_android_dladdr(info->si_addr, &outa);
+
+    if (out.dli_fname == NULL) {
+        out.dli_fname = outa.dli_fname;
+    }
+    if (out.dli_sname == NULL) {
+        out.dli_sname = outa.dli_sname;
+    }
+
+    Dl_info out_caller = {0};
+    dladdr(caller_address, &out_caller);
+    Dl_info out_callera = {0};
+    apkenv_android_dladdr(caller_address, &out_callera);
+
+    if (out_caller.dli_fname == NULL) {
+        out_caller.dli_fname = out_callera.dli_fname;
+    }
+    if (out_caller.dli_sname == NULL) {
+        out_caller.dli_sname = out_callera.dli_sname;
+    }
+
+    fprintf(stderr, "signal %d (%s), address is %p (%s / %s) from %p (%s / %s)\n",
+            sig_num, strsignal(sig_num),
+
+            info->si_addr,
+            out.dli_fname ?: "?",
+            out.dli_sname ?: "?",
+
+            (void *)caller_address,
+            out_caller.dli_fname ?: "?",
+            out_caller.dli_sname ?: "?");
 
     // Output memory map if possible
     FILE *fp = fopen("/proc/self/maps", "r");

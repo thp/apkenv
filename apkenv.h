@@ -249,6 +249,10 @@ struct GlobalState {
 /* Forward-declarations for the Bionic linker */
 void *apkenv_android_dlopen(const char *filename, int flag);
 void *apkenv_android_dlsym(void *handle, const char *symbol);
+int apkenv_android_dladdr(const void *addr, void/*Dl_info*/ *info);
+
+void apkenv_debug_dump_stack();
+extern void *apkenv_base_of_stack;
 
 /* apkenv configuration helper */
 char *get_config(char *name);
