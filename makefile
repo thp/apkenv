@@ -24,6 +24,12 @@ endif
 CFLAGS += $(SDL_CFLAGS)
 LDFLAGS += $(SDL_LDLIBS)
 
+# Compatibility fix for newer Debian/Ubuntu versions with
+# 64-bit time_t on armhf. We could wrap all functions and
+# translate all structs as part of the wrapping process,
+# but this is a little simpler for now.
+CFLAGS += -D_TIME_BITS=32
+
 SHELL := bash
 
 HOSTCC ?= cc
