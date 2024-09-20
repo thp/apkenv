@@ -34,7 +34,7 @@
 #include <unistd.h>
 #include <zlib.h>
 
-#include <EGL/egl.h>
+#include <pthread.h>
 
 #include "common.h"
 #include "../mixer/mixer.h"
@@ -347,8 +347,7 @@ worldofgoo_CallBooleanMethodV(JNIEnv* p0, jobject p1, jmethodID p2, va_list p3)
 {
     MODULE_DEBUG_PRINTF("worldofgoo_CallBooleanMethodV %s\n", p2->name);
     if (strcmp(p2->name, "isGlThread") == 0) {
-        MODULE_DEBUG_PRINTF("isGlThread: %x\n", eglGetCurrentContext());
-        return eglGetCurrentContext() != 0;
+        return pthread_equal(pthread_self(), global->gl_thread_id);
     } else if (strcmp(p2->name, "isLargeScreen") == 0) {
         return 0;
     } else {

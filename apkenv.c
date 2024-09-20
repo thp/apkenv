@@ -40,6 +40,7 @@
 #include <fcntl.h>
 #include <sys/mman.h>
 #include <ctype.h>
+#include <pthread.h>
 
 #include "jni/jnienv.h"
 #include "jni/shlib.h"
@@ -618,6 +619,8 @@ int main(int argc, char **argv)
     global.use_gles_serialize = 0;
     
     global.use_dvm = 0;
+
+    global.gl_thread_id = pthread_self();
 
     if(argc <= 1) {
         printf("ERROR: too few arguments\n");

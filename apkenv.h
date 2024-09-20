@@ -218,6 +218,7 @@ struct GlobalState {
     image_loader_t image_loader;
     int use_gles_serialize;
     int use_fullscreen;
+    pthread_t gl_thread_id;
 };
 
 #define VM(global_ptr) ((global_ptr)->_vm ? (JavaVM*)((global_ptr)->_vm) : &((global_ptr->vm)))
