@@ -69,7 +69,7 @@ struct ZipFileIndex {
 static struct ZipFileIndex apk_index[4096];
 static int apk_index_pos;
 
-struct GlobalState *global;
+static struct GlobalState *global;
 
 void
 build_apk_index(const char *filename)
@@ -338,7 +338,6 @@ worldofgoo_CallLongMethodV(JNIEnv *p0, jobject p1, jmethodID p2, va_list p3)
         fprintf(stderr, "Do not know what to do: %s\n", p2->name);
         free(str_data);
     }
-    free(str_data);
     return 0;
 }
 
@@ -435,6 +434,8 @@ worldofgoo_DeleteGlobalRef(JNIEnv* p0, jobject p1)
 static int
 worldofgoo_try_init(struct SupportModule *self)
 {
+    global = GLOBAL_M;
+
     self->priv->nativeOnCreate = (worldofgoo_oncreate_t)LOOKUP_M("nativeOnCreate");
     self->priv->nativeOnSurfaceCreated = (worldofgoo_init_t)LOOKUP_M("nativeOnSurfaceCreated");
     self->priv->nativeResize = (worldofgoo_resize_t)LOOKUP_M("nativeResize");

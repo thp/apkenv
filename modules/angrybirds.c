@@ -72,7 +72,7 @@ static struct SupportModulePriv angrybirds_priv;
 jlong audioHandle;
 
 /* Global application state so we can call this from override thingie */
-struct GlobalState *global;
+static struct GlobalState *global;
 
 /* Fill audio buffer */
 void my_audio_callback(void *ud, void *stream, int len)

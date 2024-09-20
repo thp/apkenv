@@ -634,7 +634,7 @@ JNIEnv_IsInstanceOf(JNIEnv* p0, jobject p1, jclass p2)
     return 0;
 }
 
-jmethodID
+static inline jmethodID
 jnienv_make_method(jclass clazz, const char *name, const char *sig)
 {
     jmethodID id = malloc(sizeof(struct _jmethodID));

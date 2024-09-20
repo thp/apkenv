@@ -60,6 +60,7 @@ extern int apkenv_android_dlclose(void *handle);
 /* Global application state */
 struct GlobalState global;
 struct ModuleHacks global_module_hacks;
+struct StaticModuleInit *apkenv_static_modules = NULL;
 
 static void *
 lookup_symbol_impl(const char *method)
@@ -152,6 +153,33 @@ register_module(struct SupportModule *module)
     *current = module;
 }
 
+static struct SupportModule *
+init_module(apkenv_module_init_t init, const char *source)
+{
+    struct SupportModule *module = calloc(1, sizeof(struct SupportModule));
+    module->global = &global;
+    module->filename = strdup(source);
+
+    int version = init(APKENV_MODULE_VERSION, module);
+    switch (version) {
+        case 0:
+            printf("Cannot init module: %s\n", source);
+            break;
+        case APKENV_MODULE_VERSION:
+            printf("Loaded module: %s (%d)\n", source, module->priority);
+            register_module(module);
+            return module;
+        default:
+            printf("Wrong module ABI version: %x (need %x)\n",
+                    version, APKENV_MODULE_VERSION);
+            break;
+    }
+
+    free(module->filename);
+    free(module);
+    return NULL;
+}
+
 static void
 load_module(const char *filename)
 {
@@ -161,34 +189,19 @@ load_module(const char *filename)
         return;
     }
 
-    struct SupportModule *module = calloc(1, sizeof(struct SupportModule));
-    module->global = &global;
-    module->filename = strdup(filename);
-
     apkenv_module_init_t module_init = (apkenv_module_init_t)dlsym(dl,
             APKENV_MODULE_INIT);
 
     if (module_init != NULL) {
-        int version = module_init(APKENV_MODULE_VERSION, module);
-        switch (version) {
-            case 0:
-                printf("Cannot init module: %s\n", filename);
-                break;
-            case APKENV_MODULE_VERSION:
-                printf("Loaded module: %s (%d)\n", filename, module->priority);
-                register_module(module);
-                return;
-            default:
-                printf("Wrong module ABI version: %x (need %x)\n",
-                        version, APKENV_MODULE_VERSION);
-                break;
+        if (init_module(module_init, filename) != NULL) {
+            return;
+        } else {
+            printf("Failed to init module %s\n", filename);
         }
     } else {
         printf("Cannot find %s(): %s\n", APKENV_MODULE_INIT, filename);
     }
 
-    free(module->filename);
-    free(module);
     dlclose(dl);
 }
 
@@ -209,6 +222,7 @@ load_modules(const char *dirname)
     // https://gitlab.com/qemu-project/qemu/-/issues/263
     // Can be worked around by mounting "staging/" as a tmpfs
     // Alternatively, just specify the support module using "--load"
+    // Alternatively, build with STATIC_MODULES=1
     struct dirent *ent;
     while ((ent = readdir(dir)) != NULL) {
         int len = strlen(ent->d_name) - strlen(APKENV_MODULE_SUFFIX);
@@ -343,7 +357,9 @@ usage()
     printf("\t--trace-function|-tf <function>\t\tTrace the specified function.\n");
     printf("\t--trace-all|-ta\t\t\t\tTrace all functions.\n");
     printf("\t--use-dvm <path/to/android>\t\tUse the dalvikvm instead of our fake vm.\n");
+#if !defined(APKENV_STATIC_MODULES)
     printf("\t--load <module.apkenv.so>\t\tLoad support module directly\n");
+#endif /* APKENV_STATIC_MODULES */
 #if defined(APKENV_OSMESA)
     printf("\t--serialize-gles\t\t\tUse GLES serialization acceleration (EXPERIMENTAL)\n");
     printf("\t--fullscreen\t\t\t\tFullscreen mode\n");
@@ -699,6 +715,7 @@ int main(int argc, char **argv)
             else if (strcmp(argv[i], "--fullscreen") == 0) {
                 global.use_fullscreen = 1;
             }
+#if !defined(APKENV_STATIC_MODULES)
             else if (strcmp(argv[i], "--load") == 0) {
                 i++;
                 if (i >= argc) {
@@ -707,6 +724,7 @@ int main(int argc, char **argv)
                 }
                 load_module_cmdline = argv[i];
             }
+#endif
             else if(0 == strcmp(argv[i], "--use-dvm"))
             {
                 i++;
@@ -844,12 +862,22 @@ int main(int argc, char **argv)
 
     global.libraries = head;
 
+#if defined(APKENV_STATIC_MODULES)
+    {
+        struct StaticModuleInit *cur = apkenv_static_modules;
+        while (cur != NULL) {
+            init_module(cur->init, cur->name);
+            cur = cur->next;
+        }
+    }
+#else
     if (load_module_cmdline) {
         load_module(load_module_cmdline);
     } else {
         load_modules(".");
         load_modules(global.platform->get_path(PLATFORM_PATH_MODULE_DIRECTORY));
     }
+#endif
 
     apkenv_notify_gdb_of_libraries();
 

@@ -54,9 +54,9 @@
     }
 
 /* Add init function for module export */
-#define APKENV_MODULE(modulename, modulepriority) \
-    int \
-    apkenv_module_init(int version, struct SupportModule *module) { \
+#define APKENV_MODULE_DECLARE_INIT(modulename, modulepriority) \
+    static int \
+    apkenv_module_init_##modulename(int version, struct SupportModule *module) { \
         APKENV_MODULE_CHECK_VERSION(version); \
         module->priv = &modulename ## _priv; \
         module->priority = modulepriority; \
@@ -71,6 +71,30 @@
         module->requests_exit = modulename ## _requests_exit; \
         return APKENV_MODULE_VERSION; \
     }
+
+#if defined(APKENV_STATIC_MODULES)
+#define APKENV_MODULE(modulename, modulepriority) \
+    APKENV_MODULE_DECLARE_INIT(modulename, modulepriority) \
+    extern struct StaticModuleInit *apkenv_static_modules; \
+    static struct StaticModuleInit apkenv_init_##modulename = { \
+        &apkenv_module_init_##modulename, \
+        #modulename " (built-in)", \
+        NULL, \
+    }; \
+    static void register_##modulename() __attribute__ ((constructor)); \
+    void register_##modulename() \
+    { \
+        apkenv_init_##modulename.next = apkenv_static_modules; \
+        apkenv_static_modules = &apkenv_init_##modulename; \
+    }
+#else
+#define APKENV_MODULE(modulename, modulepriority) \
+    APKENV_MODULE_DECLARE_INIT(modulename, modulepriority) \
+    int \
+    apkenv_module_init(int version, struct SupportModule *module) { \
+        return apkenv_module_init_##modulename(version, module); \
+    }
+#endif
 
 
 /* Module priorities */
@@ -95,7 +119,8 @@ typedef void (*jni_onunload_t)(JavaVM *vm, void *reserved) SOFTFP;
 #include "../jni/jnienv.h"
 #include <string.h>
 
-char *dup_jstring(struct GlobalState *global, void *str)
+static inline char *
+dup_jstring(struct GlobalState *global, void *str)
 {
     char *result;
 

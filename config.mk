@@ -4,6 +4,9 @@ LATEHOOKS ?= 1
 # Deprecated functions
 DEPRECATED ?= 0
 
+# Link support modules statically into the apkenv binary
+STATIC_MODULES ?= 1
+
 # Debug build (logging + debug symbols)
 DEBUG ?= 0
 

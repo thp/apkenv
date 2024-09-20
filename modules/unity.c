@@ -36,7 +36,7 @@
 #include <string.h>
 
 
-struct GlobalState* global;
+static struct GlobalState* global;
 
 /**
  *   jni implementations

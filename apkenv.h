@@ -266,4 +266,11 @@ typedef int (*apkenv_module_init_t)(int version, struct SupportModule *module);
 #define APKENV_MODULE_SUFFIX ".apkenv.so"
 #define APKENV_MODULE_VERSION 0x010002
 
+/* Static modules */
+struct StaticModuleInit {
+    apkenv_module_init_t init;
+    const char *name;
+    struct StaticModuleInit *next;
+};
+
 #endif /* APKENV_H */

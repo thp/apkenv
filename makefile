@@ -59,11 +59,18 @@ include platform/$(PLATFORM).mk
 
 SOURCES += $(wildcard platform/common/*.c)
 
-OBJS := $(patsubst %.c,%.o,$(SOURCES))
-
 # Support modules for specific applications
 MODULES_SOURCES := $(wildcard modules/*.c)
-MODULES := $(patsubst modules/%.c,%.apkenv.so,$(MODULES_SOURCES))
+MODULES :=
+
+ifeq ($(STATIC_MODULES),1)
+CFLAGS += -DAPKENV_STATIC_MODULES
+SOURCES += $(MODULES_SOURCES)
+else
+MODULES += $(patsubst modules/%.c,%.apkenv.so,$(MODULES_SOURCES))
+endif
+
+OBJS := $(patsubst %.c,%.o,$(SOURCES))
 
 DEPS := $(patsubst %.c,%.d,$(SOURCES)) $(patsubst %.c,%.d,$(MODULES_SOURCES))
 

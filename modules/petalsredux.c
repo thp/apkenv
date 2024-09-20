@@ -52,7 +52,7 @@ typedef void (*petalsredux_resume_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef jboolean (*petalsredux_back_t)(JNIEnv *env, jobject obj) SOFTFP;
 typedef void (*petalsredux_mix_t)(JNIEnv *env, jobject obj, jbyteArray buffer) SOFTFP;
 
-struct GlobalState *global;
+static struct GlobalState *global;
 
 struct SupportModulePriv {
     jni_onload_t JNI_OnLoad;
